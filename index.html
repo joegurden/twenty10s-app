@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Twenty10s — Random Teams</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/theme.css">
+</head>
+<body>
+  <!-- Top ribbon / header -->
+  <header class="topbar">
+    <h1>Twenty10s</h1>
+    <div class="nav">
+      <button class="nav-btn primary" data-target="page-home">Home</button>
+      <button class="nav-btn" data-target="page-players">Players</button>
+      <button class="nav-btn" data-target="page-draft">Draft Mode</button>
+      <button class="nav-btn" data-target="page-tournament">Tournament</button>
+    </div>
+    <span class="pill">Formation features are available in Draft Mode.</span>
+  </header>
+
+  <main>
+    <!-- HOME PAGE -->
+    <section id="page-home" class="page">
+      <div class="bar">
+        <button id="btn-generate">🎲 Generate</button>
+        <button id="btn-rematch">🔁 Rematch</button>
+        <button id="btn-goat">🐐 95+ on BOTH</button>
+      </div>
+
+      <!-- Live teams -->
+      <section class="grid">
+        <div class="card">
+          <div class="team-title">
+            <strong>Team A</strong><span id="sumA" class="pill"></span>
+          </div>
+          <ul id="teamA"></ul>
+        </div>
+        <div class="card">
+          <div class="team-title">
+            <strong>Opponents</strong><span id="sumB" class="pill"></span>
+          </div>
+          <ul id="teamB"></ul>
+        </div>
+      </section>
+
+      <div id="error" class="err"></div>
+    </section>
+
+    <!-- PLAYERS PAGE -->
+    <section id="page-players" class="page hidden">
+      <div class="card">
+        <div class="draft-head">
+          <strong>Players</strong>
+          <span class="pill">Search and explore the full player database.</span>
+        </div>
+        <div class="row">
+          <label for="playerSearch"><strong>Search</strong></label>
+          <input id="playerSearch" class="select" placeholder="Name, club, league, position…" />
+        </div>
+        <div id="playersTable" class="pool">
+          <div class="pill">Player table coming soon.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DRAFT MODE PAGE -->
+    <section id="page-draft" class="page hidden">
+      <!-- Intro / start button -->
+      <div class="card">
+        <div class="draft-head">
+          <div>
+            <strong>Draft Mode</strong>
+            <span class="pill">Build your XI plus subs and face a generated opponent.</span>
+          </div>
+          <button id="btn-draft" class="primary">🖐️ Start Draft</button>
+        </div>
+      </div>
+
+      <!-- DRAFT: step 1 — setup -->
+      <section id="setupPanel" class="card hidden">
+        <div class="draft-head">
+          <div>
+            <strong>Draft Setup</strong>
+            <span id="setupStep" class="pill"></span>
+          </div>
+          <button id="btn-exit-setup" class="ghost">✖ Exit</button>
+        </div>
+
+        <div class="row">
+          <label for="setupFormation"><strong>Formation</strong></label>
+          <select id="setupFormation" class="select">
+            <option>3-4-3</option>
+            <option>3-5-2</option>
+            <option>4-4-2</option>
+            <option>4-1-2-1-2</option>
+            <option>4-2-3-1</option>
+            <option selected>4-3-3 (Holding)</option>
+            <option>4-3-3 (Flat)</option>
+            <option>4-3-3 (Attack)</option>
+          </select>
+        </div>
+
+        <div id="setupInstruction" class="draft-instruction"></div>
+        <div id="setupCandidates" class="candidates"></div>
+
+        <div id="setupSubs" class="hidden">
+          <div class="subs-head">
+            <strong>Your Subs</strong>
+            <span id="setupSubsCount" class="pill">0 / 5</span>
+            <div class="spacer"></div>
+            <button id="btn-setup-auto-subs" class="ghost">⚡ Auto-pick 5</button>
+            <button id="btn-setup-finish" class="primary">✅ Done — Go to Pre-Match</button>
+          </div>
+          <div id="setupSubsCandidates" class="candidates"></div>
+        </div>
+      </section>
+
+      <!-- DRAFT: step 2 — pre-match -->
+      <section id="prematchPanel" class="card hidden">
+        <div class="draft-head">
+          <div>
+            <strong>Pre-Match Selection</strong>
+            <span class="pill">Pick 11 from your 16. You can change formation.</span>
+          </div>
+          <button id="btn-exit-prematch" class="ghost">✖ Exit</button>
+        </div>
+
+        <div class="row">
+          <label for="prematchFormation"><strong>Formation</strong></label>
+          <select id="prematchFormation" class="select">
+            <option>3-4-3</option>
+            <option>3-5-2</option>
+            <option>4-4-2</option>
+            <option>4-1-2-1-2</option>
+            <option>4-2-3-1</option>
+            <option selected>4-3-3 (Holding)</option>
+            <option>4-3-3 (Flat)</option>
+            <option>4-3-3 (Attack)</option>
+          </select>
+        </div>
+
+        <div id="prematchPool" class="pool"></div>
+        <div class="row">
+          <button id="btn-play-match" class="primary">🏁 Play Match</button>
+          <span id="seriesStatus" class="pill"></span>
+        </div>
+      </section>
+
+      <!-- DRAFT: step 3 — series -->
+      <section id="seriesPanel" class="card hidden">
+        <div class="draft-head">
+          <div>
+            <strong>Series</strong>
+            <span id="seriesLabel" class="pill"></span>
+          </div>
+          <button id="btn-exit-series" class="ghost">✖ Exit</button>
+        </div>
+        <div class="row">
+          <div id="seriesResult" class="draft-instruction"></div>
+        </div>
+        <div class="row">
+          <button id="btn-next-match" class="primary">➡ Next match</button>
+          <span id="finalScore" class="pill"></span>
+        </div>
+      </section>
+    </section>
+
+    <!-- TOURNAMENT PAGE -->
+    <section id="page-tournament" class="page hidden">
+      <div class="card">
+        <div class="draft-head">
+          <strong>Tournament</strong>
+          <span class="pill">16 teams · 4 groups · home & away. (Logic coming next.)</span>
+        </div>
+        <div class="draft-instruction">
+          Tournament engine and your xG-based match simulator will live here.
+        </div>
+        <div id="tournamentRoot" class="pool">
+          <div class="pill">We’ll build the groups, fixtures and tables here next.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    Back five show Clean Sheets; front six don’t. Green = position winner · Red = loser · Ties = neutral.
+  </footer>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
