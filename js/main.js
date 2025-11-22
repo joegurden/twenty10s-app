@@ -767,7 +767,8 @@ function runFullTournament(){
 
 /* ---------------- Wire up after DOM ready ---------------- */
 document.addEventListener("DOMContentLoaded", () => {
-  // Nav buttons → switch pages
+
+  /* ---------------- Navigation Buttons ---------------- */
   document.querySelectorAll(".nav-btn").forEach(btn => {
     btn.addEventListener("click", () => showPage(btn.dataset.target));
   });
@@ -775,38 +776,43 @@ document.addEventListener("DOMContentLoaded", () => {
   // Start on Home
   showPage("page-home");
 
-  // Home page buttons
+  /* ---------------- Home Page Buttons ---------------- */
   $("btn-generate")?.addEventListener("click", () => generate(false));
   $("btn-rematch")?.addEventListener("click",  () => generate(false));
   $("btn-goat")?.addEventListener("click",     () => generate(true));
 
-  // Draft entry on Draft page
+  /* ---------------- Draft Entry (Draft Page) ---------------- */
   $("btn-draft")?.addEventListener("click", () => {
     showPage("page-draft");
     startSetup();
   });
 
-  // Draft setup events
+  /* ---------------- Draft Setup Events ---------------- */
   $("btn-exit-setup")?.addEventListener("click", () => endSetup());
+
   $("setupFormation")?.addEventListener("change", e => {
     draft.formation = e.target.value;
     resetSetupSelections();
     renderSetup();
   });
+
   $("btn-setup-auto-subs")?.addEventListener("click", () => autoPickSubs());
   $("btn-setup-finish")?.addEventListener("click", () => finishSetup());
 
-  // Pre-match events
+  /* ---------------- Pre-match (Draft Series) ---------------- */
   $("btn-exit-prematch")?.addEventListener("click", () =>
     togglePanels({ setup:false, prematch:false, series:false })
   );
+
   $("prematchFormation")?.addEventListener("change", () => { /* stored on play */ });
+
   $("btn-play-match")?.addEventListener("click", () => playMatch());
 
-  // Series events
+  /* ---------------- Series Page ---------------- */
   $("btn-exit-series")?.addEventListener("click", () =>
     togglePanels({ setup:false, prematch:false, series:false })
   );
+
   $("btn-next-match")?.addEventListener("click", () => nextMatch());
 
   /* ---------------- Tournament Button ---------------- */
@@ -815,7 +821,8 @@ document.addEventListener("DOMContentLoaded", () => {
     runFullTournament();           // run the full xG-based tournament
   });
 
-  // Initial quick view for Home page
+  /* ---------------- Initial Home Page Render ---------------- */
   generate(false);
 });
+
 
