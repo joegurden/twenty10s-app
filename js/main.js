@@ -163,6 +163,52 @@ async function generate(goat = false){
     $("error").textContent = e.message;
   }
 }
+/* ---------------- Match simulation (xG model) ---------------- */
+// teamRatings = { att, mid, def } all roughly 83–99
+function expectedGoals(team, opponent){
+  const Att = team.att, Mid = team.mid, Def = team.def;
+  const OppAtt = opponent.att, OppMid = opponent.mid, OppDef = opponent.def;
+
+  // 1. Base attack pressure
+  const attack_pressure = Att + 0.5 * Mid - 1.1 * OppDef;
+
+  // 2. Attack vs defence advantage
+  const diff = Att - OppDef;
+  let boost;
+  if (diff >= 7)      boost = 1.18;
+  else if (diff >= 3) boost = 1.08;
+  else if (diff <= -7)boost = 0.75;
+  else if (diff <= -3)boost = 0.9;
+  else                boost = 1.0;
+
+  // 3. Midfield influence
+  const mid_diff = Mid - OppMid;
+  const mid_multiplier = 1.0 + Math.max(-0.12, Math.min(0.12, mid_diff * 0.02));
+
+  // 4. Pressure → expected goals (λ)
+  const base_lambda = 0.12 * Math.exp(attack_pressure / 20.0);
+  const lam = base_lambda * boost * mid_multiplier;
+  return Math.max(0.05, Math.min(lam, 4.0)); // clamp 0.05–4.0
+}
+
+function poissonSample(lam){
+  const L = Math.exp(-lam);
+  let k = 0, p = 1.0;
+  while(true){
+    k += 1;
+    p *= Math.random();
+    if(p <= L) break;
+  }
+  return k - 1;
+}
+
+function simulateMatchXG(rA, rB){
+  const lamA = expectedGoals(rA, rB);
+  const lamB = expectedGoals(rB, rA);
+  const gA = poissonSample(lamA);
+  const gB = poissonSample(lamB);
+  return { gA, gB, lamA, lamB };
+}
 
 /* ---------------- Draft state ---------------- */
 const draft = {
@@ -480,6 +526,244 @@ function nextMatch(){
   $("seriesStatus").textContent = `Match ${series.matchNo+1} of 3`;
   renderPrematchPool();
 }
+/* ---------------- Tournament state & helpers ---------------- */
+
+const GROUP_IDS = ["A","B","C","D"];
+
+const tournament = {
+  teams: [],     // array of { id, name, ratings:{att,mid,def} }
+  groups: {},    // { A:[teamId,...], B:[...], ... }
+  fixtures: [],  // { stage:'groups'|'semis'|'final', group, homeId, awayId, gH, gA }
+  champion: null
+};
+
+function clamp(x,min,max){ return x < min ? min : x > max ? max : x; }
+
+function createStrongTeam(id, label){
+  // base in 87–93, then small variation per unit
+  let base = 87 + Math.random() * 6;
+  let att  = base + (Math.random() * 6 - 3);
+  let mid  = base + (Math.random() * 6 - 3);
+  let def  = base + (Math.random() * 6 - 3);
+  // ensure average >= 87
+  let avg = (att + mid + def) / 3;
+  if(avg < 87){
+    const bump = 87 - avg;
+    att += bump; mid += bump; def += bump;
+  }
+  att = Math.round(clamp(att,83,99));
+  mid = Math.round(clamp(mid,83,99));
+  def = Math.round(clamp(def,83,99));
+  return {
+    id,
+    name: label,
+    ratings: { att, mid, def }
+  };
+}
+
+function initTournament(){
+  tournament.teams = [];
+  tournament.groups = {};
+  tournament.fixtures = [];
+  tournament.champion = null;
+
+  // 16 teams, first labelled as "User FC" just for flavour
+  for(let i=0;i<16;i++){
+    const name = (i === 0) ? "User FC" : `Team ${i+1}`;
+    tournament.teams.push(createStrongTeam(i, name));
+  }
+
+  // shuffle teams and assign to groups A–D (4 each)
+  const ids = shuffle(tournament.teams.map(t => t.id));
+  GROUP_IDS.forEach((g,gi) => {
+    tournament.groups[g] = ids.slice(gi*4, gi*4 + 4);
+  });
+
+  // create double round-robin fixtures inside each group
+  GROUP_IDS.forEach(g => {
+    const tIds = tournament.groups[g];
+    for(let i=0;i<tIds.length;i++){
+      for(let j=i+1;j<tIds.length;j++){
+        // two legs: home/away
+        tournament.fixtures.push({
+          stage:"groups", group:g, homeId:tIds[i], awayId:tIds[j], gH:null, gA:null
+        });
+        tournament.fixtures.push({
+          stage:"groups", group:g, homeId:tIds[j], awayId:tIds[i], gH:null, gA:null
+        });
+      }
+    }
+  });
+}
+
+function playAllGroupMatches(){
+  for(const f of tournament.fixtures){
+    if(f.stage !== "groups") continue;
+    const home = tournament.teams.find(t=>t.id===f.homeId);
+    const away = tournament.teams.find(t=>t.id===f.awayId);
+    const { gA, gB } = simulateMatchXG(home.ratings, away.ratings);
+    f.gH = gA; f.gA = gB;
+  }
+}
+
+function groupTables(){
+  // returns { A:[rows...], ... } where row = { teamId, pts, gd, gf, ga, played, won,drawn,lost }
+  const tables = {};
+  GROUP_IDS.forEach(g => {
+    const ids = tournament.groups[g];
+    const rows = {};
+    ids.forEach(id => {
+      rows[id] = { teamId:id, pts:0, gd:0, gf:0, ga:0, played:0, won:0, drawn:0, lost:0 };
+    });
+
+    for(const f of tournament.fixtures){
+      if(f.stage !== "groups" || f.group !== g) continue;
+      const h = rows[f.homeId], a = rows[f.awayId];
+      const gH = f.gH, gA = f.gA;
+      h.played++; a.played++;
+      h.gf += gH; h.ga += gA;
+      a.gf += gA; a.ga += gH;
+      if(gH > gA){
+        h.won++; a.lost++;
+        h.pts += 3;
+      }else if(gA > gH){
+        a.won++; h.lost++;
+        a.pts += 3;
+      }else{
+        h.drawn++; a.drawn++;
+        h.pts++; a.pts++;
+      }
+    }
+
+    const arr = Object.values(rows);
+    arr.forEach(r => r.gd = r.gf - r.ga);
+    arr.sort((a,b)=>{
+      if(b.pts !== a.pts) return b.pts - a.pts;
+      if(b.gd  !== a.gd)  return b.gd  - a.gd;
+      if(b.gf  !== a.gf)  return b.gf  - a.gf;
+      return Math.random() - 0.5; // random tiebreak
+    });
+
+    tables[g] = arr;
+  });
+
+  return tables;
+}
+
+function simulateTwoLeggedTie(teamA, teamB){
+  let aggA = 0, aggB = 0;
+  for(let leg=0;leg<2;leg++){
+    const { gA, gB } = simulateMatchXG(teamA.ratings, teamB.ratings);
+    aggA += gA; aggB += gB;
+  }
+  if(aggA === aggB){
+    // simple random decider if still tied
+    if(Math.random() < 0.5) aggA++;
+    else aggB++;
+  }
+  return {
+    teamA, teamB,
+    aggA, aggB,
+    winner: aggA > aggB ? teamA : teamB
+  };
+}
+
+function playKnockouts(tables){
+  // Assumption: only group WINNERS (1st place) advance → 4 teams → 2 semis.
+  const winners = GROUP_IDS.map(g => {
+    const row = tables[g][0];
+    return tournament.teams.find(t => t.id === row.teamId);
+  });
+
+  const semi1 = simulateTwoLeggedTie(winners[0], winners[1]); // A vs B
+  const semi2 = simulateTwoLeggedTie(winners[2], winners[3]); // C vs D
+
+  // one-leg final between semi winners
+  const finalTeams = [semi1.winner, semi2.winner];
+  const { gA, gB } = simulateMatchXG(finalTeams[0].ratings, finalTeams[1].ratings);
+  let winner = gA > gB ? finalTeams[0] : finalTeams[1];
+  let fA = gA, fB = gB;
+  if(gA === gB){
+    // simple random decider
+    if(Math.random() < 0.5){ winner = finalTeams[0]; fA++; }
+    else { winner = finalTeams[1]; fB++; }
+  }
+
+  tournament.champion = winner;
+
+  return {
+    semi1,
+    semi2,
+    final: { teamA: finalTeams[0], teamB: finalTeams[1], gA:fA, gB:fB, winner }
+  };
+}
+
+function renderTournament(tables, ko){
+  const el = $("tournamentOutput");
+  const parts = [];
+
+  // Groups
+  GROUP_IDS.forEach(g => {
+    const rows = tables[g];
+    parts.push(`
+      <div class="t-group-card">
+        <div class="t-group-title">Group ${g}</div>
+        <table class="t-table">
+          <thead>
+            <tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr>
+          </thead>
+          <tbody>
+            ${
+              rows.map(r=>{
+                const t = tournament.teams.find(x=>x.id===r.teamId);
+                return `<tr>
+                  <td>${t.name}</td>
+                  <td>${r.played}</td>
+                  <td>${r.won}</td>
+                  <td>${r.drawn}</td>
+                  <td>${r.lost}</td>
+                  <td>${r.gf}</td>
+                  <td>${r.ga}</td>
+                  <td>${r.gd}</td>
+                  <td>${r.pts}</td>
+                </tr>`;
+              }).join("")
+            }
+          </tbody>
+        </table>
+      </div>
+    `);
+  });
+
+  // Knockouts
+  const s1 = ko.semi1, s2 = ko.semi2, f = ko.final;
+
+  function semiLine(s){
+    return `${s.teamA.name} ${s.aggA}–${s.aggB} ${s.teamB.name}`;
+  }
+
+  parts.push(`
+    <div class="t-knockout">
+      <h3>Semi-finals (two legs)</h3>
+      <div class="pill">${semiLine(s1)}</div>
+      <div class="pill">${semiLine(s2)}</div>
+      <h3 style="margin-top:8px;">Final</h3>
+      <div class="pill">${f.teamA.name} ${f.gA}–${f.gB} ${f.teamB.name}</div>
+      <h3 style="margin-top:8px;">Champion</h3>
+      <div class="pill">🏆 ${tournament.champion.name}</div>
+    </div>
+  `);
+
+  el.innerHTML = parts.join("");
+}
+
+function runFullTournament(){
+  initTournament();
+  playAllGroupMatches();
+  const tables = groupTables();
+  const ko = playKnockouts(tables);
+  renderTournament(tables, ko);
+}
 
 /* ---------------- Wire up after DOM ready ---------------- */
 document.addEventListener("DOMContentLoaded", () => {
@@ -496,7 +780,7 @@ document.addEventListener("DOMContentLoaded", () => {
   $("btn-rematch")?.addEventListener("click",  () => generate(false));
   $("btn-goat")?.addEventListener("click",     () => generate(true));
 
-  // Draft entry button on Draft page
+  // Draft entry on Draft page
   $("btn-draft")?.addEventListener("click", () => {
     showPage("page-draft");
     startSetup();
@@ -525,6 +809,13 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   $("btn-next-match")?.addEventListener("click", () => nextMatch());
 
+  /* ---------------- Tournament Button ---------------- */
+  $("btn-run-tournament")?.addEventListener("click", () => {
+    showPage("page-tournament");   // switch to tournament page
+    runFullTournament();           // run the full xG-based tournament
+  });
+
   // Initial quick view for Home page
   generate(false);
 });
+

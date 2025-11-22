@@ -166,21 +166,25 @@
       </section>
     </section>
 
-    <!-- TOURNAMENT PAGE -->
+    <!-- TOURNAMENT PAGE --> 
     <section id="page-tournament" class="page hidden">
       <div class="card">
         <div class="draft-head">
           <strong>Tournament</strong>
-          <span class="pill">16 teams · 4 groups · home & away. (Logic coming next.)</span>
+          <span class="pill">16 teams · 4 groups · home & away · xG-based simulation.</span>
         </div>
-        <div class="draft-instruction">
-          Tournament engine and your xG-based match simulator will live here.
+
+        <div class="row">
+          <button id="btn-run-tournament" class="primary">🏆 Run Full Tournament</button>
+          <span class="pill">Generates 16 strong teams and simulates groups, semis & final.</span>
         </div>
-        <div id="tournamentRoot" class="pool">
-          <div class="pill">We’ll build the groups, fixtures and tables here next.</div>
+
+        <div id="tournamentOutput" class="pool">
+          <div class="pill">Click “Run Full Tournament” to generate a tournament.</div>
         </div>
       </div>
     </section>
+
   </main>
 
   <footer class="footer">

@@ -94,3 +94,36 @@ li:first-child{border-top:0}
   margin-top:12px;
 }
 
+/* Tournament layout */
+.t-group-card{
+  background:#0e214f;
+  border:1px solid #1b3b8a;
+  border-radius:10px;
+  padding:10px;
+}
+.t-group-title{
+  font-weight:600;
+  margin-bottom:6px;
+}
+.t-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px;
+}
+.t-table th,
+.t-table td{
+  padding:4px 6px;
+  border-bottom:1px solid #162d66;
+  text-align:right;
+}
+.t-table th:first-child,
+.t-table td:first-child{
+  text-align:left;
+}
+.t-knockout{
+  margin-top:16px;
+}
+.t-knockout h3{
+  margin:4px 0;
+  font-size:14px;
+}
