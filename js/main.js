@@ -604,7 +604,9 @@ function aggregateTeamRatings(players){
     return cnt ? Math.round(sum / cnt) : fallback;
   }
 
-  const overall = Math.round((attSum + midSum + defSum) / Math.max(attCount + midCount + defCount, 1));
+  const overall = Math.round(
+    (attSum + midSum + defSum) / Math.max(attCount + midCount + defCount, 1)
+  );
 
   return {
     att: avg(attSum, attCount, overall),
@@ -664,8 +666,8 @@ function createStrongTeam(id, label){
   };
 }
 
+// Build a simple 4-3-3 style XI for a team so we can assign scorers
 function generateSyntheticXIForTeam(team){
-  // Simple 4-3-3 style template
   const template = ["GK","RB","CB","CB","LB","CM","CM","CAM","RW","ST","LW"];
 
   return template.map(pos => {
@@ -695,29 +697,28 @@ function initTournament(){
     const name =
       (i === 0)
         ? "Your Club"
-        : AI_TEAM_NAMES[i-1] || `Team ${i+1}`;
+        : (AI_TEAM_NAMES[i-1] || `Team ${i+1}`);
 
     tournament.teams.push(createStrongTeam(i, name));
   }
 
-  // shuffle and assign to groups A–D
+  // shuffle teams and assign to groups A–D (4 each)
   const ids = shuffle(tournament.teams.map(t => t.id));
   GROUP_IDS.forEach((g,gi) => {
     tournament.groups[g] = ids.slice(gi*4, gi*4 + 4);
   });
 
-  // double round-robin fixtures
+  // create double round-robin fixtures inside each group
   GROUP_IDS.forEach(g => {
     const tIds = tournament.groups[g];
     for(let i=0;i<tIds.length;i++){
       for(let j=i+1;j<tIds.length;j++){
+        // two legs: home/away
         tournament.fixtures.push({
-          stage:"groups", group:g, homeId:tIds[i], awayId:tIds[j],
-          gH:null, gA:null
+          stage:"groups", group:g, homeId:tIds[i], awayId:tIds[j], gH:null, gA:null
         });
         tournament.fixtures.push({
-          stage:"groups", group:g, homeId:tIds[j], awayId:tIds[i],
-          gH:null, gA:null
+          stage:"groups", group:g, homeId:tIds[j], awayId:tIds[i], gH:null, gA:null
         });
       }
     }
@@ -843,15 +844,6 @@ function playKnockouts(tables){
   };
 }
 
-  tournament.champion = winner;
-
-  return {
-    semi1,
-    semi2,
-    final: { teamA: finalTeams[0], teamB: finalTeams[1], gA:fA, gB:fB, winner }
-  };
-}
-
 function renderTournament(tables, ko){
   const el = $("tournamentOutput");
   const parts = [];
@@ -889,7 +881,7 @@ function renderTournament(tables, ko){
     `);
   });
 
-    // Knockouts
+  // Knockouts
   const s1 = ko.semi1, s2 = ko.semi2, f = ko.final;
 
   function semiLine(s){
@@ -926,6 +918,14 @@ function renderTournament(tables, ko){
   `);
 
   el.innerHTML = parts.join("");
+}
+
+function runFullTournament(){
+  initTournament();
+  playAllGroupMatches();
+  const tables = groupTables();
+  const ko = playKnockouts(tables);
+  renderTournament(tables, ko);
 }
 
 /* ---------------- Wire up after DOM ready ---------------- */
