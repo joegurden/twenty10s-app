@@ -717,7 +717,7 @@ function generateSyntheticXIForTeam(team){
   });
 }
 
-async function initTournament(){
+async function initTournament(userSquad = null){
   tournament.teams = [];
   tournament.groups = {};
   tournament.fixtures = [];
@@ -727,18 +727,30 @@ async function initTournament(){
   const squads = await buildTournamentSquads();
 
   for (let i = 0; i < 16; i++) {
-    const name =
-      (i === 0)
-        ? "Your Club"                         // later we’ll replace this with your drafted XI
-        : (AI_TEAM_NAMES[i-1] || `Team ${i+1}`);
+    let name;
+    let players;
 
-    const players = squads[i];
-    const ratings = aggregateTeamRatings(players); // { att, mid, def }
+    if (i === 0) {
+      // Team 0 = Your Club (user team if available)
+      name = "Your Club";
+      if (userSquad && userSquad.length >= 11) {
+        // Use up to 15 user players
+        players = userSquad.slice(0, 15);
+      } else {
+        // Fallback: random squad
+        players = squads[i];
+      }
+    } else {
+      name = AI_TEAM_NAMES[i - 1] || `Team ${i + 1}`;
+      players = squads[i];
+    }
+
+    const ratings = aggregateTeamRatings(players);
 
     tournament.teams.push({
       id: i,
       name,
-      players,   // 15 real players for this club
+      players,
       ratings
     });
   }
@@ -754,7 +766,6 @@ async function initTournament(){
     const tIds = tournament.groups[g];
     for (let i = 0; i < tIds.length; i++) {
       for (let j = i + 1; j < tIds.length; j++) {
-        // two legs: home/away
         tournament.fixtures.push({
           stage: "groups", group: g, homeId: tIds[i], awayId: tIds[j], gH: null, gA: null
         });
@@ -912,7 +923,6 @@ function showSquad(teamId){
   box.classList.remove("hidden");
 }
 
-
 function renderTournament(tables, ko){
   const el = $("tournamentOutput");
   const parts = [];
@@ -925,28 +935,33 @@ function renderTournament(tables, ko){
         <div class="t-group-title">Group ${g}</div>
         <table class="t-table">
           <thead>
-            <tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr>
+            <tr>
+              <th>Team</th>
+              <th>P</th><th>W</th><th>D</th><th>L</th>
+              <th>GF</th><th>GA</th><th>GD</th><th>Pts</th>
+            </tr>
           </thead>
           <tbody>
             ${
-              rows.map(r=>{
-                const t = tournament.teams.find(x=>x.id===r.teamId);
-                return `<tr>
-                  <td>${t.name}<td>
-  <button class="link-button t-team" data-team-id="${t.id}">
-    ${t.name}
-  </button>
-</td>
-
-                  <td>${r.played}</td>
-                  <td>${r.won}</td>
-                  <td>${r.drawn}</td>
-                  <td>${r.lost}</td>
-                  <td>${r.gf}</td>
-                  <td>${r.ga}</td>
-                  <td>${r.gd}</td>
-                  <td>${r.pts}</td>
-                </tr>`;
+              rows.map(r => {
+                const t = tournament.teams.find(x => x.id === r.teamId);
+                return `
+                  <tr>
+                    <td>
+                      <button class="link-button t-team" data-team-id="${t.id}">
+                        ${t.name}
+                      </button>
+                    </td>
+                    <td>${r.played}</td>
+                    <td>${r.won}</td>
+                    <td>${r.drawn}</td>
+                    <td>${r.lost}</td>
+                    <td>${r.gf}</td>
+                    <td>${r.ga}</td>
+                    <td>${r.gd}</td>
+                    <td>${r.pts}</td>
+                  </tr>
+                `;
               }).join("")
             }
           </tbody>
@@ -967,32 +982,16 @@ function renderTournament(tables, ko){
       <h3>Semi-finals (two legs)</h3>
       <div class="pill">${semiLine(s1)}</div>
       <div class="pill">${semiLine(s2)}</div>
-
       <h3 style="margin-top:8px;">Final</h3>
       <div class="pill">${f.teamA.name} ${f.gA}–${f.gB} ${f.teamB.name}</div>
-
-      <div class="t-final-events">
-        <div class="pill"><strong>${f.teamA.name} scorers</strong>${f.eventsA.length ? "" : " — none"}</div>
-        ${
-          f.eventsA.map(ev =>
-            `<div class="pill">${ev.minute}' – ${ev.scorer.Name}</div>`
-          ).join("")
-        }
-        <div class="pill" style="margin-top:4px;"><strong>${f.teamB.name} scorers</strong>${f.eventsB.length ? "" : " — none"}</div>
-        ${
-          f.eventsB.map(ev =>
-            `<div class="pill">${ev.minute}' – ${ev.scorer.Name}</div>`
-          ).join("")
-        }
-      </div>
-
       <h3 style="margin-top:8px;">Champion</h3>
       <div class="pill">🏆 ${tournament.champion.name}</div>
     </div>
   `);
 
   el.innerHTML = parts.join("");
-  // After rendering, wire up team name clicks to show squads
+
+  // Wire up team name clicks to show squads
   document.querySelectorAll(".t-team").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = Number(btn.dataset.teamId);
@@ -1001,13 +1000,20 @@ function renderTournament(tables, ko){
   });
 }
 
+
 async function runFullTournament(){
   const out = $("tournamentOutput");
   if (out) {
     out.innerHTML = `<div class="pill">Building tournament squads and simulating matches...</div>`;
   }
 
-  await initTournament();        // now async (builds squads)
+  // Build user squad from Draft if available: 11 XI + 4 subs
+  let userSquad = null;
+  if (draft.yourXI && draft.yourXI.every(p => p) && draft.subs && draft.subs.length >= 4) {
+    userSquad = [...draft.yourXI, ...draft.subs.slice(0, 4)];
+  }
+
+  await initTournament(userSquad);  // Your Club will use this if present
   playAllGroupMatches();
   const tables = groupTables();
   const ko = playKnockouts(tables);
@@ -1065,9 +1071,9 @@ document.addEventListener("DOMContentLoaded", () => {
   $("btn-next-match")?.addEventListener("click", () => nextMatch());
 
   /* ---------------- Squad Panel Close Button (6d) ---------------- */
-  $("btn-close-squad")?.addEventListener("click", () => {
-    $("tournamentSquad")?.classList.add("hidden");
-  });
+$("btn-close-squad")?.addEventListener("click", () => {
+  $("tournamentSquad")?.classList.add("hidden");
+});
 
   /* ---------------- Tournament Button ---------------- */
   $("btn-run-tournament")?.addEventListener("click", async () => {

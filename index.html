@@ -189,13 +189,22 @@
 
       <!-- RIGHT SIDE: Team Details -->
       <div id="teamDetails" class="team-details card hidden">
-        <h3 id="td-teamName">Team Details</h3>
+        <div class="draft-head" style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong id="td-teamName">Team Details</strong>
+            <span id="td-teamSubtitle" class="pill"></span>
+          </div>
+          <button id="btn-close-squad" class="ghost">✖ Close</button>
+        </div>
 
+        <!-- Squad list -->
+        <h4>Squad</h4>
         <div id="td-squad">
           <div class="pill">Select a team name to view their squad.</div>
         </div>
 
-        <h4>Match Events</h4>
+        <!-- Match events -->
+        <h4 style="margin-top:12px;">Match Events</h4>
         <div id="td-events">
           <div class="pill">Match events will appear here.</div>
         </div>
@@ -205,14 +214,3 @@
 
   </div>
 </section>
-
-
-</main>
-
-<footer class="footer">
-  Back five show Clean Sheets; front six don’t. Green = position winner · Red = loser · Ties = neutral.
-</footer>
-
-<script type="module" src="js/main.js"></script>
-</body>
-</html>

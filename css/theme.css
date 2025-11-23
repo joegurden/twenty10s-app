@@ -164,3 +164,15 @@ li:first-child{border-top:0}
     margin-top: 12px;
   }
 }
+
+.link-button{
+  background:none;
+  border:none;
+  color:inherit;
+  padding:0;
+  font:inherit;
+  cursor:pointer;
+}
+.link-button:hover{
+  text-decoration:underline;
+}
