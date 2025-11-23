@@ -729,17 +729,17 @@ async function initTournament(){
   for (let i = 0; i < 16; i++) {
     const name =
       (i === 0)
-        ? "Your Club"                         // placeholder – later this will be the user’s drafted team
+        ? "Your Club"                         // later we’ll replace this with your drafted XI
         : (AI_TEAM_NAMES[i-1] || `Team ${i+1}`);
 
     const players = squads[i];
-    const ratings = aggregateTeamRatings(players); // uses att/mid/def bucket logic
+    const ratings = aggregateTeamRatings(players); // { att, mid, def }
 
     tournament.teams.push({
       id: i,
       name,
-      players,    // 15 real players for this club
-      ratings     // { att, mid, def } from those players
+      players,   // 15 real players for this club
+      ratings
     });
   }
 
@@ -765,7 +765,6 @@ async function initTournament(){
     }
   });
 }
-
 
 function playAllGroupMatches(){
   for(const f of tournament.fixtures){
@@ -840,7 +839,7 @@ function simulateTwoLeggedTie(teamA, teamB){
 }
 
 function playKnockouts(tables){
-  // Assumption: only group WINNERS (1st place) advance → 4 teams → 2 semis.
+  // Only group winners advance → 4 teams → 2 semis.
   const winners = GROUP_IDS.map(g => {
     const row = tables[g][0];
     return tournament.teams.find(t => t.id === row.teamId);
@@ -857,17 +856,17 @@ function playKnockouts(tables){
   let fA = gA, fB = gB;
   let winner = gA > gB ? finalTeams[0] : finalTeams[1];
 
-  // If tied, random “late goal” winner
-  if(gA === gB){
-    if(Math.random() < 0.5){ winner = finalTeams[0]; fA++; }
+  if (gA === gB){
+    // random late deciding goal
+    if (Math.random() < 0.5){ winner = finalTeams[0]; fA++; }
     else { winner = finalTeams[1]; fB++; }
   }
 
-  // Build synthetic XI for each finalist and generate goal events
-  const xiA = generateSyntheticXIForTeam(finalTeams[0]);
-  const xiB = generateSyntheticXIForTeam(finalTeams[1]);
-  const eventsA = simulateGoalsForTeam(xiA, fA);
-  const eventsB = simulateGoalsForTeam(xiB, fB);
+  // Use REAL squads for scorers (all 15 players as scoring pool)
+  const squadA = finalTeams[0].players || [];
+  const squadB = finalTeams[1].players || [];
+  const eventsA = simulateGoalsForTeam(squadA, fA);
+  const eventsB = simulateGoalsForTeam(squadB, fB);
 
   tournament.champion = winner;
 
@@ -885,6 +884,34 @@ function playKnockouts(tables){
     }
   };
 }
+
+function showSquad(teamId){
+  const team = tournament.teams.find(t => t.id === teamId);
+  if (!team) return;
+
+  const box = $("tournamentSquad");
+  const titleEl = $("squadTitle");
+  const subtitleEl = $("squadSubtitle");
+  const listEl = $("squadList");
+
+  const avgRating = Math.round(
+    team.players.reduce((s,p) => s + (Number(p.Rating) || 0), 0) /
+    Math.max(team.players.length, 1)
+  );
+
+  titleEl.textContent = `${team.name} — Squad`;
+  subtitleEl.textContent = `${team.players.length} players · avg rating ${avgRating}`;
+
+  listEl.innerHTML = team.players.map(p => `
+    <div class="pool pick">
+      <strong>${p.Position} — ${p.Name}</strong> (${p.Rating})<br>
+      <span class="pill">${p.Club} · ${p.League}</span>
+    </div>
+  `).join("");
+
+  box.classList.remove("hidden");
+}
+
 
 function renderTournament(tables, ko){
   const el = $("tournamentOutput");
@@ -905,7 +932,12 @@ function renderTournament(tables, ko){
               rows.map(r=>{
                 const t = tournament.teams.find(x=>x.id===r.teamId);
                 return `<tr>
-                  <td>${t.name}</td>
+                  <td>${t.name}<td>
+  <button class="link-button t-team" data-team-id="${t.id}">
+    ${t.name}
+  </button>
+</td>
+
                   <td>${r.played}</td>
                   <td>${r.won}</td>
                   <td>${r.drawn}</td>
@@ -960,6 +992,13 @@ function renderTournament(tables, ko){
   `);
 
   el.innerHTML = parts.join("");
+  // After rendering, wire up team name clicks to show squads
+  document.querySelectorAll(".t-team").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = Number(btn.dataset.teamId);
+      showSquad(id);
+    });
+  });
 }
 
 async function runFullTournament(){
@@ -968,7 +1007,7 @@ async function runFullTournament(){
     out.innerHTML = `<div class="pill">Building tournament squads and simulating matches...</div>`;
   }
 
-  await initTournament();        // now async
+  await initTournament();        // now async (builds squads)
   playAllGroupMatches();
   const tables = groupTables();
   const ko = playKnockouts(tables);
@@ -1025,14 +1064,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $("btn-next-match")?.addEventListener("click", () => nextMatch());
 
+  /* ---------------- Squad Panel Close Button (6d) ---------------- */
+  $("btn-close-squad")?.addEventListener("click", () => {
+    $("tournamentSquad")?.classList.add("hidden");
+  });
+
   /* ---------------- Tournament Button ---------------- */
-$("btn-run-tournament")?.addEventListener("click", async () => {
-  showPage("page-tournament");   // switch to tournament page
-  await runFullTournament();     // build squads + simulate everything
-});
+  $("btn-run-tournament")?.addEventListener("click", async () => {
+    showPage("page-tournament");   // switch to Tournament page
+    await runFullTournament();     // build squads + simulate tournament
+  });
 
   /* ---------------- Initial Home Page Render ---------------- */
   generate(false);
 });
-
-

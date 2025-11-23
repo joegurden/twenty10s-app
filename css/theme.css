@@ -127,3 +127,40 @@ li:first-child{border-top:0}
   margin:4px 0;
   font-size:14px;
 }
+
+.link-button{
+  background:none;
+  border:none;
+  color:inherit;
+  padding:0;
+  font:inherit;
+  cursor:pointer;
+}
+.link-button:hover{
+  text-decoration:underline;
+}
+
+.tournament-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.team-details {
+  background: rgba(13,31,74,.9);
+  padding: 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+  .tournament-layout {
+    grid-template-columns: 1fr;
+  }
+  .team-details {
+    margin-top: 12px;
+  }
+}
