@@ -260,6 +260,57 @@ function showPage(pageId){
   }
 }
 
+/* --- GOAL SCORER WEIGHTS & SELECTION --- */
+
+function scorerWeightByPosition(pos){
+  if (pos === "GK") return 0.01;     // keepers almost never score
+
+  if (pos === "ST" || pos === "CF") return 5;       // strikers
+  if (pos === "RW" || pos === "LW") return 4;       // wide forwards
+  if (pos === "CAM")               return 3.5;
+  if (pos === "CM" || pos === "RM" || pos === "LM" || pos === "CDM") return 2;
+  if (pos === "RWB" || pos === "LWB") return 1.5;
+  if (pos === "RB" || pos === "LB" || pos === "CB") return 1;
+
+  return 2;
+}
+
+function pickScorer(players){
+  if (!players.length) return null;
+
+  // Miracle GK goal (1 in 1000)
+  if (Math.random() < 1/1000){
+    const gk = players.find(p => p.Position === "GK");
+    if (gk) return gk;
+  }
+
+  const weights = players.map(p => {
+    const w = scorerWeightByPosition(p.Position);
+    const jitter = 0.5 + Math.random() * 0.5;
+    return w * jitter;
+  });
+
+  const total = weights.reduce((a,b)=>a+b,0);
+  let r = Math.random() * total;
+
+  for (let i = 0; i < players.length; i++){
+    r -= weights[i];
+    if (r <= 0) return players[i];
+  }
+  return players[players.length - 1];
+}
+
+function simulateGoalsForTeam(players, goals){
+  const events = [];
+  for (let i = 0; i < goals; i++){
+    const minute = 1 + Math.floor(Math.random() * 95); // realistic minutes
+    const scorer = pickScorer(players);
+    events.push({ minute, scorer });
+  }
+  events.sort((a,b)=>a.minute - b.minute);
+  return events;
+}
+
 /* ---------------- Draft helpers ---------------- */
 async function buildGlobalPool(){
   draft.globalPool = [];
@@ -527,6 +578,40 @@ function nextMatch(){
   renderPrematchPool();
 }
 /* ---------------- Tournament state & helpers ---------------- */
+
+/* --- TEAM RATING AGGREGATION (att, mid, def) --- */
+
+const ATT_POS = new Set(["ST","CF","RW","LW","CAM"]);
+const MID_POS = new Set(["CM","CDM","LM","RM","RWB","LWB"]);
+const DEF_POS = new Set(["CB","RB","LB","GK"]);
+
+function aggregateTeamRatings(players){
+  let attSum = 0, attCount = 0;
+  let midSum = 0, midCount = 0;
+  let defSum = 0, defCount = 0;
+
+  players.forEach(p => {
+    const r = Number(p.Rating) || 0;
+    const pos = p.Position;
+
+    if (ATT_POS.has(pos)) { attSum += r; attCount++; }
+    else if (MID_POS.has(pos)) { midSum += r; midCount++; }
+    else if (DEF_POS.has(pos)) { defSum += r; defCount++; }
+    else { midSum += r; midCount++; }
+  });
+
+  function avg(sum, cnt, fallback){
+    return cnt ? Math.round(sum / cnt) : fallback;
+  }
+
+  const overall = Math.round((attSum + midSum + defSum) / Math.max(attCount + midCount + defCount, 1));
+
+  return {
+    att: avg(attSum, attCount, overall),
+    mid: avg(midSum, midCount, overall),
+    def: avg(defSum, defCount, overall)
+  };
+}
 
 const GROUP_IDS = ["A","B","C","D"];
 
