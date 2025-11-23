@@ -665,6 +665,37 @@ function createStrongTeam(id, label){
     ratings: { att, mid, def }
   };
 }
+// Build 16 squads of 15 real players from Supabase
+async function buildTournamentSquads(){
+  // Grab a pool of strong players (rating 84+ so teams can reach high averages)
+  const { data, error } = await supabase
+    .from("players")
+    .select("*")
+    .gte("Rating", 84)
+    .order("Rating", { ascending: false })
+    .limit(400); // plenty for 16 x 15
+
+  if (error) throw new Error(error.message);
+  if (!data || !data.length) {
+    throw new Error("No players found for tournament squads.");
+  }
+
+  const players = shuffle([...data]);
+  const total = players.length;
+  const squads = [];
+
+  // 16 teams x 15 players. If we run out, we wrap around (so no errors).
+  for (let i = 0; i < 16; i++) {
+    const squad = [];
+    for (let j = 0; j < 15; j++) {
+      const idx = (i * 15 + j) % total;
+      squad.push(players[idx]);
+    }
+    squads.push(squad);
+  }
+
+  return squads;
+}
 
 // Build a simple 4-3-3 style XI for a team so we can assign scorers
 function generateSyntheticXIForTeam(team){
@@ -686,44 +717,55 @@ function generateSyntheticXIForTeam(team){
   });
 }
 
-function initTournament(){
+async function initTournament(){
   tournament.teams = [];
   tournament.groups = {};
   tournament.fixtures = [];
   tournament.champion = null;
 
-  // 16 teams: 1 user club + 15 AI Ultimate Team-style names
-  for(let i=0;i<16;i++){
+  // Build 16 real squads of 15 players each
+  const squads = await buildTournamentSquads();
+
+  for (let i = 0; i < 16; i++) {
     const name =
       (i === 0)
-        ? "Your Club"
+        ? "Your Club"                         // placeholder – later this will be the user’s drafted team
         : (AI_TEAM_NAMES[i-1] || `Team ${i+1}`);
 
-    tournament.teams.push(createStrongTeam(i, name));
+    const players = squads[i];
+    const ratings = aggregateTeamRatings(players); // uses att/mid/def bucket logic
+
+    tournament.teams.push({
+      id: i,
+      name,
+      players,    // 15 real players for this club
+      ratings     // { att, mid, def } from those players
+    });
   }
 
   // shuffle teams and assign to groups A–D (4 each)
   const ids = shuffle(tournament.teams.map(t => t.id));
-  GROUP_IDS.forEach((g,gi) => {
-    tournament.groups[g] = ids.slice(gi*4, gi*4 + 4);
+  GROUP_IDS.forEach((g, gi) => {
+    tournament.groups[g] = ids.slice(gi * 4, gi * 4 + 4);
   });
 
   // create double round-robin fixtures inside each group
   GROUP_IDS.forEach(g => {
     const tIds = tournament.groups[g];
-    for(let i=0;i<tIds.length;i++){
-      for(let j=i+1;j<tIds.length;j++){
+    for (let i = 0; i < tIds.length; i++) {
+      for (let j = i + 1; j < tIds.length; j++) {
         // two legs: home/away
         tournament.fixtures.push({
-          stage:"groups", group:g, homeId:tIds[i], awayId:tIds[j], gH:null, gA:null
+          stage: "groups", group: g, homeId: tIds[i], awayId: tIds[j], gH: null, gA: null
         });
         tournament.fixtures.push({
-          stage:"groups", group:g, homeId:tIds[j], awayId:tIds[i], gH:null, gA:null
+          stage: "groups", group: g, homeId: tIds[j], awayId: tIds[i], gH: null, gA: null
         });
       }
     }
   });
 }
+
 
 function playAllGroupMatches(){
   for(const f of tournament.fixtures){
@@ -920,8 +962,13 @@ function renderTournament(tables, ko){
   el.innerHTML = parts.join("");
 }
 
-function runFullTournament(){
-  initTournament();
+async function runFullTournament(){
+  const out = $("tournamentOutput");
+  if (out) {
+    out.innerHTML = `<div class="pill">Building tournament squads and simulating matches...</div>`;
+  }
+
+  await initTournament();        // now async
   playAllGroupMatches();
   const tables = groupTables();
   const ko = playKnockouts(tables);
@@ -979,10 +1026,10 @@ document.addEventListener("DOMContentLoaded", () => {
   $("btn-next-match")?.addEventListener("click", () => nextMatch());
 
   /* ---------------- Tournament Button ---------------- */
-  $("btn-run-tournament")?.addEventListener("click", () => {
-    showPage("page-tournament");   // switch to tournament page
-    runFullTournament();           // run the full xG-based tournament
-  });
+$("btn-run-tournament")?.addEventListener("click", async () => {
+  showPage("page-tournament");   // switch to tournament page
+  await runFullTournament();     // build squads + simulate everything
+});
 
   /* ---------------- Initial Home Page Render ---------------- */
   generate(false);
