@@ -179,13 +179,19 @@
       <span class="pill">Generates 16 strong teams and simulates groups, semis & final.</span>
     </div>
 
-    <!-- Layout: Left = tables, right = squad panel -->
-    <div class="tournament-layout">
-
-      <!-- LEFT SIDE: Groups + Knockouts -->
-      <div id="tournamentOutput" class="pool">
-        <div class="pill">Click “Run Full Tournament” to generate a tournament.</div>
-      </div>
+    <div class="row">
+      <label for="tournamentFormation"><strong>Your Club formation</strong></label>
+      <select id="tournamentFormation" class="select">
+        <option>3-4-3</option>
+        <option>3-5-2</option>
+        <option>4-4-2</option>
+        <option>4-1-2-1-2</option>
+        <option>4-2-3-1</option>
+        <option selected>4-3-3 (Holding)</option>
+        <option>4-3-3 (Flat)</option>
+        <option>4-3-3 (Attack)</option>
+      </select>
+    </div>
 
 <!-- RIGHT SIDE: Team Details / Squad Panel -->
 <div id="tournamentSquad" class="team-details card hidden">

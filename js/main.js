@@ -615,6 +615,69 @@ function aggregateTeamRatings(players){
   };
 }
 
+function buildXIAndSubs(players, formationKey){
+  const slots = FORMATIONS[formationKey] || FORMATIONS["4-3-3 (Holding)"];
+  const used = new Set();
+  const xi = Array(slots.length).fill(null);
+
+  // pick best available player (by Rating) for each slot
+  for (let i = 0; i < slots.length; i++){
+    const need = slots[i];
+    let bestIdx = -1;
+    let bestRating = -Infinity;
+
+    for (let idx = 0; idx < players.length; idx++){
+      if (used.has(idx)) continue;
+      const p = players[idx];
+      if (!need.includes(p.Position)) continue;
+      const r = Number(p.Rating) || 0;
+      if (r > bestRating){
+        bestRating = r;
+        bestIdx = idx;
+      }
+    }
+
+    // if no positional match, take best remaining player
+    if (bestIdx === -1){
+      for (let idx = 0; idx < players.length; idx++){
+        if (used.has(idx)) continue;
+        const p = players[idx];
+        const r = Number(p.Rating) || 0;
+        if (r > bestRating){
+          bestRating = r;
+          bestIdx = idx;
+        }
+      }
+    }
+
+    if (bestIdx === -1){
+      // safety fallback
+      xi[i] = players[0];
+      used.add(0);
+    } else {
+      xi[i] = players[bestIdx];
+      used.add(bestIdx);
+    }
+  }
+
+  // remaining players become a randomised bench; keep up to 4 subs at random
+  const remaining = players
+    .map((p, idx) => ({ p, idx }))
+    .filter(obj => !used.has(obj.idx))
+    .map(obj => obj.p);
+
+  const subsPool = shuffle([...remaining]);
+  const subs = subsPool.slice(0, 4);
+
+  return { xi, subs };
+}
+
+function randomFormationKey(){
+  const keys = Object.keys(FORMATIONS);
+  if (!keys.length) return "4-3-3 (Holding)";
+  return keys[Math.floor(Math.random() * keys.length)];
+}
+
 const GROUP_IDS = ["A","B","C","D"];
 
 const AI_TEAM_NAMES = [
@@ -723,12 +786,17 @@ async function initTournament(userSquad = null){
   tournament.fixtures = [];
   tournament.champion = null;
 
-  // Build 16 real squads of 15 players each
+  // Build 16 real squads of 15 players each from Supabase
   const squads = await buildTournamentSquads();
+
+  // User formation for "Your Club"
+  const formationSelect = $("tournamentFormation");
+  const userFormationKey = formationSelect?.value || "4-3-3 (Holding)";
 
   for (let i = 0; i < 16; i++) {
     let name;
     let players;
+    let formationKey;
 
     if (i === 0) {
       // Team 0 = Your Club (user team if available)
@@ -737,21 +805,27 @@ async function initTournament(userSquad = null){
         // Use up to 15 user players
         players = userSquad.slice(0, 15);
       } else {
-        // Fallback: random squad
+        // Fallback: random squad from Supabase
         players = squads[i];
       }
+      formationKey = userFormationKey;      // user-picked formation
     } else {
       name = AI_TEAM_NAMES[i - 1] || `Team ${i + 1}`;
       players = squads[i];
+      formationKey = randomFormationKey();  // random formation for AI
     }
 
-    const ratings = aggregateTeamRatings(players);
+    const { xi, subs } = buildXIAndSubs(players, formationKey);
+    const ratings = aggregateTeamRatings(xi); // ratings based on XI
 
     tournament.teams.push({
       id: i,
       name,
-      players,
-      ratings
+      players,        // full 15-man squad
+      xi,             // starting XI based on formation
+      subs,           // 4 random subs
+      formation: formationKey,
+      ratings         // used for xG in simulations
     });
   }
 
@@ -873,11 +947,17 @@ function playKnockouts(tables){
     else { winner = finalTeams[1]; fB++; }
   }
 
-  // Use REAL squads for scorers (all 15 players as scoring pool)
-  const squadA = finalTeams[0].players || [];
-  const squadB = finalTeams[1].players || [];
-  const eventsA = simulateGoalsForTeam(squadA, fA);
-  const eventsB = simulateGoalsForTeam(squadB, fB);
+  // Use each team's XI + 4 subs as the scoring pool
+  const poolA = [
+    ...(finalTeams[0].xi || finalTeams[0].players || []),
+    ...(finalTeams[0].subs || [])
+  ];
+  const poolB = [
+    ...(finalTeams[1].xi || finalTeams[1].players || []),
+    ...(finalTeams[1].subs || [])
+  ];
+  const eventsA = simulateGoalsForTeam(poolA, fA);
+  const eventsB = simulateGoalsForTeam(poolB, fB);
 
   tournament.champion = winner;
 
@@ -977,6 +1057,11 @@ function renderTournament(tables, ko){
     return `${s.teamA.name} ${s.aggA}–${s.aggB} ${s.teamB.name}`;
   }
 
+  function formatScorers(teamName, events){
+    if (!events || !events.length) return `${teamName}: (no goals recorded)`;
+    return `${teamName}: ` + events.map(e => `${e.scorer.Name} ${e.minute}'`).join(", ");
+  }
+
   parts.push(`
     <div class="t-knockout">
       <h3>Semi-finals (two legs)</h3>
@@ -984,6 +1069,8 @@ function renderTournament(tables, ko){
       <div class="pill">${semiLine(s2)}</div>
       <h3 style="margin-top:8px;">Final</h3>
       <div class="pill">${f.teamA.name} ${f.gA}–${f.gB} ${f.teamB.name}</div>
+      <div class="pill t-scorers">${formatScorers(f.teamA.name, f.eventsA)}</div>
+      <div class="pill t-scorers">${formatScorers(f.teamB.name, f.eventsB)}</div>
       <h3 style="margin-top:8px;">Champion</h3>
       <div class="pill">🏆 ${tournament.champion.name}</div>
     </div>
