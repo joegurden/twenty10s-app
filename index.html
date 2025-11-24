@@ -193,28 +193,34 @@
       </select>
     </div>
 
-<div class="tournament-layout">
+    <!-- Proper two-column layout -->
+    <div class="tournament-layout">
 
-<!-- RIGHT SIDE: Team Details / Squad Panel -->
-<div id="tournamentSquad" class="team-details card hidden">
-  <div class="draft-head" style="display:flex; justify-content:space-between; align-items:center;">
-    <div>
-      <strong id="squadTitle">Squad</strong>
-      <span id="squadSubtitle" class="pill"></span>
-    </div>
-    <button id="btn-close-squad" class="ghost">✖ Close</button>
-  </div>
+      <!-- LEFT SIDE: Groups + Knockouts -->
+      <div id="tournamentOutput" class="pool">
+        <div class="pill">Click “Run Full Tournament” to generate a tournament.</div>
+      </div>
 
-  <div id="squadList" class="pool">
-    <!-- Filled by JS -->
-  </div>
-</div>
+      <!-- RIGHT SIDE: Team Details / Squad Panel -->
+      <div id="tournamentSquad" class="team-details card hidden">
+        <div class="draft-head" style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong id="squadTitle">Squad</strong>
+            <span id="squadSubtitle" class="pill"></span>
+          </div>
+          <button id="btn-close-squad" class="ghost">✖ Close</button>
+        </div>
 
+        <div id="squadList" class="pool">
+          <!-- Filled by JS -->
+        </div>
+      </div>
 
     </div><!-- end .tournament-layout -->
 
   </div>
 </section>
+
 
 </main> <!-- if you see a <main> tag earlier, close it -->
   
