@@ -179,7 +179,7 @@
       <span class="pill">Generates 16 strong teams and simulates groups, semis & final.</span>
     </div>
 
-    <!-- Layout: Left = tables, right = team details -->
+    <!-- Layout: Left = tables, right = squad panel -->
     <div class="tournament-layout">
 
       <!-- LEFT SIDE: Groups + Knockouts -->
@@ -187,21 +187,23 @@
         <div class="pill">Click “Run Full Tournament” to generate a tournament.</div>
       </div>
 
-<!-- RIGHT SIDE: Team Details -->
-<div id="tournamentSquad" class="team-details card hidden">
-  <h3 id="td-teamName">Team Details</h3>
+      <!-- RIGHT SIDE: Squad panel (matches main.js: showSquad) -->
+      <div id="tournamentSquad" class="team-details card hidden">
+        <div class="draft-head" style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <strong id="squadTitle">Squad</strong>
+            <span id="squadSubtitle" class="pill"></span>
+          </div>
+          <button id="btn-close-squad" class="ghost">✖ Close</button>
+        </div>
 
-  <div id="td-squad">
-    <div class="pill">Select a team name to view their squad.</div>
-  </div>
+        <div id="squadList" class="pool">
+          <!-- Filled by JS when you click a team -->
+        </div>
+      </div>
 
-  <h4>Match Events</h4>
-  <div id="td-events">
-    <div class="pill">Match events will appear here.</div>
-  </div>
-</div>
-
-    </div><!-- end layout -->
+    </div><!-- end .tournament-layout -->
 
   </div>
 </section>
+

@@ -1070,17 +1070,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $("btn-next-match")?.addEventListener("click", () => nextMatch());
 
-  /* ---------------- Squad Panel Close Button (6d) ---------------- */
+/* ---------------- Squad Panel Close Button ---------------- */
 $("btn-close-squad")?.addEventListener("click", () => {
   $("tournamentSquad")?.classList.add("hidden");
 });
 
-  /* ---------------- Tournament Button ---------------- */
-  $("btn-run-tournament")?.addEventListener("click", async () => {
-    showPage("page-tournament");   // switch to Tournament page
-    await runFullTournament();     // build squads + simulate tournament
-  });
-
-  /* ---------------- Initial Home Page Render ---------------- */
-  generate(false);
+/* ---------------- Tournament Button ---------------- */
+$("btn-run-tournament")?.addEventListener("click", async () => {
+  showPage("page-tournament");   // switch to Tournament page
+  await runFullTournament();     // build squads + simulate tournament
 });
