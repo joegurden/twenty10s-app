@@ -63,7 +63,8 @@ async function loadByPositions(posSlots){
       .eq("Position", pos)
       .limit(500);
     if(error) throw new Error(error.message);
-    pools.set(pos, shuffle([...(data || [])]));
+pools.set(pos, shuffle([...(data || [])]));
+//                    ^^^  three dots, not ".["
   }
   return pools;
 }
@@ -321,7 +322,8 @@ async function buildGlobalPool(){
       .select("*")
       .eq("Position", pos)
       .limit(800);
-    if(data?.length) draft.globalPool.push(...data);
+ if (data?.length) draft.globalPool.push(...data);
+//                              ^^^ three dots again
   }
 }
 
@@ -489,8 +491,10 @@ function finishSetup(){
 
 function renderPrematchPool(){
   const pool = [...draft.yourXI, ...draft.subs];
+  //             ^^^              ^^^
   $("prematchFormation").value = draft.formation;
   $("seriesStatus").textContent = `Match ${series.matchNo+1} of 3`;
+
   $("prematchPool").innerHTML = pool.map((p,i) => `
     <label class="pick">
       <input type="checkbox" data-idx="${i}">
@@ -1097,8 +1101,8 @@ async function runFullTournament(){
   // Build user squad from Draft if available: 11 XI + 4 subs
   let userSquad = null;
   if (draft.yourXI && draft.yourXI.every(p => p) && draft.subs && draft.subs.length >= 4) {
-    userSquad = [...draft.yourXI, ...draft.subs.slice(0, 4)];
-  }
+  userSquad = [...draft.yourXI, ...draft.subs.slice(0, 4)];
+}
 
   await initTournament(userSquad);  // Your Club will use this if present
   playAllGroupMatches();
