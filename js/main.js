@@ -703,10 +703,12 @@ const AI_TEAM_NAMES = [
 ];
 
 const tournament = {
-  teams: [],     // array of { id, name, ratings:{att,mid,def} }
-  groups: {},    // { A:[teamId,...], B:[...], ... }
-  fixtures: [],  // { stage:'groups'|'semis'|'final', group, homeId, awayId, gH, gA }
-  champion: null
+  teams: [],
+  groups: {},
+  fixtures: [],
+  champion: null,
+  userTeamId: 0,          // "Your Club"
+  currentUserFixtureIdx: 0
 };
 
 function clamp(x,min,max){ return x < min ? min : x > max ? max : x; }
