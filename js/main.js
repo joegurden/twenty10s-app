@@ -682,8 +682,6 @@ function randomFormationKey(){
   return keys[Math.floor(Math.random() * keys.length)];
 }
 
-const GROUP_IDS = ["A","B","C","D"];
-
 const AI_TEAM_NAMES = [
   "Total Footballers",
   "Classic XI",
