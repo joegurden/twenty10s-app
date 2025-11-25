@@ -1169,6 +1169,18 @@ const FORMATION_POSITIONS = {
   "4-3-3 (Attack)":  ["GK","RB","CB","CB","LB","CM","CAM","CM","RW","ST","LW"],
 };
 
+const DRAFT_SUB_PICKS = 4;
+const ALL_POSITIONS = ["GK","RB","CB","LB","CDM","CM","CAM","RM","LM","RW","LW","ST"];
+
+// State for the draft flow
+let draftState = {
+  active: false,
+  step: 0,          // which pick we're on
+  totalSteps: 0,    // 11 (XI) + 4 (subs) = 15
+  picks: [],        // chosen players
+  currentCandidates: [], // 4 options for this step
+};
+
 const TOURNAMENT_NUM_TEAMS = 16;
 const TOURNAMENT_GROUP_SIZE = 4;
 const TOURNAMENT_SQUAD_SIZE = 15;
@@ -1354,44 +1366,166 @@ function initTournament() {
   ];
   tournament.fixtures = [];
 
-// 1) Read the user's chosen formation
-const formationSelect = $("tournamentFormation");
-const selectedFormation = formationSelect?.value || "4-3-3 (Holding)";
-tournament.userFormation = selectedFormation;
-tournament.requiredPositions =
-  FORMATION_POSITIONS[selectedFormation] ||
-  FORMATION_POSITIONS["4-3-3 (Holding)"];
+  // 1) Read the user's chosen formation
+  const formationSelect = $("tournamentFormation");
+  const selectedFormation = formationSelect?.value || "4-3-3 (Holding)";
+  tournament.userFormation = selectedFormation;
+  tournament.requiredPositions =
+    FORMATION_POSITIONS[selectedFormation] ||
+    FORMATION_POSITIONS["4-3-3 (Holding)"];
 
-console.log("User formation:", tournament.userFormation);
-console.log("Required XI positions:", tournament.requiredPositions);
+  console.log("User formation:", tournament.userFormation);
+  console.log("Required XI positions:", tournament.requiredPositions);
 
-  // 1) Build 16 teams with 15-man squads each
-  buildTournamentTeams();
-
-  // 2) Assign teams into groups A–D
-  assignTeamsToGroups();
-
-  // 3) Build group stage fixtures (home & away)
-  buildGroupFixtures();
-
-  // 4) Pick a user team (for now random – later could be selectable)
-  pickUserTeam();
-
-  // 5) Show 15-man squad selection UI for the user's team
+  // 2) START THE DRAFT — no AI teams yet
   showTournamentSquadSelection();
 
-  console.log("Tournament initialised:", tournament);
+// NOTE:
+// AI teams + groups + fixtures will be created
+// AFTER the user completes the draft.
 }
 
 // Temporary store for which players are ticked in the 15-man squad
-let tournamentSelectedSquadIds = new Set();
-
+// Show the tournament draft panel and start at pick 1
 function showTournamentSquadSelection() {
-  const userTeam = tournament.teams[tournament.userTeamIndex];
-  if (!userTeam) {
-    console.warn("No user team found for tournament.");
+  draftState.active = true;
+  draftState.step = 0;
+
+  const xiCount = tournament.requiredPositions?.length || 11;
+  draftState.totalSteps = xiCount + DRAFT_SUB_PICKS; // 11 + 4 = 15
+  draftState.picks = [];
+  draftState.currentCandidates = [];
+
+  renderTournamentDraftStep();
+}
+
+// Render the current draft step (4 options)
+function renderTournamentDraftStep() {
+  const panel = $("tournamentSquad");
+  const list = $("tournamentSquadList");
+  const countLabel = $("tournamentSquadCount");
+  const title = $("squadTitle");
+  const subtitle = $("squadSubtitle");
+
+  if (!panel || !list || !countLabel) {
+    console.warn("Tournament draft UI elements missing.");
     return;
   }
+
+  panel.classList.remove("hidden");
+
+  const pickNumber = draftState.step + 1;
+  const total = draftState.totalSteps;
+
+  const xiCount = tournament.requiredPositions?.length || 11;
+  const isStartingXI = draftState.step < xiCount;
+  const position = isStartingXI
+    ? tournament.requiredPositions[draftState.step]
+    : null; // null = any position
+
+  if (title) {
+    title.textContent = isStartingXI
+      ? "Pick your Starting XI"
+      : "Pick your Substitutes";
+  }
+
+  if (subtitle) {
+    subtitle.textContent = isStartingXI
+      ? `Pick a ${position} (${pickNumber} of ${total})`
+      : `Pick any position (${pickNumber} of ${total})`;
+  }
+
+  countLabel.textContent = `${draftState.picks.length} / ${total} players selected`;
+
+  // Generate 4 placeholder options (later we'll use Supabase)
+  const candidates = generateDraftOptions(position);
+  draftState.currentCandidates = candidates;
+
+  list.innerHTML = candidates
+    .map((p, idx) => `
+      <label class="player-row">
+        <input 
+          type="radio" 
+          name="draftOption" 
+          value="${idx}"
+          data-player-id="${p.id}"
+        />
+        <span class="name">${p.name}</span>
+        <span class="pos">${p.position}</span>
+        <span class="rating">${p.rating}</span>
+      </label>
+    `)
+    .join("");
+}
+
+// Create 4 fake players for this step (will be replaced with Supabase later)
+function generateDraftOptions(position) {
+  const options = [];
+  for (let i = 0; i < 4; i++) {
+    const pos =
+      position || ALL_POSITIONS[Math.floor(Math.random() * ALL_POSITIONS.length)];
+    const rating = 70 + Math.floor(Math.random() * 11); // 70–80
+    const id = `draft-${draftState.step}-${i}`;
+    options.push({
+      id,
+      name: `Player ${pos} ${rating}`,
+      position: pos,
+      rating,
+    });
+  }
+  return options;
+}
+
+// Handle clicking "Save Squad" as "Confirm pick & go to next"
+function confirmDraftPick() {
+  if (!draftState.active) return;
+
+  const selected = document.querySelector('input[name="draftOption"]:checked');
+  if (!selected) {
+    alert("Please choose a player before continuing.");
+    return;
+  }
+
+  const idx = parseInt(selected.value, 10);
+  const chosen = draftState.currentCandidates[idx];
+  if (!chosen) return;
+
+  draftState.picks.push(chosen);
+
+  if (draftState.step + 1 >= draftState.totalSteps) {
+    finishTournamentDraft();
+  } else {
+    draftState.step += 1;
+    renderTournamentDraftStep();
+  }
+}
+
+// Build the final 15-man user squad when draft is done
+function finishTournamentDraft() {
+  draftState.active = false;
+
+  const userSquad = draftState.picks;
+  const avgRating = Math.round(
+    userSquad.reduce((sum, p) => sum + p.rating, 0) / userSquad.length
+  );
+
+  // Build the user team as team 0
+  tournament.teams = [];
+  tournament.userTeamIndex = 0;
+  tournament.teams.push({
+    id: 0,
+    name: "User Club",
+    rating: avgRating,
+    squad: userSquad,
+    isUser: true,
+  });
+
+  $("tournamentSquad")?.classList.add("hidden");
+  console.log("User draft complete:", userSquad);
+
+  // TODO: here we will create AI teams, groups & fixtures from Supabase
+}
+
 
   tournamentSelectedSquadIds = new Set();
 
@@ -1460,54 +1594,9 @@ $("btn-run-tournament")?.addEventListener("click", () => {
     initTournament();   // new flow
   });
 
-  /* ---------------- Tournament Squad Selection Events ---------------- */
-
-  // Handle ticking/unticking players in the 15-man squad
-  $("tournamentSquadList")?.addEventListener("change", (e) => {
-    const target = e.target;
-    if (!(target instanceof HTMLInputElement)) return;
-    if (!target.classList.contains("tournament-squad-checkbox")) return;
-
-    const playerId = target.dataset.playerId;
-    if (!playerId) return;
-
-    if (target.checked) {
-      // Enforce max 15
-      if (tournamentSelectedSquadIds.size >= TOURNAMENT_SQUAD_SIZE) {
-        target.checked = false;
-        alert(`You can only pick ${TOURNAMENT_SQUAD_SIZE} players for the tournament squad.`);
-        return;
-      }
-      tournamentSelectedSquadIds.add(playerId);
-    } else {
-      tournamentSelectedSquadIds.delete(playerId);
-    }
-
-    const countLabel = $("tournamentSquadCount");
-    if (countLabel) {
-      countLabel.textContent = `${tournamentSelectedSquadIds.size} / ${TOURNAMENT_SQUAD_SIZE} selected`;
-    }
-  });
-
-  // Save the 15-man squad
+  /* ---------------- Tournament Squad / Draft Events ---------------- */
   $("btn-save-tournament-squad")?.addEventListener("click", () => {
-    if (tournamentSelectedSquadIds.size !== TOURNAMENT_SQUAD_SIZE) {
-      alert(`You must select exactly ${TOURNAMENT_SQUAD_SIZE} players.`);
-      return;
-    }
-
-    const userTeam = tournament.teams[tournament.userTeamIndex];
-    if (!userTeam) return;
-
-    // Keep only the chosen 15 players as the user's tournament squad
-    userTeam.squad = userTeam.squad.filter(p =>
-      tournamentSelectedSquadIds.has(p.id)
-    );
-
-    $("tournamentSquad")?.classList.add("hidden");
-    console.log("Saved tournament squad:", userTeam.squad);
-
-    // TODO (Step 3): go to first pre-match lineup picker here
+    confirmDraftPick();
   });
 
   /* ---------------- Initial Home Page Render ---------------- */
