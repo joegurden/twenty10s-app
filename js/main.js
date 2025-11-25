@@ -1231,24 +1231,39 @@ let tournament = {
 
 /* ---------- Tournament Helper Functions ---------- */
 
-function buildTournamentTeams() {
-  tournament.teams = [];
+function buildTournamentSquad(team) {
+  const squad = [];
+  for (let i = 0; i < TOURNAMENT_SQUAD_SIZE; i++) {
+    squad.push({
+      id: `${team.id}-${i}`,
+      name: `Player ${i + 1}`,
+      position: "MID",     // placeholder for now
+      rating: team.rating, // placeholder
+    });
+  }
+  return squad;
+}
 
-  for (let i = 0; i < TOURNAMENT_NUM_TEAMS; i++) {
+// Build the remaining AI teams (placeholder logic for now)
+function buildAITeamsPlaceholder() {
+  const existingCount = tournament.teams.length; // should be 1 (the user team)
+
+  for (let i = existingCount; i < TOURNAMENT_NUM_TEAMS; i++) {
+    const rating = 70 + Math.floor(Math.random() * 11); // 70–80
     const team = {
       id: i,
-      name: `Team ${i + 1}`,
-      rating: 70 + Math.floor(Math.random() * 11), // 70–80 for now
+      name: `AI Team ${i + 1}`,
+      rating,
       squad: [],
       isUser: false,
     };
 
-    // 15-man squad
     team.squad = buildTournamentSquad(team);
 
     tournament.teams.push(team);
   }
 }
+
 
 function buildTournamentSquad(team) {
   const squad = [];
@@ -1500,7 +1515,6 @@ function confirmDraftPick() {
   }
 }
 
-// Build the final 15-man user squad when draft is done
 function finishTournamentDraft() {
   draftState.active = false;
 
@@ -1509,7 +1523,7 @@ function finishTournamentDraft() {
     userSquad.reduce((sum, p) => sum + p.rating, 0) / userSquad.length
   );
 
-  // Build the user team as team 0
+  // 1) Build the user team as team 0
   tournament.teams = [];
   tournament.userTeamIndex = 0;
   tournament.teams.push({
@@ -1520,10 +1534,25 @@ function finishTournamentDraft() {
     isUser: true,
   });
 
+  // 2) Build the remaining AI teams (placeholder – Supabase later)
+  buildAITeamsPlaceholder();
+
+  // 3) Assign all 16 teams into groups A–D
+  assignTeamsToGroups();
+
+  // 4) Build full group stage fixtures (home & away)
+  buildGroupFixtures();
+
+  // 5) Hide draft panel and log result
   $("tournamentSquad")?.classList.add("hidden");
   console.log("User draft complete:", userSquad);
+  console.log("Tournament ready:", {
+    teams: tournament.teams,
+    groups: tournament.groups,
+    fixtures: tournament.fixtures,
+  });
 
-  // TODO: here we will create AI teams, groups & fixtures from Supabase
+  // TODO: render groups + upcoming fixtures into #tournamentOutput
 }
 
   /* ---------------- Series Page ---------------- */
