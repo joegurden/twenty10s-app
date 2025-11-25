@@ -201,7 +201,7 @@
         <div class="pill">Click “Run Full Tournament” to generate a tournament.</div>
       </div>
 
-      <!-- RIGHT SIDE: Team Details / Squad Panel -->
+      <!-- RIGHT SIDE: Team Details / Tournament Squad Panel -->
       <div id="tournamentSquad" class="team-details card hidden">
         <div class="draft-head" style="display:flex; justify-content:space-between; align-items:center;">
           <div>
@@ -211,8 +211,17 @@
           <button id="btn-close-squad" class="ghost">✖ Close</button>
         </div>
 
-        <div id="squadList" class="pool">
-          <!-- Filled by JS -->
+        <!-- NEW: 15-man selection counter -->
+        <p id="tournamentSquadCount" class="pill">0 / 15 selected</p>
+
+        <!-- NEW: list container used by JS (showTournamentSquadSelection) -->
+        <div id="tournamentSquadList" class="pool">
+          <!-- Filled by JS with checkboxes -->
+        </div>
+
+        <!-- NEW: save button for the 15-man squad -->
+        <div class="row">
+          <button id="btn-save-tournament-squad" class="primary">Save Squad</button>
         </div>
       </div>
 

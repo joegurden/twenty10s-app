@@ -1351,10 +1351,52 @@ function initTournament() {
   // 4) Pick a user team (for now random – later could be selectable)
   pickUserTeam();
 
-  // 5) Later: move to squad selection UI
-  // showTournamentSquadSelection();
+  // 5) Show 15-man squad selection UI for the user's team
+  showTournamentSquadSelection();
 
   console.log("Tournament initialised:", tournament);
+}
+
+// Temporary store for which players are ticked in the 15-man squad
+let tournamentSelectedSquadIds = new Set();
+
+function showTournamentSquadSelection() {
+  const userTeam = tournament.teams[tournament.userTeamIndex];
+  if (!userTeam) {
+    console.warn("No user team found for tournament.");
+    return;
+  }
+
+  tournamentSelectedSquadIds = new Set();
+
+  const panel = $("tournamentSquad");
+  const list = $("tournamentSquadList");
+  const countLabel = $("tournamentSquadCount");
+
+  if (!panel || !list || !countLabel) {
+    console.warn("Tournament squad UI elements missing (tournamentSquad / tournamentSquadList / tournamentSquadCount).");
+    return;
+  }
+
+  panel.classList.remove("hidden");
+
+  // Build simple list of checkboxes for each player
+  list.innerHTML = userTeam.squad
+    .map(p => `
+      <label class="player-row">
+        <input 
+          type="checkbox" 
+          class="tournament-squad-checkbox" 
+          data-player-id="${p.id}"
+        />
+        <span class="name">${p.name}</span>
+        <span class="pos">${p.position}</span>
+        <span class="rating">${p.rating}</span>
+      </label>
+    `)
+    .join("");
+
+  countLabel.textContent = `0 / ${TOURNAMENT_SQUAD_SIZE} selected`;
 }
 
 /* ---------------- Series Page ---------------- */
@@ -1373,6 +1415,77 @@ $("btn-close-squad")?.addEventListener("click", () => {
 $("btn-run-tournament")?.addEventListener("click", () => {
   showPage("page-tournament");
   initTournament();   // new flow
+});
+  /* ---------------- Series Page ---------------- */
+  $("btn-exit-series")?.addEventListener("click", () =>
+    togglePanels({ setup:false, prematch:false, series:false })
+  );
+
+  $("btn-next-match")?.addEventListener("click", () => nextMatch());
+
+  /* ---------------- Squad Panel Close Button ---------------- */
+  $("btn-close-squad")?.addEventListener("click", () => {
+    $("tournamentSquad")?.classList.add("hidden");
+  });
+
+  /* ---------------- Tournament Button ---------------- */
+  $("btn-run-tournament")?.addEventListener("click", () => {
+    showPage("page-tournament");
+    initTournament();   // new flow
+  });
+
+  /* ---------------- Tournament Squad Selection Events ---------------- */
+
+  // Handle ticking/unticking players in the 15-man squad
+  $("tournamentSquadList")?.addEventListener("change", (e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLInputElement)) return;
+    if (!target.classList.contains("tournament-squad-checkbox")) return;
+
+    const playerId = target.dataset.playerId;
+    if (!playerId) return;
+
+    if (target.checked) {
+      // Enforce max 15
+      if (tournamentSelectedSquadIds.size >= TOURNAMENT_SQUAD_SIZE) {
+        target.checked = false;
+        alert(`You can only pick ${TOURNAMENT_SQUAD_SIZE} players for the tournament squad.`);
+        return;
+      }
+      tournamentSelectedSquadIds.add(playerId);
+    } else {
+      tournamentSelectedSquadIds.delete(playerId);
+    }
+
+    const countLabel = $("tournamentSquadCount");
+    if (countLabel) {
+      countLabel.textContent = `${tournamentSelectedSquadIds.size} / ${TOURNAMENT_SQUAD_SIZE} selected`;
+    }
+  });
+
+  // Save the 15-man squad
+  $("btn-save-tournament-squad")?.addEventListener("click", () => {
+    if (tournamentSelectedSquadIds.size !== TOURNAMENT_SQUAD_SIZE) {
+      alert(`You must select exactly ${TOURNAMENT_SQUAD_SIZE} players.`);
+      return;
+    }
+
+    const userTeam = tournament.teams[tournament.userTeamIndex];
+    if (!userTeam) return;
+
+    // Keep only the chosen 15 players as the user's tournament squad
+    userTeam.squad = userTeam.squad.filter(p =>
+      tournamentSelectedSquadIds.has(p.id)
+    );
+
+    $("tournamentSquad")?.classList.add("hidden");
+    console.log("Saved tournament squad:", userTeam.squad);
+
+    // TODO (Step 3): go to first pre-match lineup picker here
+  });
+
+  /* ---------------- Initial Home Page Render ---------------- */
+  generate(false);
 });
 
 /* ---------------- Initial Home Page Render ---------------- */
