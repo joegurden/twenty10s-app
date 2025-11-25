@@ -1488,6 +1488,4 @@ $("btn-run-tournament")?.addEventListener("click", () => {
   generate(false);
 });
 
-/* ---------------- Initial Home Page Render ---------------- */
-generate(false);
-});
+
