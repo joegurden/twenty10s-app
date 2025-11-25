@@ -1158,6 +1158,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /* ---------- Tournament Mode State ---------- */
 
+const FORMATION_POSITIONS = {
+  "3-4-3":      ["GK","CB","CB","CB","RM","CM","CM","LM","RW","ST","LW"],
+  "3-5-2":      ["GK","CB","CB","CB","RM","CM","CAM","CM","LM","ST","ST"],
+  "4-4-2":      ["GK","RB","CB","CB","LB","RM","CM","CM","LM","ST","ST"],
+  "4-1-2-1-2":  ["GK","RB","CB","CB","LB","CDM","CM","CM","CAM","ST","ST"],
+  "4-2-3-1":    ["GK","RB","CB","CB","LB","CDM","CDM","CAM","RW","ST","LW"],
+  "4-3-3 (Holding)": ["GK","RB","CB","CB","LB","CDM","CM","CM","RW","ST","LW"],
+  "4-3-3 (Flat)":    ["GK","RB","CB","CB","LB","CM","CM","CM","RW","ST","LW"],
+  "4-3-3 (Attack)":  ["GK","RB","CB","CB","LB","CM","CAM","CM","RW","ST","LW"],
+};
+
 const TOURNAMENT_NUM_TEAMS = 16;
 const TOURNAMENT_GROUP_SIZE = 4;
 const TOURNAMENT_SQUAD_SIZE = 15;
@@ -1200,6 +1211,10 @@ let tournament = {
 
   // Final info once completed
   championIndex: null,
+
+  // NEW — formation + required XI
+  userFormation: "4-3-3 (Holding)",
+  requiredPositions: [],
 };
 
 /* ---------- Tournament Helper Functions ---------- */
@@ -1338,6 +1353,17 @@ function initTournament() {
     { name: "Group D", teamIndices: [], table: [] },
   ];
   tournament.fixtures = [];
+
+// 1) Read the user's chosen formation
+const formationSelect = $("tournamentFormation");
+const selectedFormation = formationSelect?.value || "4-3-3 (Holding)";
+tournament.userFormation = selectedFormation;
+tournament.requiredPositions =
+  FORMATION_POSITIONS[selectedFormation] ||
+  FORMATION_POSITIONS["4-3-3 (Holding)"];
+
+console.log("User formation:", tournament.userFormation);
+console.log("Required XI positions:", tournament.requiredPositions);
 
   // 1) Build 16 teams with 15-man squads each
   buildTournamentTeams();
