@@ -1156,24 +1156,225 @@ document.addEventListener("DOMContentLoaded", () => {
 
   $("btn-play-match")?.addEventListener("click", () => playMatch());
 
-  /* ---------------- Series Page ---------------- */
-  $("btn-exit-series")?.addEventListener("click", () =>
-    togglePanels({ setup:false, prematch:false, series:false })
-  );
+/* ---------- Tournament Mode State ---------- */
 
-  $("btn-next-match")?.addEventListener("click", () => nextMatch());
+const TOURNAMENT_NUM_TEAMS = 16;
+const TOURNAMENT_GROUP_SIZE = 4;
+const TOURNAMENT_SQUAD_SIZE = 15;
 
-  /* ---------------- Squad Panel Close Button ---------------- */
-  $("btn-close-squad")?.addEventListener("click", () => {
-    $("tournamentSquad")?.classList.add("hidden");
+const TOURNAMENT_STAGES = {
+  NOT_STARTED: "not_started",
+  GROUPS: "groups",
+  SEMIS: "semis",
+  FINAL: "final",
+  FINISHED: "finished",
+};
+
+let tournament = {
+  stage: TOURNAMENT_STAGES.NOT_STARTED,
+
+  // All generated teams (length 16)
+  teams: [], // each: { id, name, rating, squad:[players], isUser:boolean }
+
+  // Index of the team the user controls (in tournament.teams)
+  userTeamIndex: null,
+
+  // Groups A–D
+  groups: [
+    { name: "Group A", teamIndices: [], table: [] },
+    { name: "Group B", teamIndices: [], table: [] },
+    { name: "Group C", teamIndices: [], table: [] },
+    { name: "Group D", teamIndices: [], table: [] },
+  ],
+
+  // List of matches in chronological order
+  fixtures: [],
+  // each fixture:
+  // { id, stage:"group"|"semi"|"final", groupName:null|"Group A",
+  //   homeIndex, awayIndex, leg:1|2, played:false, score:null, scorers:[] }
+
+  currentMatchIndex: 0,
+
+  // Last XI the user used (for "Use last lineup" button later)
+  previousXI: null, // { formation:"4-3-3", playerIds:[..11 ids..] }
+
+  // Final info once completed
+  championIndex: null,
+};
+
+/* ---------- Tournament Helper Functions ---------- */
+
+function buildTournamentTeams() {
+  tournament.teams = [];
+
+  for (let i = 0; i < TOURNAMENT_NUM_TEAMS; i++) {
+    const team = {
+      id: i,
+      name: `Team ${i + 1}`,
+      rating: 70 + Math.floor(Math.random() * 11), // 70–80 for now
+      squad: [],
+      isUser: false,
+    };
+
+    // 15-man squad
+    team.squad = buildTournamentSquad(team);
+
+    tournament.teams.push(team);
+  }
+}
+
+function buildTournamentSquad(team) {
+  const squad = [];
+  for (let i = 0; i < TOURNAMENT_SQUAD_SIZE; i++) {
+    squad.push({
+      id: `${team.id}-${i}`,
+      name: `Player ${i + 1}`,
+      position: "MID",     // placeholder for now
+      rating: team.rating, // placeholder
+    });
+  }
+  return squad;
+}
+
+function assignTeamsToGroups() {
+  const indices = [...Array(TOURNAMENT_NUM_TEAMS).keys()];
+
+  // Simple shuffle
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+
+  // Clear any previous group data
+  tournament.groups.forEach(group => {
+    group.teamIndices = [];
+    group.table = [];
   });
 
-  /* ---------------- Tournament Button ---------------- */
-  $("btn-run-tournament")?.addEventListener("click", async () => {
-    showPage("page-tournament");   // switch to Tournament page
-    await runFullTournament();     // build squads + simulate tournament
+  // 4 groups of 4
+  indices.forEach((teamIndex, i) => {
+    const groupIdx = Math.floor(i / TOURNAMENT_GROUP_SIZE); // 0–3
+    tournament.groups[groupIdx].teamIndices.push(teamIndex);
   });
 
-  /* ---------------- Initial Home Page Render ---------------- */
-  generate(false);
+  // Init tables
+  tournament.groups.forEach(group => {
+    group.table = group.teamIndices.map(teamIndex => ({
+      teamIndex,
+      played: 0,
+      won: 0,
+      drawn: 0,
+      lost: 0,
+      goalsFor: 0,
+      goalsAgainst: 0,
+      points: 0,
+    }));
+  });
+}
+
+function buildGroupFixtures() {
+  tournament.fixtures = [];
+
+  tournament.groups.forEach(group => {
+    const t = group.teamIndices;
+
+    // Round robin, home & away
+    for (let i = 0; i < t.length; i++) {
+      for (let j = i + 1; j < t.length; j++) {
+        // First leg
+        tournament.fixtures.push({
+          id: `G-${group.name}-${t[i]}-${t[j]}-1`,
+          stage: "group",
+          groupName: group.name,
+          homeIndex: t[i],
+          awayIndex: t[j],
+          leg: 1,
+          played: false,
+          score: null,   // { home, away }
+          scorers: [],   // [{ teamIndex, playerId, minute }]
+        });
+        // Second leg
+        tournament.fixtures.push({
+          id: `G-${group.name}-${t[j]}-${t[i]}-2`,
+          stage: "group",
+          groupName: group.name,
+          homeIndex: t[j],
+          awayIndex: t[i],
+          leg: 2,
+          played: false,
+          score: null,
+          scorers: [],
+        });
+      }
+    }
+  });
+}
+
+function pickUserTeam() {
+  const randomIndex = Math.floor(Math.random() * TOURNAMENT_NUM_TEAMS);
+  tournament.userTeamIndex = randomIndex;
+
+  tournament.teams.forEach((t, i) => {
+    t.isUser = (i === randomIndex);
+  });
+
+  console.log("User controls team:", tournament.teams[randomIndex]?.name);
+}
+
+function initTournament() {
+  // Reset core state
+  tournament.stage = TOURNAMENT_STAGES.GROUPS;
+  tournament.teams = [];
+  tournament.userTeamIndex = null;
+  tournament.championIndex = null;
+  tournament.currentMatchIndex = 0;
+  tournament.previousXI = null;
+
+  // Reset groups & fixtures
+  tournament.groups = [
+    { name: "Group A", teamIndices: [], table: [] },
+    { name: "Group B", teamIndices: [], table: [] },
+    { name: "Group C", teamIndices: [], table: [] },
+    { name: "Group D", teamIndices: [], table: [] },
+  ];
+  tournament.fixtures = [];
+
+  // 1) Build 16 teams with 15-man squads each
+  buildTournamentTeams();
+
+  // 2) Assign teams into groups A–D
+  assignTeamsToGroups();
+
+  // 3) Build group stage fixtures (home & away)
+  buildGroupFixtures();
+
+  // 4) Pick a user team (for now random – later could be selectable)
+  pickUserTeam();
+
+  // 5) Later: move to squad selection UI
+  // showTournamentSquadSelection();
+
+  console.log("Tournament initialised:", tournament);
+}
+
+/* ---------------- Series Page ---------------- */
+$("btn-exit-series")?.addEventListener("click", () =>
+  togglePanels({ setup:false, prematch:false, series:false })
+);
+
+$("btn-next-match")?.addEventListener("click", () => nextMatch());
+
+/* ---------------- Squad Panel Close Button ---------------- */
+$("btn-close-squad")?.addEventListener("click", () => {
+  $("tournamentSquad")?.classList.add("hidden");
+});
+
+/* ---------------- Tournament Button ---------------- */
+$("btn-run-tournament")?.addEventListener("click", () => {
+  showPage("page-tournament");
+  initTournament();   // new flow
+});
+
+/* ---------------- Initial Home Page Render ---------------- */
+generate(false);
 });
