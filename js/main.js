@@ -1009,8 +1009,38 @@ function showSquad(teamId){
   box.classList.remove("hidden");
 }
 
-// Make sure this exists somewhere near the top of your tournament code:
 const GROUP_IDS = ["A", "B", "C", "D"];
+
+function createEmptyTables() {
+  const tables = {};
+
+  // tournament.groups: [ { name:"Group A", teamIndices:[...] }, ... ]
+  tournament.groups.forEach(group => {
+    const g = group.name.slice(-1); // "A", "B", "C" or "D"
+    tables[g] = group.teamIndices.map(teamIndex => ({
+      teamId: teamIndex,
+      played: 0,
+      won: 0,
+      drawn: 0,
+      lost: 0,
+      gf: 0,
+      ga: 0,
+      gd: 0,
+      pts: 0,
+    }));
+  });
+
+  return tables;
+}
+
+function createEmptyKO() {
+  return {
+    semi1: { teamA: null, teamB: null, aggA: 0, aggB: 0 },
+    semi2: { teamA: null, teamB: null, aggA: 0, aggB: 0 },
+    final: { teamA: null, teamB: null, aggA: 0, aggB: 0 },
+  };
+}
+
 
 function renderTournament(tables, ko) {
   const el = $("tournamentOutput");
@@ -1088,7 +1118,7 @@ function renderTournament(tables, ko) {
     </div>
   `);
 
-  el.innerHTML = parts.join("");
+    el.innerHTML = parts.join("");
 }
 
 
@@ -1513,23 +1543,22 @@ function finishTournamentDraft() {
     isUser: true,
   });
 
-  // 2) Build the remaining AI teams (placeholder – Supabase later)
+  // 2) Build the remaining AI teams
   buildAITeamsPlaceholder();
 
   // 3) Assign all 16 teams into groups A–D
   assignTeamsToGroups();
 
-// 4) Build full group stage fixtures (home & away)
-buildGroupFixtures();
+  // 4) Build full group stage fixtures (home & away)
+  buildGroupFixtures();
 
-// 5) Hide draft panel
-$("tournamentSquad")?.classList.add("hidden");
+  // 5) Hide draft panel
+  $("tournamentSquad")?.classList.add("hidden");
 
-// 6) Build empty tables + KO and render
-const tables = createEmptyTables();
-const ko = createEmptyKO();
-renderTournament(tables, ko);
-
+  // 6) Build empty tables + KO and render
+  const tables = createEmptyTables();
+  const ko = createEmptyKO();
+  renderTournament(tables, ko);
 
   console.log("User draft complete:", userSquad);
   console.log("Tournament ready:", {
