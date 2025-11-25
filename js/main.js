@@ -1009,13 +1009,18 @@ function showSquad(teamId){
   box.classList.remove("hidden");
 }
 
-function renderTournament(tables, ko){
+// Make sure this exists somewhere near the top of your tournament code:
+const GROUP_IDS = ["A", "B", "C", "D"];
+
+function renderTournament(tables, ko) {
   const el = $("tournamentOutput");
+  if (!el) return;
+
   const parts = [];
 
   // Groups
   GROUP_IDS.forEach(g => {
-    const rows = tables[g];
+    const rows = tables[g] || [];
     parts.push(`
       <div class="t-group-card">
         <div class="t-group-title">Group ${g}</div>
@@ -1031,11 +1036,12 @@ function renderTournament(tables, ko){
             ${
               rows.map(r => {
                 const t = tournament.teams.find(x => x.id === r.teamId);
+                if (!t) return "";
                 return `
                   <tr>
                     <td>
                       <button class="link-button t-team" data-team-id="${t.id}">
-                        ${t.name}
+                        ${t.name}${t.isUser ? " (You)" : ""}
                       </button>
                     </td>
                     <td>${r.played}</td>
@@ -1059,59 +1065,32 @@ function renderTournament(tables, ko){
   // Knockouts
   const s1 = ko.semi1, s2 = ko.semi2, f = ko.final;
 
-  function semiLine(s){
-    return `${s.teamA.name} ${s.aggA}–${s.aggB} ${s.teamB.name}`;
+  function semiLine(s) {
+    const a = s.teamA?.name || "TBD";
+    const b = s.teamB?.name || "TBD";
+    return `${a} ${s.aggA ?? 0}–${s.aggB ?? 0} ${b}`;
   }
 
-  function formatScorers(teamName, events){
-    if (!events || !events.length) return `${teamName}: (no goals recorded)`;
-    return `${teamName}: ` + events.map(e => `${e.scorer.Name} ${e.minute}'`).join(", ");
-  }
+  const finalLine = (() => {
+    const a = f.teamA?.name || "TBD";
+    const b = f.teamB?.name || "TBD";
+    return `${a} ${f.aggA ?? 0}–${f.aggB ?? 0} ${b}`;
+  })();
 
   parts.push(`
-    <div class="t-knockout">
-      <h3>Semi-finals (two legs)</h3>
-      <div class="pill">${semiLine(s1)}</div>
-      <div class="pill">${semiLine(s2)}</div>
-      <h3 style="margin-top:8px;">Final</h3>
-      <div class="pill">${f.teamA.name} ${f.gA}–${f.gB} ${f.teamB.name}</div>
-      <div class="pill t-scorers">${formatScorers(f.teamA.name, f.eventsA)}</div>
-      <div class="pill t-scorers">${formatScorers(f.teamB.name, f.eventsB)}</div>
-      <h3 style="margin-top:8px;">Champion</h3>
-      <div class="pill">🏆 ${tournament.champion.name}</div>
+    <div class="t-ko-card">
+      <div class="t-group-title">Knockout Stage</div>
+      <ul class="t-ko-list">
+        <li>Semi-final 1: ${semiLine(s1)}</li>
+        <li>Semi-final 2: ${semiLine(s2)}</li>
+        <li>Final: ${finalLine}</li>
+      </ul>
     </div>
   `);
 
   el.innerHTML = parts.join("");
-
-  // Wire up team name clicks to show squads
-  document.querySelectorAll(".t-team").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = Number(btn.dataset.teamId);
-      showSquad(id);
-    });
-  });
 }
 
-
-async function runFullTournament(){
-  const out = $("tournamentOutput");
-  if (out) {
-    out.innerHTML = `<div class="pill">Building tournament squads and simulating matches...</div>`;
-  }
-
-  // Build user squad from Draft if available: 11 XI + 4 subs
-  let userSquad = null;
-  if (draft.yourXI && draft.yourXI.every(p => p) && draft.subs && draft.subs.length >= 4) {
-  userSquad = [...draft.yourXI, ...draft.subs.slice(0, 4)];
-}
-
-  await initTournament(userSquad);  // Your Club will use this if present
-  playAllGroupMatches();
-  const tables = groupTables();
-  const ko = playKnockouts(tables);
-  renderTournament(tables, ko);
-}
 
 /* ---------------- Wire up after DOM ready ---------------- */
 document.addEventListener("DOMContentLoaded", () => {
@@ -1528,7 +1507,7 @@ function finishTournamentDraft() {
   tournament.userTeamIndex = 0;
   tournament.teams.push({
     id: 0,
-    name: "User Club",
+    name: "Your Club",
     rating: avgRating,
     squad: userSquad,
     isUser: true,
@@ -1540,20 +1519,26 @@ function finishTournamentDraft() {
   // 3) Assign all 16 teams into groups A–D
   assignTeamsToGroups();
 
-  // 4) Build full group stage fixtures (home & away)
-  buildGroupFixtures();
+// 4) Build full group stage fixtures (home & away)
+buildGroupFixtures();
 
-  // 5) Hide draft panel and log result
-  $("tournamentSquad")?.classList.add("hidden");
+// 5) Hide draft panel
+$("tournamentSquad")?.classList.add("hidden");
+
+// 6) Build empty tables + KO and render
+const tables = createEmptyTables();
+const ko = createEmptyKO();
+renderTournament(tables, ko);
+
+
   console.log("User draft complete:", userSquad);
   console.log("Tournament ready:", {
     teams: tournament.teams,
     groups: tournament.groups,
     fixtures: tournament.fixtures,
   });
-
-  // TODO: render groups + upcoming fixtures into #tournamentOutput
 }
+
 
   /* ---------------- Series Page ---------------- */
   $("btn-exit-series")?.addEventListener("click", () =>
