@@ -1526,56 +1526,6 @@ function finishTournamentDraft() {
   // TODO: here we will create AI teams, groups & fixtures from Supabase
 }
 
-
-  tournamentSelectedSquadIds = new Set();
-
-  const panel = $("tournamentSquad");
-  const list = $("tournamentSquadList");
-  const countLabel = $("tournamentSquadCount");
-
-  if (!panel || !list || !countLabel) {
-    console.warn("Tournament squad UI elements missing (tournamentSquad / tournamentSquadList / tournamentSquadCount).");
-    return;
-  }
-
-  panel.classList.remove("hidden");
-
-  // Build simple list of checkboxes for each player
-  list.innerHTML = userTeam.squad
-    .map(p => `
-      <label class="player-row">
-        <input 
-          type="checkbox" 
-          class="tournament-squad-checkbox" 
-          data-player-id="${p.id}"
-        />
-        <span class="name">${p.name}</span>
-        <span class="pos">${p.position}</span>
-        <span class="rating">${p.rating}</span>
-      </label>
-    `)
-    .join("");
-
-  countLabel.textContent = `0 / ${TOURNAMENT_SQUAD_SIZE} selected`;
-}
-
-/* ---------------- Series Page ---------------- */
-$("btn-exit-series")?.addEventListener("click", () =>
-  togglePanels({ setup:false, prematch:false, series:false })
-);
-
-$("btn-next-match")?.addEventListener("click", () => nextMatch());
-
-/* ---------------- Squad Panel Close Button ---------------- */
-$("btn-close-squad")?.addEventListener("click", () => {
-  $("tournamentSquad")?.classList.add("hidden");
-});
-
-/* ---------------- Tournament Button ---------------- */
-$("btn-run-tournament")?.addEventListener("click", () => {
-  showPage("page-tournament");
-  initTournament();   // new flow
-});
   /* ---------------- Series Page ---------------- */
   $("btn-exit-series")?.addEventListener("click", () =>
     togglePanels({ setup:false, prematch:false, series:false })
@@ -1591,7 +1541,7 @@ $("btn-run-tournament")?.addEventListener("click", () => {
   /* ---------------- Tournament Button ---------------- */
   $("btn-run-tournament")?.addEventListener("click", () => {
     showPage("page-tournament");
-    initTournament();   // new flow
+    initTournament();   // new tournament flow with draft
   });
 
   /* ---------------- Tournament Squad / Draft Events ---------------- */
