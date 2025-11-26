@@ -1007,14 +1007,12 @@ function showSquad(teamId){
   box.classList.remove("hidden");
 }
 
-const GROUP_IDS = ["A", "B", "C", "D"];
 
 function createEmptyTables() {
   const tables = {};
 
-  // tournament.groups: [ { name:"Group A", teamIndices:[...] }, ... ]
   tournament.groups.forEach(group => {
-    const g = group.name.slice(-1); // "A", "B", "C" or "D"
+    const g = group.name.slice(-1); // "A", "B", "C", "D"
     tables[g] = group.teamIndices.map(teamIndex => ({
       teamId: teamIndex,
       played: 0,
@@ -1038,8 +1036,6 @@ function createEmptyKO() {
     final: { teamA: null, teamB: null, aggA: 0, aggB: 0 },
   };
 }
-
-
 function renderTournament(tables, ko) {
   const el = $("tournamentOutput");
   if (!el) return;
@@ -1116,7 +1112,7 @@ function renderTournament(tables, ko) {
     </div>
   `);
 
-    el.innerHTML = parts.join("");
+     el.innerHTML = parts.join("");
 }
 
 
@@ -1165,6 +1161,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /* ---------- Tournament Mode State ---------- */
 
+const GROUP_IDS = ["A", "B", "C", "D"];
+
 const FORMATION_POSITIONS = {
   "3-4-3":      ["GK","CB","CB","CB","RM","CM","CM","LM","RW","ST","LW"],
   "3-5-2":      ["GK","CB","CB","CB","RM","CM","CAM","CM","LM","ST","ST"],
@@ -1179,14 +1177,14 @@ const FORMATION_POSITIONS = {
 const DRAFT_SUB_PICKS = 4;
 const ALL_POSITIONS = ["GK","RB","CB","LB","CDM","CM","CAM","RM","LM","RW","LW","ST"];
 
-// State for the draft flow
 let draftState = {
   active: false,
-  step: 0,          // which pick we're on
-  totalSteps: 0,    // 11 (XI) + 4 (subs) = 15
-  picks: [],        // chosen players
-  currentCandidates: [], // 4 options for this step
+  step: 0,
+  totalSteps: 0,
+  picks: [],
+  currentCandidates: [],
 };
+
 
 const TOURNAMENT_NUM_TEAMS = 16;
 const TOURNAMENT_GROUP_SIZE = 4;
@@ -1526,11 +1524,17 @@ function finishTournamentDraft() {
   draftState.active = false;
 
   const userSquad = draftState.picks;
+  console.log("finishTournamentDraft called, picked players:", userSquad);
+
+  if (!userSquad || userSquad.length !== 15) {
+    console.warn("Unexpected draft length:", userSquad?.length);
+  }
+
   const avgRating = Math.round(
     userSquad.reduce((sum, p) => sum + p.rating, 0) / userSquad.length
   );
 
-  // 1) Build the user team as team 0
+  // 1) User team as team 0
   tournament.teams = [];
   tournament.userTeamIndex = 0;
   tournament.teams.push({
@@ -1541,31 +1545,48 @@ function finishTournamentDraft() {
     isUser: true,
   });
 
-  // 2) Build the remaining AI teams
+  // 2) AI teams
   buildAITeamsPlaceholder();
 
-  // 3) Assign all 16 teams into groups A–D
+  // 3) Groups + fixtures
   assignTeamsToGroups();
-
-  // 4) Build full group stage fixtures (home & away)
   buildGroupFixtures();
 
-  // 5) Hide draft panel
+  // 4) Hide draft panel
   $("tournamentSquad")?.classList.add("hidden");
 
-  // 6) Build empty tables + KO and render
-  const tables = createEmptyTables();
-  const ko = createEmptyKO();
-  renderTournament(tables, ko);
+  // 5) Build empty tables + KO
+  let tables, ko;
+  try {
+    tables = createEmptyTables();
+    ko = createEmptyKO();
+  } catch (err) {
+    console.error("Error creating tables/KO:", err);
+    const out = $("tournamentOutput");
+    if (out) {
+      out.innerHTML = `<div class="pill">Draft complete (15 players), but an error occurred building tables. Check console.</div>`;
+    }
+    return;
+  }
 
-  console.log("User draft complete:", userSquad);
+  // 6) Render tournament
+  try {
+    renderTournament(tables, ko);
+  } catch (err) {
+    console.error("Error in renderTournament:", err);
+    const out = $("tournamentOutput");
+    if (out) {
+      out.innerHTML = `<div class="pill">Draft complete (15 players), but an error occurred rendering the tournament. Check console.</div>`;
+    }
+    return;
+  }
+
   console.log("Tournament ready:", {
     teams: tournament.teams,
     groups: tournament.groups,
     fixtures: tournament.fixtures,
   });
 }
-
 
   /* ---------------- Series Page ---------------- */
   $("btn-exit-series")?.addEventListener("click", () =>
