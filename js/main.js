@@ -806,7 +806,7 @@ function showNextMatchPanel() {
   label.textContent = getFixtureLabel(fix);
 }
 
-// Called when user clicks "Pick XI & Play" (for now: auto-sim)
+// Called when user clicks "Pick XI & Play Next" (for now: auto-sim)
 function playNextGroupMatch() {
   const nextIdx = getNextUserFixtureIndex();
   if (nextIdx === -1) {
@@ -828,9 +828,15 @@ function playNextGroupMatch() {
   // Now play your own match
   simulateFixtureAtIndex(nextIdx, true);
 
-  // Re-render and update the panel
-renderTournament();
+  // Re-render and update the panel for the next match (if any)
+  renderTournament();
   showNextMatchPanel();
+
+  // If you have no more group matches, finish the tournament
+  const another = getNextUserFixtureIndex();
+  if (another === -1) {
+    finishTournamentFromGroups();
+  }
 }
 
 
@@ -1201,12 +1207,53 @@ function renderTournament(tables, ko) {
   const bracket = ko || tournament.ko || { semis: [], final: [] };
 
   const koSemis = (bracket.semis || [])
-    .map((m) => `<li>${m.homeFrom} vs ${m.awayFrom}</li>`)
+    .map((m) => {
+      let homeLabel = m.homeFrom;
+      let awayLabel = m.awayFrom;
+
+      if (typeof m.homeIndex === "number") {
+        homeLabel = tournament.teams[m.homeIndex]?.name || homeLabel;
+      }
+      if (typeof m.awayIndex === "number") {
+        awayLabel = tournament.teams[m.awayIndex]?.name || awayLabel;
+      }
+
+      let scoreStr = "";
+      if (m.score) {
+        scoreStr = ` (${m.score.home}–${m.score.away})`;
+      }
+
+      return `<li>${homeLabel} vs ${awayLabel}${scoreStr}</li>`;
+    })
     .join("");
 
-  const koFinal = (bracket.final || [])
-    .map((m) => `<li>${m.homeFrom} vs ${m.awayFrom}</li>`)
+  const koFinalList = (bracket.final || [])
+    .map((m) => {
+      let homeLabel = m.homeFrom;
+      let awayLabel = m.awayFrom;
+
+      if (typeof m.homeIndex === "number") {
+        homeLabel = tournament.teams[m.homeIndex]?.name || homeLabel;
+      }
+      if (typeof m.awayIndex === "number") {
+        awayLabel = tournament.teams[m.awayIndex]?.name || awayLabel;
+      }
+
+      let scoreStr = "";
+      if (m.score) {
+        scoreStr = ` (${m.score.home}–${m.score.away})`;
+      }
+
+      return `<li>${homeLabel} vs ${awayLabel}${scoreStr}</li>`;
+    })
     .join("");
+
+  let championHtml = "";
+  if (typeof tournament.championIndex === "number") {
+    const champName =
+      tournament.teams[tournament.championIndex]?.name || "Unknown";
+    championHtml = `<p><strong>Champion: ${champName}</strong></p>`;
+  }
 
   const koHtml = `
     <div class="card mini">
@@ -1214,7 +1261,8 @@ function renderTournament(tables, ko) {
       <h4>Semi-finals</h4>
       <ul>${koSemis}</ul>
       <h4>Final</h4>
-      <ul>${koFinal}</ul>
+      <ul>${koFinalList}</ul>
+      ${championHtml}
     </div>
   `;
 
@@ -1290,6 +1338,151 @@ function createEmptyKO() {
   tournament.ko = ko;
   return ko;
 }
+
+// Simulate all remaining unplayed GROUP fixtures (AI vs AI)
+function simulateAllRemainingGroupFixtures() {
+  for (let i = 0; i < tournament.fixtures.length; i++) {
+    const f = tournament.fixtures[i];
+    if (f.stage === "group" && !f.played) {
+      simulateFixtureAtIndex(i, false);
+    }
+  }
+}
+
+// Use final group tables to fill the semi-finals
+function buildKnockoutsFromGroups() {
+  const ko = tournament.ko || createEmptyKO();
+
+  function getPlaces(groupName) {
+    const group = tournament.groups.find(g => g.name === groupName);
+    if (!group || !group.table || group.table.length < 2) {
+      return [null, null];
+    }
+    // table is already sorted by points / GD / GF
+    return [group.table[0].teamIndex, group.table[1].teamIndex];
+  }
+
+  const [wA, rA] = getPlaces("Group A");
+  const [wB, rB] = getPlaces("Group B");
+  const [wC, rC] = getPlaces("Group C");
+  const [wD, rD] = getPlaces("Group D");
+
+  // SF1: Winner A vs Runner-up B
+  if (ko.semis[0]) {
+    ko.semis[0].homeIndex = wA;
+    ko.semis[0].awayIndex = rB;
+    if (typeof wA === "number") {
+      ko.semis[0].homeFrom = tournament.teams[wA]?.name || ko.semis[0].homeFrom;
+    }
+    if (typeof rB === "number") {
+      ko.semis[0].awayFrom = tournament.teams[rB]?.name || ko.semis[0].awayFrom;
+    }
+  }
+
+  // SF2: Winner C vs Runner-up D
+  if (ko.semis[1]) {
+    ko.semis[1].homeIndex = wC;
+    ko.semis[1].awayIndex = rD;
+    if (typeof wC === "number") {
+      ko.semis[1].homeFrom = tournament.teams[wC]?.name || ko.semis[1].homeFrom;
+    }
+    if (typeof rD === "number") {
+      ko.semis[1].awayFrom = tournament.teams[rD]?.name || ko.semis[1].awayFrom;
+    }
+  }
+
+  tournament.ko = ko;
+}
+
+// One-off KO match using ratings, must produce a winner (no draws)
+function simulateKOMatch(homeIndex, awayIndex) {
+  const home = tournament.teams[homeIndex];
+  const away = tournament.teams[awayIndex];
+  if (!home || !away) return null;
+
+  const base = 1.4;
+  const diff = (home.rating ?? 75) - (away.rating ?? 75);
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const homeXG = clamp(base + diff / 25, 0.2, 4.5);
+  const awayXG = clamp(base - diff / 25, 0.2, 4.5);
+
+  const sampleGoals = (lambda) => {
+    let goals = 0;
+    const steps = 8;
+    const p = lambda / steps;
+    for (let i = 0; i < steps; i++) {
+      if (Math.random() < p) goals++;
+    }
+    return goals;
+  };
+
+  let gh = sampleGoals(homeXG);
+  let ga = sampleGoals(awayXG);
+
+  // No draws in knockouts – someone wins
+  if (gh === ga) {
+    if (Math.random() < 0.5) gh++;
+    else ga++;
+  }
+
+  const winnerIndex = gh > ga ? homeIndex : awayIndex;
+  return { gh, ga, winnerIndex };
+}
+
+// Play both semis + the final and record the champion
+function simulateKnockouts() {
+  const ko = tournament.ko;
+  if (!ko) return;
+
+  // Semis
+  ko.semis.forEach(m => {
+    if (typeof m.homeIndex !== "number" || typeof m.awayIndex !== "number") return;
+    const res = simulateKOMatch(m.homeIndex, m.awayIndex);
+    if (!res) return;
+    m.score = { home: res.gh, away: res.ga };
+    m.winnerIndex = res.winnerIndex;
+  });
+
+  const sf1Winner = ko.semis[0]?.winnerIndex;
+  const sf2Winner = ko.semis[1]?.winnerIndex;
+
+  // Final
+  if (typeof sf1Winner === "number" && typeof sf2Winner === "number" && ko.final && ko.final[0]) {
+    const final = ko.final[0];
+    final.homeIndex = sf1Winner;
+    final.awayIndex = sf2Winner;
+    final.homeFrom = tournament.teams[sf1Winner]?.name || final.homeFrom;
+    final.awayFrom = tournament.teams[sf2Winner]?.name || final.awayFrom;
+
+    const resF = simulateKOMatch(sf1Winner, sf2Winner);
+    if (resF) {
+      final.score = { home: resF.gh, away: resF.ga };
+      final.winnerIndex = resF.winnerIndex;
+      tournament.championIndex = resF.winnerIndex;
+    }
+  }
+}
+
+// Finish everything once the user has played all their group games
+function finishTournamentFromGroups() {
+  // 1) Play all remaining AI group fixtures
+  simulateAllRemainingGroupFixtures();
+
+  // 2) Build & simulate knockouts
+  buildKnockoutsFromGroups();
+  simulateKnockouts();
+
+  // 3) Re-render UI
+  renderTournament();
+  showNextMatchPanel();
+
+  if (typeof tournament.championIndex === "number") {
+    const champ = tournament.teams[tournament.championIndex]?.name || "Unknown";
+    console.log("Tournament champion:", champ);
+  }
+}
+
 
 function finishTournamentDraft() {
   draftState.active = false;
