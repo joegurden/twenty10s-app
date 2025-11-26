@@ -657,6 +657,331 @@ let tournament = {
 
 /* ---------- Tournament Helper Functions ---------- */
 
+// Create empty group tables from the drawn groups
+function createEmptyTables() {
+  const tables = {};
+
+  tournament.groups.forEach(group => {
+    const rows = group.teamIndices.map(teamIndex => {
+      const team = tournament.teams[teamIndex];
+      return {
+        teamIndex,
+        name: team?.name || `Team ${teamIndex + 1}`,
+        played: 0,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        gf: 0,
+        ga: 0,
+        gd: 0,
+        points: 0,
+      };
+    });
+
+    group.table = rows;
+    tables[group.name] = rows;
+  });
+
+  tournament.tables = tables;
+  return tables;
+}
+
+// Simple empty knockout bracket: 2 semis + final
+function createEmptyKO() {
+  const ko = {
+    semis: [
+      {
+        id: "SF1",
+        homeFrom: "Winner Group A",
+        awayFrom: "Runner-up Group B",
+        homeIndex: null,
+        awayIndex: null,
+        score: null,
+      },
+      {
+        id: "SF2",
+        homeFrom: "Winner Group C",
+        awayFrom: "Runner-up Group D",
+        homeIndex: null,
+        awayIndex: null,
+        score: null,
+      },
+    ],
+    final: [
+      {
+        id: "F",
+        homeFrom: "Winner SF1",
+        awayFrom: "Winner SF2",
+        homeIndex: null,
+        awayIndex: null,
+        score: null,
+      },
+    ],
+  };
+
+  tournament.ko = ko;
+  return ko;
+}
+
+// Render all groups + a basic KO bracket
+function renderTournament(tables, ko) {
+  const container = $("tournamentOutput");
+  if (!container) return;
+
+  const groupsHtml = tournament.groups.map(group => {
+    const rows = (tables && tables[group.name]) || group.table || [];
+    const body = rows
+      .map((row, idx) => {
+        const team = tournament.teams[row.teamIndex];
+        const name = team?.name || row.name || `Team ${row.teamIndex + 1}`;
+        const isUser = row.teamIndex === tournament.userTeamIndex;
+        return `
+          <tr${isUser ? ' class="highlight-row"' : ""}>
+            <td>${idx + 1}</td>
+            <td>${name}</td>
+            <td>${row.played}</td>
+            <td>${row.won}</td>
+            <td>${row.drawn}</td>
+            <td>${row.lost}</td>
+            <td>${row.gf}</td>
+            <td>${row.ga}</td>
+            <td>${row.gd}</td>
+            <td>${row.points}</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    return `
+      <div class="card mini">
+        <div class="draft-head"><strong>${group.name}</strong></div>
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Team</th>
+              <th>P</th>
+              <th>W</th>
+              <th>D</th>
+              <th>L</th>
+              <th>GF</th>
+              <th>GA</th>
+              <th>GD</th>
+              <th>Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${body}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }).join("");
+
+  const koSemis = (ko?.semis || [])
+    .map(m => `<li>${m.homeFrom} vs ${m.awayFrom}</li>`)
+    .join("");
+
+  const koFinal = (ko?.final || [])
+    .map(m => `<li>${m.homeFrom} vs ${m.awayFrom}</li>`)
+    .join("");
+
+  const koHtml = `
+    <div class="card mini">
+      <div class="draft-head"><strong>Knockouts</strong></div>
+      <h4>Semi-finals</h4>
+      <ul>${koSemis}</ul>
+      <h4>Final</h4>
+      <ul>${koFinal}</ul>
+    </div>
+  `;
+
+  container.innerHTML = `
+    <div class="group-grid">
+      ${groupsHtml}
+    </div>
+    <hr />
+    ${koHtml}
+  `;
+}
+
+// Find the next unplayed group fixture that involves the user
+function getNextUserFixtureIndex() {
+  if (tournament.userTeamIndex == null) return -1;
+
+  return tournament.fixtures.findIndex(
+    f =>
+      f.stage === "group" &&
+      !f.played &&
+      (f.homeIndex === tournament.userTeamIndex ||
+        f.awayIndex === tournament.userTeamIndex)
+  );
+}
+
+function getFixtureLabel(fix) {
+  if (!fix) return "";
+  const home = tournament.teams[fix.homeIndex]?.name || "Home";
+  const away = tournament.teams[fix.awayIndex]?.name || "Away";
+  const group = fix.groupName || "";
+  const legStr = fix.leg ? ` · Leg ${fix.leg}` : "";
+  return `${group} · ${home} vs ${away}${legStr}`;
+}
+
+// Update a single group's table from a finished fixture
+function updateTablesFromFixture(fix) {
+  if (!fix || !fix.score) return;
+
+  const group =
+    tournament.groups.find(g => g.name === fix.groupName) ||
+    tournament.groups.find(
+      g => g.teamIndices.includes(fix.homeIndex) && g.teamIndices.includes(fix.awayIndex)
+    );
+
+  if (!group || !group.table) return;
+
+  const homeRow = group.table.find(r => r.teamIndex === fix.homeIndex);
+  const awayRow = group.table.find(r => r.teamIndex === fix.awayIndex);
+  if (!homeRow || !awayRow) return;
+
+  const gh = fix.score.home;
+  const ga = fix.score.away;
+
+  homeRow.played++;
+  awayRow.played++;
+
+  homeRow.gf += gh;
+  homeRow.ga += ga;
+  awayRow.gf += ga;
+  awayRow.ga += gh;
+
+  homeRow.gd = homeRow.gf - homeRow.ga;
+  awayRow.gd = awayRow.gf - awayRow.ga;
+
+  if (gh > ga) {
+    homeRow.won++;
+    homeRow.points += 3;
+    awayRow.lost++;
+  } else if (ga > gh) {
+    awayRow.won++;
+    awayRow.points += 3;
+    homeRow.lost++;
+  } else {
+    homeRow.drawn++;
+    awayRow.drawn++;
+    homeRow.points += 1;
+    awayRow.points += 1;
+  }
+
+  // sort by Points, GD, GF
+  group.table.sort(
+    (a, b) =>
+      b.points - a.points ||
+      (b.gd || 0) - (a.gd || 0) ||
+      (b.gf || 0) - (a.gf || 0)
+  );
+
+  if (tournament.tables && group.name in tournament.tables) {
+    tournament.tables[group.name] = group.table;
+  }
+}
+
+// Tiny xG-ish generator based on rating
+function simulateFixtureAtIndex(idx, isUserMatch) {
+  const fix = tournament.fixtures[idx];
+  if (!fix || fix.played) return;
+
+  const home = tournament.teams[fix.homeIndex];
+  const away = tournament.teams[fix.awayIndex];
+  if (!home || !away) return;
+
+  const homeRating = home.rating ?? 75;
+  const awayRating = away.rating ?? 75;
+
+  const base = 1.4;
+  const diff = homeRating - awayRating;
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+  const homeXG = clamp(base + diff / 25, 0.2, 4.5);
+  const awayXG = clamp(base - diff / 25, 0.2, 4.5);
+
+  function sampleGoals(lambda) {
+    let goals = 0;
+    const steps = 8;
+    const p = lambda / steps;
+    for (let i = 0; i < steps; i++) {
+      if (Math.random() < p) goals++;
+    }
+    return goals;
+  }
+
+  const gh = sampleGoals(homeXG);
+  const ga = sampleGoals(awayXG);
+
+  fix.played = true;
+  fix.score = { home: gh, away: ga };
+
+  updateTablesFromFixture(fix);
+
+  if (isUserMatch) {
+    const isHome = fix.homeIndex === tournament.userTeamIndex;
+    const yourGoals = isHome ? gh : ga;
+    const oppGoals = isHome ? ga : gh;
+    const yourTeam = tournament.teams[tournament.userTeamIndex];
+    const oppTeam = tournament.teams[isHome ? fix.awayIndex : fix.homeIndex];
+
+    alert(
+      `Result: ${yourTeam.name} ${yourGoals}–${oppGoals} ${oppTeam.name}`
+    );
+  }
+}
+
+// Show / hide the "Next Group Match" card
+function showNextMatchPanel() {
+  const panel = $("tournamentNextMatch");
+  const label = $("tournamentNextLabel");
+  if (!panel || !label) return;
+
+  const idx = getNextUserFixtureIndex();
+  if (idx === -1) {
+    panel.classList.add("hidden");
+    label.textContent = "Group stage complete.";
+    return;
+  }
+
+  const fix = tournament.fixtures[idx];
+  panel.classList.remove("hidden");
+  label.textContent = getFixtureLabel(fix);
+}
+
+// Called when user clicks "Pick XI & Play" (for now: auto-sim)
+function playNextGroupMatch() {
+  const nextIdx = getNextUserFixtureIndex();
+  if (nextIdx === -1) {
+    alert("No more group matches for your team.");
+    return;
+  }
+
+  // Sim AI vs AI fixtures that come before your next match
+  for (let i = 0; i < nextIdx; i++) {
+    const f = tournament.fixtures[i];
+    const involvesUser =
+      f.homeIndex === tournament.userTeamIndex ||
+      f.awayIndex === tournament.userTeamIndex;
+    if (!f.played && !involvesUser) {
+      simulateFixtureAtIndex(i, false);
+    }
+  }
+
+  // Now play your own match
+  simulateFixtureAtIndex(nextIdx, true);
+
+  // Re-render and update the panel
+  renderTournament(tournament.tables, tournament.ko);
+  showNextMatchPanel();
+}
+
+
 function buildTournamentSquad(team) {
   const squad = [];
   for (let i = 0; i < TOURNAMENT_SQUAD_SIZE; i++) {
@@ -1098,20 +1423,23 @@ function renderTournament(tables, ko) {
 function finishTournamentDraft() {
   draftState.active = false;
 
-  const userSquad = draftState.picks;
+  const userSquad = draftState.picks || [];
   console.log("finishTournamentDraft called, picked players:", userSquad);
 
-  if (!userSquad || userSquad.length !== 15) {
-    console.warn("Unexpected draft length:", userSquad?.length);
+  if (userSquad.length !== 15) {
+    console.warn("Expected 15 drafted players, got", userSquad.length);
   }
 
-  const avgRating = Math.round(
-    userSquad.reduce((sum, p) => sum + p.rating, 0) / userSquad.length
-  );
+  const avgRating = userSquad.length
+    ? Math.round(
+        userSquad.reduce((sum, p) => sum + p.rating, 0) / userSquad.length
+      )
+    : 75;
 
   // 1) User team as team 0
   tournament.teams = [];
   tournament.userTeamIndex = 0;
+
   tournament.teams.push({
     id: 0,
     name: "Your Club",
@@ -1130,7 +1458,7 @@ function finishTournamentDraft() {
   // 4) Hide draft panel
   $("tournamentSquad")?.classList.add("hidden");
 
-  // 5) Build empty tables + KO
+  // 5) Build empty tables + KO and store them
   let tables, ko;
   try {
     tables = createEmptyTables();
@@ -1139,19 +1467,22 @@ function finishTournamentDraft() {
     console.error("Error creating tables/KO:", err);
     const out = $("tournamentOutput");
     if (out) {
-      out.innerHTML = `<div class="pill">Draft complete (15 players), but an error occurred building tables. Check console.</div>`;
+      out.innerHTML =
+        `<div class="pill">Draft complete (15 players), but an error occurred building tables. Check console.</div>`;
     }
     return;
   }
 
-  // 6) Render tournament
+  // 6) Render tournament + show first "Next match"
   try {
     renderTournament(tables, ko);
+    showNextMatchPanel();
   } catch (err) {
     console.error("Error in renderTournament:", err);
     const out = $("tournamentOutput");
     if (out) {
-      out.innerHTML = `<div class="pill">Draft complete (15 players), but an error occurred rendering the tournament. Check console.</div>`;
+      out.innerHTML =
+        `<div class="pill">Draft complete (15 players), but an error occurred rendering the tournament. Check console.</div>`;
     }
     return;
   }
@@ -1227,6 +1558,11 @@ document.addEventListener("DOMContentLoaded", () => {
   $("btn-save-tournament-squad")?.addEventListener("click", () => {
     confirmDraftPick();
   });
+
+/* ---------------- Tournament "Next Match" Button ---------------- */
+$("btn-tournament-play-next")?.addEventListener("click", () => {
+  playNextGroupMatch();
+});
 
   /* ---------------- Initial Home Page Render ---------------- */
   generate(false);
