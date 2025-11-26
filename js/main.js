@@ -834,26 +834,44 @@ async function initTournament(userSquad = null){
   }
 
   // shuffle teams and assign to groups A–D (4 each)
-  const ids = shuffle(tournament.teams.map(t => t.id));
-  GROUP_IDS.forEach((g, gi) => {
-    tournament.groups[g] = ids.slice(gi * 4, gi * 4 + 4);
-  });
+  const ids = shuffle(tournament.teams.map(t => t.id));  
 
-  // create double round-robin fixtures inside each group
-  GROUP_IDS.forEach(g => {
-    const tIds = tournament.groups[g];
-    for (let i = 0; i < tIds.length; i++) {
-      for (let j = i + 1; j < tIds.length; j++) {
-        tournament.fixtures.push({
-          stage: "groups", group: g, homeId: tIds[i], awayId: tIds[j], gH: null, gA: null
-        });
-        tournament.fixtures.push({
-          stage: "groups", group: g, homeId: tIds[j], awayId: tIds[i], gH: null, gA: null
-        });
-      }
+// create double round-robin fixtures inside each group
+tournament.fixtures = []; // reset if needed
+
+tournament.groups.forEach(group => {
+  // group.name is like "Group A" → take the last char "A"
+  const g = group.name?.slice(-1) || "";
+  const tIds = group.teamIndices || [];
+
+  for (let i = 0; i < tIds.length; i++) {
+    for (let j = i + 1; j < tIds.length; j++) {
+      const home = tIds[i];
+      const away = tIds[j];
+
+      // first leg
+      tournament.fixtures.push({
+        stage: "groups",
+        group: g,
+        homeId: home,
+        awayId: away,
+        gH: null,
+        gA: null,
+      });
+
+      // second leg
+      tournament.fixtures.push({
+        stage: "groups",
+        group: g,
+        homeId: away,
+        awayId: home,
+        gH: null,
+        gA: null,
+      });
     }
-  });
-}
+  }
+});
+
 
 function playAllGroupMatches(){
   for(const f of tournament.fixtures){
