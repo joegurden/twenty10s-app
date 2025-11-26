@@ -1667,5 +1667,3 @@ function finishTournamentDraft() {
   /* ---------------- Initial Home Page Render ---------------- */
   generate(false);
 });
-
-
