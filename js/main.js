@@ -829,7 +829,7 @@ function playNextGroupMatch() {
   simulateFixtureAtIndex(nextIdx, true);
 
   // Re-render and update the panel
-  renderTournament(tournament.tables, tournament.ko);
+renderTournament();
   showNextMatchPanel();
 }
 
@@ -1025,195 +1025,35 @@ function showTournamentSquadSelection() {
   renderTournamentDraftStep();
 }
 
-// Render the current draft step (4 options)
-function renderTournamentDraftStep() {
-  const panel = $("tournamentSquad");
-  const list = $("tournamentSquadList");
-  const countLabel = $("tournamentSquadCount");
-  const title = $("squadTitle");
-  const subtitle = $("squadSubtitle");
-
-  if (!panel || !list || !countLabel) {
-    console.warn("Tournament draft UI elements missing.");
-    return;
-  }
-
-  panel.classList.remove("hidden");
-
-  const pickNumber = draftState.step + 1;
-  const total = draftState.totalSteps;
-
-  const xiCount = tournament.requiredPositions?.length || 11;
-  const isStartingXI = draftState.step < xiCount;
-  const position = isStartingXI
-    ? tournament.requiredPositions[draftState.step]
-    : null; // null = any position
-
-  if (title) {
-    title.textContent = isStartingXI
-      ? "Pick your Starting XI"
-      : "Pick your Substitutes";
-  }
-
-  if (subtitle) {
-    subtitle.textContent = isStartingXI
-      ? `Pick a ${position} (${pickNumber} of ${total})`
-      : `Pick any position (${pickNumber} of ${total})`;
-  }
-
-  countLabel.textContent = `${draftState.picks.length} / ${total} players selected`;
-
-  // Generate 4 placeholder options (later we'll use Supabase)
-  const candidates = generateDraftOptions(position);
-  draftState.currentCandidates = candidates;
-
-  list.innerHTML = candidates
-    .map((p, idx) => `
-      <label class="player-row">
-        <input 
-          type="radio" 
-          name="draftOption" 
-          value="${idx}"
-          data-player-id="${p.id}"
-        />
-        <span class="name">${p.name}</span>
-        <span class="pos">${p.position}</span>
-        <span class="rating">${p.rating}</span>
-      </label>
-    `)
-    .join("");
-}
-
-// Create 4 fake players for this step (will be replaced with Supabase later)
-function generateDraftOptions(position) {
-  const options = [];
-  for (let i = 0; i < 4; i++) {
-    const pos =
-      position || ALL_POSITIONS[Math.floor(Math.random() * ALL_POSITIONS.length)];
-    const rating = 70 + Math.floor(Math.random() * 11); // 70–80
-    const id = `draft-${draftState.step}-${i}`;
-    options.push({
-      id,
-      name: `Player ${pos} ${rating}`,
-      position: pos,
-      rating,
-    });
-  }
-  return options;
-}
-
-// Handle clicking "Save Squad" as "Confirm pick & go to next"
-function confirmDraftPick() {
-  if (!draftState.active) return;
-
-  const selected = document.querySelector('input[name="draftOption"]:checked');
-  if (!selected) {
-    alert("Please choose a player before continuing.");
-    return;
-  }
-
-  const idx = parseInt(selected.value, 10);
-  const chosen = draftState.currentCandidates[idx];
-  if (!chosen) return;
-
-  draftState.picks.push(chosen);
-
-  if (draftState.step + 1 >= draftState.totalSteps) {
-    finishTournamentDraft();
-  } else {
-    draftState.step += 1;
-    renderTournamentDraftStep();
-  }
-}
-
-// Build empty group tables (all 0s) based on the drawn groups
-function createEmptyTables() {
-  const tables = {};
-
-  tournament.groups.forEach(group => {
-    const rows = group.teamIndices.map(teamIndex => {
-      const team = tournament.teams[teamIndex];
-      return {
-        teamIndex,
-        name: team?.name || `Team ${teamIndex + 1}`,
-        played: 0,
-        won: 0,
-        drawn: 0,
-        lost: 0,
-        gf: 0,
-        ga: 0,
-        gd: 0,
-        points: 0,
-      };
-    });
-
-    // store on the group for later updates
-    group.table = rows;
-    tables[group.name] = rows;
-  });
-
-  return tables;
-}
-
-// Simple empty knockout bracket: 2 semis + a final
-function createEmptyKO() {
-  return {
-    semis: [
-      {
-        id: "SF1",
-        homeFrom: "Winner Group A",
-        awayFrom: "Runner-up Group B",
-        homeIndex: null,
-        awayIndex: null,
-        score: null,
-      },
-      {
-        id: "SF2",
-        homeFrom: "Winner Group C",
-        awayFrom: "Runner-up Group D",
-        homeIndex: null,
-        awayIndex: null,
-        score: null,
-      },
-    ],
-    final: [
-      {
-        id: "F",
-        homeFrom: "Winner SF1",
-        awayFrom: "Winner SF2",
-        homeIndex: null,
-        awayIndex: null,
-        score: null,
-      },
-    ],
-  };
-}
-
-// Render the empty group tables + knockout bracket into #tournamentOutput
-function renderTournament(tables, ko) {
+function renderTournament() {
   const container = $("tournamentOutput");
   if (!container) return;
 
   const groupsHtml = tournament.groups.map(group => {
-    const rows = tables[group.name] || [];
-    const body = rows.map((row, idx) => {
-      const team = tournament.teams[row.teamIndex];
-      const name = team?.name || row.name || `Team ${row.teamIndex + 1}`;
-      return `
-        <tr>
-          <td>${idx + 1}</td>
-          <td>${name}</td>
-          <td>${row.played}</td>
-          <td>${row.won}</td>
-          <td>${row.drawn}</td>
-          <td>${row.lost}</td>
-          <td>${row.gf}</td>
-          <td>${row.ga}</td>
-          <td>${row.gd}</td>
-          <td>${row.points}</td>
-        </tr>
-      `;
-    }).join("");
+    const rows = group.table || [];
+
+    const body = rows
+      .map((row, idx) => {
+        const team = tournament.teams[row.teamIndex];
+        const name = team?.name ?? row.name ?? `Team ${row.teamIndex + 1}`;
+        const isUser = row.teamIndex === tournament.userTeamIndex;
+
+        return `
+          <tr${isUser ? ' class="highlight-row"' : ""}>
+            <td>${idx + 1}</td>
+            <td>${name}</td>
+            <td>${row.played}</td>
+            <td>${row.won}</td>
+            <td>${row.drawn}</td>
+            <td>${row.lost}</td>
+            <td>${row.gf}</td>
+            <td>${row.ga}</td>
+            <td>${row.gd}</td>
+            <td>${row.points}</td>
+          </tr>
+        `;
+      })
+      .join("");
 
     return `
       <div class="card mini">
@@ -1233,40 +1073,32 @@ function renderTournament(tables, ko) {
               <th>Pts</th>
             </tr>
           </thead>
-          <tbody>
-            ${body}
-          </tbody>
+          <tbody>${body}</tbody>
         </table>
       </div>
     `;
   }).join("");
 
-  const koSemis = ko.semis.map(m => `
-    <li>${m.homeFrom} vs ${m.awayFrom}</li>
-  `).join("");
+  const koSemis = tournament.ko.semis
+    .map(m => `<li>${m.homeFrom} vs ${m.awayFrom}</li>`)
+    .join("");
 
-  const koFinal = ko.final.map(m => `
-    <li>${m.homeFrom} vs ${m.awayFrom}</li>
-  `).join("");
+  const koFinal = tournament.ko.final
+    .map(m => `<li>${m.homeFrom} vs ${m.awayFrom}</li>`)
+    .join("");
 
   const koHtml = `
     <div class="card mini">
       <div class="draft-head"><strong>Knockouts</strong></div>
       <h4>Semi-finals</h4>
-      <ul>
-        ${koSemis}
-      </ul>
+      <ul>${koSemis}</ul>
       <h4>Final</h4>
-      <ul>
-        ${koFinal}
-      </ul>
+      <ul>${koFinal}</ul>
     </div>
   `;
 
   container.innerHTML = `
-    <div class="group-grid">
-      ${groupsHtml}
-    </div>
+    <div class="group-grid">${groupsHtml}</div>
     <hr />
     ${koHtml}
   `;
