@@ -1484,18 +1484,20 @@ function finishTournamentFromGroups() {
 
   // 2) Build & simulate knockouts
   buildKnockoutsFromGroups();
-  simulateKnockouts();
+  simulateKnockouts();  // <-- this sets tournament.championIndex
 
   // 3) Re-render UI
   renderTournament();
   showNextMatchPanel();
+
+  // 4) NOW update the button visibility
+  updateTournamentRestartButton();   // 👈 ADD THIS LINE
 
   if (typeof tournament.championIndex === "number") {
     const champ = tournament.teams[tournament.championIndex]?.name || "Unknown";
     console.log("Tournament champion:", champ);
   }
 }
-
 
 function finishTournamentDraft() {
   draftState.active = false;
