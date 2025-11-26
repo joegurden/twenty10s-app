@@ -1011,19 +1011,53 @@ function showSquad(teamId){
 function createEmptyTables() {
   const tables = {};
 
-  tournament.groups.forEach(group => {
-    const g = group.name.slice(-1); // "A", "B", "C", "D"
-    tables[g] = group.teamIndices.map(teamIndex => ({
-      teamId: teamIndex,
-      played: 0,
-      won: 0,
-      drawn: 0,
-      lost: 0,
-      gf: 0,
-      ga: 0,
-      gd: 0,
-      pts: 0,
-    }));
+  // Case 1: groups stored as an array (our newer structure)
+  if (Array.isArray(tournament.groups)) {
+    tournament.groups.forEach(group => {
+      if (!group) return;
+      // Expect group.name like "Group A" or "A"
+      const name = group.name || "";
+      const g = name.slice(-1); // "A","B","C","D"
+      const indices = group.teamIndices || [];
+      tables[g] = indices.map(teamIndex => ({
+        teamId: teamIndex,
+        played: 0,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        gf: 0,
+        ga: 0,
+        gd: 0,
+        pts: 0,
+      }));
+    });
+
+    return tables;
+  }
+
+  // Case 2: groups stored as an object, e.g. { A:{teamIndices:[]}, B:{...} }
+  if (tournament.groups && typeof tournament.groups === "object") {
+    Object.entries(tournament.groups).forEach(([key, group]) => {
+      const indices = group.teamIndices || group.teamIds || [];
+      tables[key] = indices.map(teamIndex => ({
+        teamId: teamIndex,
+        played: 0,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        gf: 0,
+        ga: 0,
+        gd: 0,
+        pts: 0,
+      }));
+    });
+
+    return tables;
+  }
+
+  // Fallback: no groups; just create empty arrays so renderTournament doesn't crash
+  GROUP_IDS.forEach(g => {
+    tables[g] = [];
   });
 
   return tables;
