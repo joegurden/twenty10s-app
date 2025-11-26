@@ -1000,6 +1000,9 @@ function initTournament() {
   tournament.ko = { semis: [], final: [] };
   tournament.tables = {};
 
+  // 👉 Hide the "New Tournament" button at the start of a fresh tournament
+  updateTournamentRestartButton();   // ← PLACE IT HERE ✔️
+
   // 1) Read the user's chosen formation
   const formationSelect = $("tournamentFormation");
   const selectedFormation = formationSelect?.value || "4-3-3 (Holding)";
@@ -1014,6 +1017,7 @@ function initTournament() {
   // 2) START THE 15-man DRAFT
   showTournamentSquadSelection();
 }
+
 
 // Show the tournament draft panel and start at pick 1
 function showTournamentSquadSelection() {
@@ -1464,6 +1468,15 @@ function simulateKnockouts() {
   }
 }
 
+function updateTournamentRestartButton() {
+  const btn = $("btn-new-tournament");
+  if (!btn) return;
+
+  const hasChampion = typeof tournament.championIndex === "number";
+  // Show only once a champion exists
+  btn.classList.toggle("hidden", !hasChampion);
+}
+
 // Finish everything once the user has played all their group games
 function finishTournamentFromGroups() {
   // 1) Play all remaining AI group fixtures
@@ -1537,25 +1550,29 @@ function finishTournamentDraft() {
     return;
   }
 
-  // 6) Render tournament & show "Next Match" panel
-  try {
-    renderTournament(tables, ko);
-    showNextMatchPanel();
-  } catch (err) {
-    console.error("Error in renderTournament:", err);
-    const out = $("tournamentOutput");
-    if (out) {
-      out.innerHTML =
-        `<div class="pill">Draft complete (15 players), but an error occurred rendering the tournament. Check console.</div>`;
-    }
-    return;
-  }
+// 6) Render tournament & show "Next Match" panel
+try {
+  renderTournament(tables, ko);
+  showNextMatchPanel();
 
-  console.log("Tournament ready:", {
-    teams: tournament.teams,
-    groups: tournament.groups,
-    fixtures: tournament.fixtures,
-  });
+  // 👉 ADD THIS HERE (3b)
+  updateTournamentRestartButton();    // ✔️ Shows/hides "New Tournament" button
+
+} catch (err) {
+  console.error("Error in renderTournament:", err);
+  const out = $("tournamentOutput");
+  if (out) {
+    out.innerHTML =
+      `<div class="pill">Draft complete (15 players), but an error occurred rendering the tournament. Check console.</div>`;
+  }
+  return;
+}
+
+console.log("Tournament ready:", {
+  teams: tournament.teams,
+  groups: tournament.groups,
+  fixtures: tournament.fixtures,
+});
 }
 
 
@@ -1628,6 +1645,11 @@ document.addEventListener("DOMContentLoaded", () => {
 $("btn-tournament-play-next")?.addEventListener("click", () => {
   playNextGroupMatch();
 });
+
+  /* ---------------- Tournament "New Tournament" Button ---------------- */
+  $("btn-new-tournament")?.addEventListener("click", () => {
+    initTournament();
+  });
 
   /* ---------------- Initial Home Page Render ---------------- */
   generate(false);
