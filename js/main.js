@@ -927,6 +927,152 @@ function confirmDraftPick() {
   }
 }
 
+// Build empty group tables (all 0s) based on the drawn groups
+function createEmptyTables() {
+  const tables = {};
+
+  tournament.groups.forEach(group => {
+    const rows = group.teamIndices.map(teamIndex => {
+      const team = tournament.teams[teamIndex];
+      return {
+        teamIndex,
+        name: team?.name || `Team ${teamIndex + 1}`,
+        played: 0,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        gf: 0,
+        ga: 0,
+        gd: 0,
+        points: 0,
+      };
+    });
+
+    // store on the group for later updates
+    group.table = rows;
+    tables[group.name] = rows;
+  });
+
+  return tables;
+}
+
+// Simple empty knockout bracket: 2 semis + a final
+function createEmptyKO() {
+  return {
+    semis: [
+      {
+        id: "SF1",
+        homeFrom: "Winner Group A",
+        awayFrom: "Runner-up Group B",
+        homeIndex: null,
+        awayIndex: null,
+        score: null,
+      },
+      {
+        id: "SF2",
+        homeFrom: "Winner Group C",
+        awayFrom: "Runner-up Group D",
+        homeIndex: null,
+        awayIndex: null,
+        score: null,
+      },
+    ],
+    final: [
+      {
+        id: "F",
+        homeFrom: "Winner SF1",
+        awayFrom: "Winner SF2",
+        homeIndex: null,
+        awayIndex: null,
+        score: null,
+      },
+    ],
+  };
+}
+
+// Render the empty group tables + knockout bracket into #tournamentOutput
+function renderTournament(tables, ko) {
+  const container = $("tournamentOutput");
+  if (!container) return;
+
+  const groupsHtml = tournament.groups.map(group => {
+    const rows = tables[group.name] || [];
+    const body = rows.map((row, idx) => {
+      const team = tournament.teams[row.teamIndex];
+      const name = team?.name || row.name || `Team ${row.teamIndex + 1}`;
+      return `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${name}</td>
+          <td>${row.played}</td>
+          <td>${row.won}</td>
+          <td>${row.drawn}</td>
+          <td>${row.lost}</td>
+          <td>${row.gf}</td>
+          <td>${row.ga}</td>
+          <td>${row.gd}</td>
+          <td>${row.points}</td>
+        </tr>
+      `;
+    }).join("");
+
+    return `
+      <div class="card mini">
+        <div class="draft-head"><strong>${group.name}</strong></div>
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Team</th>
+              <th>P</th>
+              <th>W</th>
+              <th>D</th>
+              <th>L</th>
+              <th>GF</th>
+              <th>GA</th>
+              <th>GD</th>
+              <th>Pts</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${body}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }).join("");
+
+  const koSemis = ko.semis.map(m => `
+    <li>${m.homeFrom} vs ${m.awayFrom}</li>
+  `).join("");
+
+  const koFinal = ko.final.map(m => `
+    <li>${m.homeFrom} vs ${m.awayFrom}</li>
+  `).join("");
+
+  const koHtml = `
+    <div class="card mini">
+      <div class="draft-head"><strong>Knockouts</strong></div>
+      <h4>Semi-finals</h4>
+      <ul>
+        ${koSemis}
+      </ul>
+      <h4>Final</h4>
+      <ul>
+        ${koFinal}
+      </ul>
+    </div>
+  `;
+
+  container.innerHTML = `
+    <div class="group-grid">
+      ${groupsHtml}
+    </div>
+    <hr />
+    ${koHtml}
+  `;
+}
+
 function finishTournamentDraft() {
   draftState.active = false;
 
