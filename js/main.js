@@ -991,6 +991,8 @@ function initTournament() {
     { name: "Group D", teamIndices: [], table: [] },
   ];
   tournament.fixtures = [];
+  tournament.ko = { semis: [], final: [] };
+  tournament.tables = {};
 
   // 1) Read the user's chosen formation
   const formationSelect = $("tournamentFormation");
@@ -1003,15 +1005,10 @@ function initTournament() {
   console.log("User formation:", tournament.userFormation);
   console.log("Required XI positions:", tournament.requiredPositions);
 
-  // 2) START THE DRAFT — no AI teams yet
+  // 2) START THE 15-man DRAFT
   showTournamentSquadSelection();
-
-// NOTE:
-// AI teams + groups + fixtures will be created
-// AFTER the user completes the draft.
 }
 
-// Temporary store for which players are ticked in the 15-man squad
 // Show the tournament draft panel and start at pick 1
 function showTournamentSquadSelection() {
   draftState.active = true;
@@ -1025,20 +1022,141 @@ function showTournamentSquadSelection() {
   renderTournamentDraftStep();
 }
 
-function renderTournament() {
+/**
+ * One draft "step":
+ * - Show 4 fake player options for the required position
+ * - User chooses 1 and hits "Next Player"
+ */
+function renderTournamentDraftStep() {
+  const panel = $("tournamentSquad");
+  const list = $("tournamentSquadList");
+  const countLabel = $("tournamentSquadCount");
+
+  if (!panel || !list || !countLabel) {
+    console.warn(
+      "Tournament squad UI elements missing (tournamentSquad / tournamentSquadList / tournamentSquadCount)."
+    );
+    return;
+  }
+
+  // If we've already picked all players, finish the draft
+  if (draftState.step >= draftState.totalSteps) {
+    finishTournamentDraft();
+    return;
+  }
+
+  panel.classList.remove("hidden");
+
+  const xiCount = tournament.requiredPositions?.length || 11;
+  const isSubPick = draftState.step >= xiCount;
+
+  // Decide which position this pick is for
+  let desiredPos;
+  if (!isSubPick) {
+    desiredPos = tournament.requiredPositions[draftState.step] || "ST";
+  } else {
+    // subs can be any position
+    desiredPos =
+      ALL_POSITIONS[
+        Math.floor(Math.random() * ALL_POSITIONS.length)
+      ] || "ST";
+  }
+
+  // Build 4 simple candidate players for this slot
+  const candidates = [];
+  for (let i = 0; i < 4; i++) {
+    const rating = 70 + Math.floor(Math.random() * 11); // 70–80
+    const labelIndex = draftState.step + 1; // 1–15
+
+    candidates.push({
+      id: `user-${draftState.step}-${i}-${Date.now()}-${Math.random()
+        .toString(16)
+        .slice(2, 6)}`,
+      name: isSubPick
+        ? `Sub ${labelIndex - xiCount} #${i + 1}`
+        : `XI Player ${labelIndex} #${i + 1}`,
+      position: desiredPos,
+      rating,
+    });
+  }
+
+  draftState.currentCandidates = candidates;
+
+  list.innerHTML = candidates
+    .map(
+      (p, i) => `
+      <label class="player-row">
+        <input 
+          type="radio"
+          name="tournament-cand"
+          class="tournament-squad-radio"
+          data-index="${i}"
+        />
+        <span class="name">${p.name}</span>
+        <span class="pos">${p.position}</span>
+        <span class="rating">${p.rating}</span>
+      </label>
+    `
+    )
+    .join("");
+
+  countLabel.textContent = `${draftState.picks.length} / ${draftState.totalSteps} selected`;
+}
+
+// Called when the "Next Player" button is clicked
+function confirmDraftPick() {
+  if (!draftState.active) return;
+
+  const list = $("tournamentSquadList");
+  const countLabel = $("tournamentSquadCount");
+  if (!list || !countLabel) return;
+
+  const selected = list.querySelector(
+    'input[name="tournament-cand"]:checked'
+  );
+  if (!selected) {
+    alert("Please select a player first.");
+    return;
+  }
+
+  const idx = Number(selected.dataset.index);
+  const chosen = draftState.currentCandidates[idx];
+  if (!chosen) return;
+
+  draftState.picks.push(chosen);
+  draftState.step++;
+
+  countLabel.textContent = `${draftState.picks.length} / ${draftState.totalSteps} selected`;
+
+  if (draftState.step >= draftState.totalSteps) {
+    // All 15 chosen → build the tournament
+    finishTournamentDraft();
+  } else {
+    // Move to next pick
+    renderTournamentDraftStep();
+  }
+}
+
+function renderTournament(tables, ko) {
   const container = $("tournamentOutput");
   if (!container) return;
 
-  const groupsHtml = tournament.groups.map(group => {
-    const rows = group.table || [];
+  const groupsHtml = tournament.groups
+    .map((group) => {
+      const rows =
+        group.table && group.table.length
+          ? group.table
+          : (tables && tables[group.name]) || [];
 
-    const body = rows
-      .map((row, idx) => {
-        const team = tournament.teams[row.teamIndex];
-        const name = team?.name ?? row.name ?? `Team ${row.teamIndex + 1}`;
-        const isUser = row.teamIndex === tournament.userTeamIndex;
+      const body = rows
+        .map((row, idx) => {
+          const team = tournament.teams[row.teamIndex];
+          const name =
+            team?.name ?? row.name ?? `Team ${row.teamIndex + 1}`;
+          const isUser =
+            row.teamIndex === tournament.userTeamIndex;
 
-        return `
+          return `
           <tr${isUser ? ' class="highlight-row"' : ""}>
             <td>${idx + 1}</td>
             <td>${name}</td>
@@ -1052,10 +1170,10 @@ function renderTournament() {
             <td>${row.points}</td>
           </tr>
         `;
-      })
-      .join("");
+        })
+        .join("");
 
-    return `
+      return `
       <div class="card mini">
         <div class="draft-head"><strong>${group.name}</strong></div>
         <table class="mini-table">
@@ -1077,14 +1195,17 @@ function renderTournament() {
         </table>
       </div>
     `;
-  }).join("");
-
-  const koSemis = tournament.ko.semis
-    .map(m => `<li>${m.homeFrom} vs ${m.awayFrom}</li>`)
+    })
     .join("");
 
-  const koFinal = tournament.ko.final
-    .map(m => `<li>${m.homeFrom} vs ${m.awayFrom}</li>`)
+  const bracket = ko || tournament.ko || { semis: [], final: [] };
+
+  const koSemis = (bracket.semis || [])
+    .map((m) => `<li>${m.homeFrom} vs ${m.awayFrom}</li>`)
+    .join("");
+
+  const koFinal = (bracket.final || [])
+    .map((m) => `<li>${m.homeFrom} vs ${m.awayFrom}</li>`)
     .join("");
 
   const koHtml = `
@@ -1108,8 +1229,8 @@ function renderTournament() {
 function createEmptyTables() {
   const tables = {};
 
-  tournament.groups.forEach(group => {
-    const rows = group.teamIndices.map(teamIndex => {
+  tournament.groups.forEach((group) => {
+    const rows = group.teamIndices.map((teamIndex) => {
       const team = tournament.teams[teamIndex];
       return {
         teamIndex,
@@ -1125,17 +1246,17 @@ function createEmptyTables() {
       };
     });
 
-    // store on the group for later updates
     group.table = rows;
     tables[group.name] = rows;
   });
 
+  tournament.tables = tables;
   return tables;
 }
 
 // Simple empty knockout bracket: 2 semis + a final
 function createEmptyKO() {
-  return {
+  const ko = {
     semis: [
       {
         id: "SF1",
@@ -1165,7 +1286,85 @@ function createEmptyKO() {
       },
     ],
   };
+
+  tournament.ko = ko;
+  return ko;
 }
+
+function finishTournamentDraft() {
+  draftState.active = false;
+
+  const userSquad = draftState.picks || [];
+  console.log("finishTournamentDraft called, picked players:", userSquad);
+
+  if (userSquad.length !== 15) {
+    console.warn("Expected 15 drafted players, got", userSquad.length);
+  }
+
+  const avgRating = userSquad.length
+    ? Math.round(
+        userSquad.reduce((sum, p) => sum + p.rating, 0) / userSquad.length
+      )
+    : 75;
+
+  // 1) User team as team 0
+  tournament.teams = [];
+  tournament.userTeamIndex = 0;
+
+  tournament.teams.push({
+    id: 0,
+    name: "Your Club",
+    rating: avgRating,
+    squad: userSquad,
+    isUser: true,
+  });
+
+  // 2) AI teams
+  buildAITeamsPlaceholder();
+
+  // 3) Groups + fixtures
+  assignTeamsToGroups();
+  buildGroupFixtures();
+
+  // 4) Hide draft panel
+  $("tournamentSquad")?.classList.add("hidden");
+
+  // 5) Build empty tables + KO and store them
+  let tables, ko;
+  try {
+    tables = createEmptyTables();
+    ko = createEmptyKO();
+  } catch (err) {
+    console.error("Error creating tables/KO:", err);
+    const out = $("tournamentOutput");
+    if (out) {
+      out.innerHTML =
+        `<div class="pill">Draft complete (15 players), but an error occurred building tables. Check console.</div>`;
+    }
+    return;
+  }
+
+  // 6) Render tournament & show "Next Match" panel
+  try {
+    renderTournament(tables, ko);
+    showNextMatchPanel();
+  } catch (err) {
+    console.error("Error in renderTournament:", err);
+    const out = $("tournamentOutput");
+    if (out) {
+      out.innerHTML =
+        `<div class="pill">Draft complete (15 players), but an error occurred rendering the tournament. Check console.</div>`;
+    }
+    return;
+  }
+
+  console.log("Tournament ready:", {
+    teams: tournament.teams,
+    groups: tournament.groups,
+    fixtures: tournament.fixtures,
+  });
+}
+
 
 
 function finishTournamentDraft() {
