@@ -1070,14 +1070,16 @@ function createEmptyKO() {
     final: { teamA: null, teamB: null, aggA: 0, aggB: 0 },
   };
 }
-function renderTournament(tables, ko) {
+
+function renderTournament(tables, ko){
   const el = $("tournamentOutput");
   if (!el) return;
-
   const parts = [];
 
-  // Groups
-  GROUP_IDS.forEach(g => {
+  // Groups – loop over whatever keys exist in tables
+  const groupKeys = Object.keys(tables); // e.g. ["A","B","C","D"]
+
+  groupKeys.forEach(g => {
     const rows = tables[g] || [];
     parts.push(`
       <div class="t-group-card">
@@ -1195,7 +1197,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /* ---------- Tournament Mode State ---------- */
 
-const GROUP_IDS = ["A", "B", "C", "D"];
 
 const FORMATION_POSITIONS = {
   "3-4-3":      ["GK","CB","CB","CB","RM","CM","CM","LM","RW","ST","LW"],
