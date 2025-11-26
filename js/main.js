@@ -1104,6 +1104,70 @@ function renderTournament() {
   `;
 }
 
+// Build empty group tables (all 0s) based on the drawn groups
+function createEmptyTables() {
+  const tables = {};
+
+  tournament.groups.forEach(group => {
+    const rows = group.teamIndices.map(teamIndex => {
+      const team = tournament.teams[teamIndex];
+      return {
+        teamIndex,
+        name: team?.name || `Team ${teamIndex + 1}`,
+        played: 0,
+        won: 0,
+        drawn: 0,
+        lost: 0,
+        gf: 0,
+        ga: 0,
+        gd: 0,
+        points: 0,
+      };
+    });
+
+    // store on the group for later updates
+    group.table = rows;
+    tables[group.name] = rows;
+  });
+
+  return tables;
+}
+
+// Simple empty knockout bracket: 2 semis + a final
+function createEmptyKO() {
+  return {
+    semis: [
+      {
+        id: "SF1",
+        homeFrom: "Winner Group A",
+        awayFrom: "Runner-up Group B",
+        homeIndex: null,
+        awayIndex: null,
+        score: null,
+      },
+      {
+        id: "SF2",
+        homeFrom: "Winner Group C",
+        awayFrom: "Runner-up Group D",
+        homeIndex: null,
+        awayIndex: null,
+        score: null,
+      },
+    ],
+    final: [
+      {
+        id: "F",
+        homeFrom: "Winner SF1",
+        awayFrom: "Winner SF2",
+        homeIndex: null,
+        awayIndex: null,
+        score: null,
+      },
+    ],
+  };
+}
+
+
 function finishTournamentDraft() {
   draftState.active = false;
 
@@ -1142,34 +1206,34 @@ function finishTournamentDraft() {
   // 4) Hide draft panel
   $("tournamentSquad")?.classList.add("hidden");
 
-  // 5) Build empty tables + KO and store them
-  let tables, ko;
-  try {
-    tables = createEmptyTables();
-    ko = createEmptyKO();
-  } catch (err) {
-    console.error("Error creating tables/KO:", err);
-    const out = $("tournamentOutput");
-    if (out) {
-      out.innerHTML =
-        `<div class="pill">Draft complete (15 players), but an error occurred building tables. Check console.</div>`;
-    }
-    return;
+ // 5) Build empty tables + KO and store them
+let tables, ko;
+try {
+  tables = createEmptyTables();
+  ko = createEmptyKO();
+} catch (err) {
+  console.error("Error creating tables/KO:", err);
+  const out = $("tournamentOutput");
+  if (out) {
+    out.innerHTML =
+      `<div class="pill">Draft complete (15 players), but an error occurred building tables. Check console.</div>`;
   }
+  return;
+}
 
-  // 6) Render tournament + show first "Next match"
-  try {
-    renderTournament(tables, ko);
-    showNextMatchPanel();
-  } catch (err) {
-    console.error("Error in renderTournament:", err);
-    const out = $("tournamentOutput");
-    if (out) {
-      out.innerHTML =
-        `<div class="pill">Draft complete (15 players), but an error occurred rendering the tournament. Check console.</div>`;
-    }
-    return;
+// 6) Render tournament
+try {
+  renderTournament(tables, ko);
+} catch (err) {
+  console.error("Error in renderTournament:", err);
+  const out = $("tournamentOutput");
+  if (out) {
+    out.innerHTML =
+      `<div class="pill">Draft complete (15 players), but an error occurred rendering the tournament. Check console.</div>`;
   }
+  return;
+}
+
 
   console.log("Tournament ready:", {
     teams: tournament.teams,
