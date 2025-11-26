@@ -690,20 +690,6 @@ function buildAITeamsPlaceholder() {
   }
 }
 
-
-function buildTournamentSquad(team) {
-  const squad = [];
-  for (let i = 0; i < TOURNAMENT_SQUAD_SIZE; i++) {
-    squad.push({
-      id: `${team.id}-${i}`,
-      name: `Player ${i + 1}`,
-      position: "MID",     // placeholder for now
-      rating: team.rating, // placeholder
-    });
-  }
-  return squad;
-}
-
 function assignTeamsToGroups() {
   const indices = [...Array(TOURNAMENT_NUM_TEAMS).keys()];
 
