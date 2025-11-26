@@ -672,23 +672,45 @@ function buildTournamentSquad(team) {
 
 // Build the remaining AI teams (placeholder logic for now)
 function buildAITeamsPlaceholder() {
-  const existingCount = tournament.teams.length; // should be 1 (the user team)
+  // Your 15 custom AI team names
+  const AI_TEAM_NAMES = [
+    "CF Monteluna",
+    "RK Dynamo Varga",
+    "AC Rosendale",
+    "FK Baltica Varna",
+    "Sporting Verdanos",
+    "Real Sosobad",
+    "Notin Your Forest",
+    "Bayern Bruised",
+    "Athletic Biltoast",
+    "FC No Chance",
+    "Borussia Teeth",
+    "Lads on Toure",
+    "Giroud Sandstorm",
+    "Obi One Kenobi Nil",
+    "Expected Toulouse"
+  ];
+
+  // Start from 1 because team 0 is Your Club
+  const existingCount = tournament.teams.length;
 
   for (let i = existingCount; i < TOURNAMENT_NUM_TEAMS; i++) {
-    const rating = 70 + Math.floor(Math.random() * 11); // 70–80
+
+    const rating = 70 + Math.floor(Math.random() * 11); // 70–80 rating
+
     const team = {
       id: i,
-      name: `AI Team ${i + 1}`,
+      name: AI_TEAM_NAMES[i - 1],   // map 1→0, 2→1, ..., 15→14
       rating,
       squad: [],
       isUser: false,
     };
 
     team.squad = buildTournamentSquad(team);
-
     tournament.teams.push(team);
   }
 }
+
 
 function assignTeamsToGroups() {
   const indices = [...Array(TOURNAMENT_NUM_TEAMS).keys()];
