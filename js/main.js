@@ -640,8 +640,8 @@ let draftState = {
   totalSteps: 0,
   picks: [],
   currentCandidates: [],
+  taken: new Set(),      // track players already picked
 };
-
 
 const TOURNAMENT_NUM_TEAMS = 16;
 const TOURNAMENT_GROUP_SIZE = 4;
@@ -876,20 +876,7 @@ function playNextGroupMatch() {
 }
 
 
-function buildTournamentSquad(team) {
-  const squad = [];
-  for (let i = 0; i < TOURNAMENT_SQUAD_SIZE; i++) {
-    squad.push({
-      id: `${team.id}-${i}`,
-      name: `Player ${i + 1}`,
-      position: "MID",     // placeholder for now
-      rating: team.rating, // placeholder
-    });
-  }
-  return squad;
-}
-
-// Build the remaining AI teams (placeholder logic for now)
+// Build the remaining AI teams using Supabase players
 function buildAITeamsPlaceholder() {
   // Your 15 custom AI team names
   const AI_TEAM_NAMES = [
@@ -907,25 +894,82 @@ function buildAITeamsPlaceholder() {
     "Lads on Toure",
     "Giroud Sandstorm",
     "Obi One Kenobi Nil",
-    "Expected Toulouse"
+    "Expected Toulouse",
   ];
 
-  // Start from 1 because team 0 is Your Club
-  const existingCount = tournament.teams.length;
+  // user team already pushed as team 0
+  const userTeam = tournament.teams[0];
+  const userSquad = userTeam?.squad || [];
+
+  // avoid reusing user's players in AI squads
+  const usedKeys = new Set(userSquad.map(keyOf));
+
+  // helper to get a random item
+  const randItem = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+  // helper to pick a player by position, falling back if needed
+  function pickForPosition(pos) {
+    let candidates = tournamentPool.filter(
+      (p) => p.Position === pos && !usedKeys.has(keyOf(p))
+    );
+
+    if (!candidates.length) {
+      candidates = tournamentPool.filter((p) => !usedKeys.has(keyOf(p)));
+    }
+
+    if (!candidates.length) return null;
+
+    const chosen = randItem(candidates);
+    usedKeys.add(keyOf(chosen));
+    return chosen;
+  }
+
+  // Build each AI team
+  const formationKeys = Object.keys(FORMATION_POSITIONS);
+
+  const existingCount = tournament.teams.length; // should be 1 (user)
 
   for (let i = existingCount; i < TOURNAMENT_NUM_TEAMS; i++) {
+    const formationKey = randItem(formationKeys);
+    const positions = FORMATION_POSITIONS[formationKey] || FORMATION_POSITIONS["4-3-3 (Holding)"];
 
-    const rating = 70 + Math.floor(Math.random() * 11); // 70–80 rating
+    const xi = [];
+    for (const pos of positions) {
+      const p = pickForPosition(pos);
+      if (!p) break;
+      xi.push(p);
+    }
+
+    // If we can't fill a full XI, stop creating AI teams
+    if (xi.length < 11) {
+      console.warn("Not enough players in Supabase to fill all AI XIs.");
+      break;
+    }
+
+    const squad = [...xi];
+
+    // Fill up to TOURNAMENT_SQUAD_SIZE with random subs
+    while (squad.length < TOURNAMENT_SQUAD_SIZE) {
+      const subsCandidates = tournamentPool.filter((p) => !usedKeys.has(keyOf(p)));
+      if (!subsCandidates.length) break;
+      const sub = randItem(subsCandidates);
+      usedKeys.add(keyOf(sub));
+      squad.push(sub);
+    }
+
+    const avgRating = Math.round(
+      squad.reduce((sum, p) => sum + (Number(p.Rating) || 0), 0) / squad.length
+    );
 
     const team = {
       id: i,
-      name: AI_TEAM_NAMES[i - 1],   // map 1→0, 2→1, ..., 15→14
-      rating,
-      squad: [],
+      name: AI_TEAM_NAMES[i - 1] || `AI Team ${i + 1}`,
+      rating: avgRating,
+      squad,
       isUser: false,
+      formation: formationKey,
     };
 
-    team.squad = buildTournamentSquad(team);
     tournament.teams.push(team);
   }
 }
@@ -1016,7 +1060,7 @@ function pickUserTeam() {
   console.log("User controls team:", tournament.teams[randomIndex]?.name);
 }
 
-function initTournament() {
+async function initTournament() {
   // Reset core state
   tournament.stage = TOURNAMENT_STAGES.GROUPS;
   tournament.teams = [];
@@ -1036,10 +1080,10 @@ function initTournament() {
   tournament.ko = { semis: [], final: [] };
   tournament.tables = {};
 
-  // 👉 Hide the "New Tournament" button at the start of a fresh tournament
-  updateTournamentRestartButton();   // ← PLACE IT HERE ✔️
+  // Hide the "New Tournament" button at the start of a fresh tournament
+  updateTournamentRestartButton();
 
-  // 1) Read the user's chosen formation
+  // 1) Read the user's chosen formation for their XI later
   const formationSelect = $("tournamentFormation");
   const selectedFormation = formationSelect?.value || "4-3-3 (Holding)";
   tournament.userFormation = selectedFormation;
@@ -1050,12 +1094,19 @@ function initTournament() {
   console.log("User formation:", tournament.userFormation);
   console.log("Required XI positions:", tournament.requiredPositions);
 
-  // 2) START THE 15-man DRAFT
+  // 2) Load Supabase tournament pool (85–90 rated players)
+  const pool = await loadTournamentPoolFromSupabase();
+  if (!pool || pool.length < TOURNAMENT_SQUAD_SIZE) {
+    alert("Not enough eligible players in Supabase to start a tournament (need at least 15).");
+    return;
+  }
+
+  // 3) Start the 15-man draft using real Supabase players
   showTournamentSquadSelection();
 }
 
 
-// Show the tournament draft panel and start at pick 1
+// Show the tournament draft panel and start at pick 1 (Supabase-backed)
 function showTournamentSquadSelection() {
   draftState.active = true;
   draftState.step = 0;
@@ -1064,15 +1115,8 @@ function showTournamentSquadSelection() {
   draftState.totalSteps = xiCount + DRAFT_SUB_PICKS; // 11 + 4 = 15
   draftState.picks = [];
   draftState.currentCandidates = [];
+  draftState.taken = new Set();  // reset taken set
 
-  renderTournamentDraftStep();
-}
-
-/**
- * One draft "step":
- * - Show 4 fake player options for the required position
- * - User chooses 1 and hits "Next Player"
- */
 function renderTournamentDraftStep() {
   const panel = $("tournamentSquad");
   const list = $("tournamentSquadList");
@@ -1108,22 +1152,35 @@ function renderTournamentDraftStep() {
       ] || "ST";
   }
 
-  // Build 4 simple candidate players for this slot
-  const candidates = [];
-  for (let i = 0; i < 4; i++) {
-    const rating = 70 + Math.floor(Math.random() * 11); // 70–80
-    const labelIndex = draftState.step + 1; // 1–15
+  // --- NEW: Build candidates from Supabase pool ---
 
-    candidates.push({
-      id: `user-${draftState.step}-${i}-${Date.now()}-${Math.random()
-        .toString(16)
-        .slice(2, 6)}`,
-      name: isSubPick
-        ? `Sub ${labelIndex - xiCount} #${i + 1}`
-        : `XI Player ${labelIndex} #${i + 1}`,
-      position: desiredPos,
-      rating,
-    });
+  // helper to check if player already taken in this draft
+  const isTaken = (p) => draftState.taken.has(keyOf(p));
+
+  // candidates matching the desired position
+  let candidates = tournamentPool.filter(
+    (p) => p.Position === desiredPos && !isTaken(p)
+  );
+
+  // shuffle helper (reuse your global shuffle if you like)
+  const localShuffle = (arr) => shuffle([...arr]);
+
+  candidates = localShuffle(candidates).slice(0, 4);
+
+  // fallback: if we couldn't get any for that position, use any untaken players
+  if (!candidates.length) {
+    const untaken = tournamentPool.filter((p) => !isTaken(p));
+    candidates = localShuffle(untaken).slice(0, 4);
+  }
+
+  // Still nothing? Show a message
+  if (!candidates.length) {
+    list.innerHTML = `
+      <div class="pill">
+        No more available players in Supabase for this pick. Add more players and restart the tournament.
+      </div>
+    `;
+    return;
   }
 
   draftState.currentCandidates = candidates;
@@ -1138,9 +1195,9 @@ function renderTournamentDraftStep() {
           class="tournament-squad-radio"
           data-index="${i}"
         />
-        <span class="name">${p.name}</span>
-        <span class="pos">${p.position}</span>
-        <span class="rating">${p.rating}</span>
+        <span class="name">${p.Name}</span>
+        <span class="pos">${p.Position}</span>
+        <span class="rating">${p.Rating}</span>
       </label>
     `
     )
@@ -1169,8 +1226,12 @@ function confirmDraftPick() {
   const chosen = draftState.currentCandidates[idx];
   if (!chosen) return;
 
+  // Record pick
   draftState.picks.push(chosen);
   draftState.step++;
+
+  // Mark this player as taken so we don't offer them again
+  draftState.taken.add(keyOf(chosen));
 
   countLabel.textContent = `${draftState.picks.length} / ${draftState.totalSteps} selected`;
 
@@ -1539,6 +1600,7 @@ function finishTournamentDraft() {
   draftState.active = false;
 
   const userSquad = draftState.picks || [];
+  userTournamentSquad = userSquad;  // store globally too
   console.log("finishTournamentDraft called, picked players:", userSquad);
 
   if (userSquad.length !== 15) {
@@ -1547,9 +1609,13 @@ function finishTournamentDraft() {
 
   const avgRating = userSquad.length
     ? Math.round(
-        userSquad.reduce((sum, p) => sum + p.rating, 0) / userSquad.length
+        userSquad.reduce(
+          (sum, p) => sum + (Number(p.Rating) || 0),
+          0
+        ) / userSquad.length
       )
     : 75;
+
 
   // 1) User team as team 0
   tournament.teams = [];
