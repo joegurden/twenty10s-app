@@ -1116,6 +1116,7 @@ function showTournamentSquadSelection() {
   draftState.picks = [];
   draftState.currentCandidates = [];
   draftState.taken = new Set();  // reset taken set
+}
 
 function renderTournamentDraftStep() {
   const panel = $("tournamentSquad");
