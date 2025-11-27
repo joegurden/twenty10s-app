@@ -28,7 +28,7 @@ const $ = (id) => document.getElementById(id);
 
 /* ---------------- Tournament (Supabase) Globals ---------------- */
 
-const TOURNAMENT_SQUAD_SIZE = 15;  // user squad size = 15
+// no TOURNAMENT_SQUAD_SIZE here
 
 let tournamentPool = [];       // all eligible players (85–90 rated)
 let userTournamentSquad = [];  // user's chosen 15
