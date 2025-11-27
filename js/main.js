@@ -1105,7 +1105,6 @@ async function initTournament() {
   showTournamentSquadSelection();
 }
 
-
 // Show the tournament draft panel and start at pick 1 (Supabase-backed)
 function showTournamentSquadSelection() {
   draftState.active = true;
@@ -1116,6 +1115,9 @@ function showTournamentSquadSelection() {
   draftState.picks = [];
   draftState.currentCandidates = [];
   draftState.taken = new Set();  // reset taken set
+
+  // 👉 actually draw the first set of options
+  renderTournamentDraftStep();
 }
 
 function renderTournamentDraftStep() {
