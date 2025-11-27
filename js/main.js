@@ -25,6 +25,42 @@ const FORMATIONS = {
 
 const BACKLINE = new Set(["GK","RB","CB","LB","RWB","LWB"]);
 const $ = (id) => document.getElementById(id);
+
+/* ---------------- Tournament (Supabase) Globals ---------------- */
+
+const TOURNAMENT_SQUAD_SIZE = 15;  // user squad size = 15
+
+let tournamentPool = [];       // all eligible players (85–90 rated)
+let userTournamentSquad = [];  // user's chosen 15
+let tournamentTeams = [];      // user + 15 AI teams
+
+/* ---------------- Load players from Supabase ---------------- */
+
+async function loadTournamentPoolFromSupabase() {
+  try {
+    const { data, error } = await supabase
+      .from("players")
+      .select("*")
+      .gte("Rating", 85)
+      .lte("Rating", 90);
+
+    if (error) {
+      console.error("Supabase load error:", error);
+      return [];
+    }
+
+    tournamentPool = (data || []).sort((a, b) => b.Rating - a.Rating);
+
+    console.log("🎯 Loaded Supabase tournament pool:", tournamentPool.length);
+    return tournamentPool;
+
+  } catch (err) {
+    console.error("Unexpected Supabase load error:", err);
+    return [];
+  }
+}
+
+
 const keyOf = (p) => `${p.Name}|${p.Club}`;
 
 function shuffle(a){
