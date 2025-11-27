@@ -38,11 +38,9 @@ let tournamentTeams = [];      // user + 15 AI teams
 
 async function loadTournamentPoolFromSupabase() {
   try {
-    const { data, error } = await supabase
-      .from("players")
-      .select("*")
-      .gte("Rating", 85)
-      .lte("Rating", 90);
+   const { data, error } = await supabase
+  .from("players")
+  .select("*");
 
     if (error) {
       console.error("Supabase load error:", error);
