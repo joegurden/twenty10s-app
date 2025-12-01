@@ -1619,121 +1619,104 @@ function renderTournament(tables, ko) {
     })
     .join("");
 
-  const bracket = ko || tournament.ko || { semis: [], final: [] };
+// Knockouts: QFs (two legs), SFs (two legs), Final (one leg)
+const bracket =
+  ko || tournament.ko || { quarters: [], semis: [], final: [] };
 
-  // --- Build semi-final matches as bracket boxes ---
-  const koSemisHtml = (bracket.semis || [])
-    .map((m, idx) => {
-      let homeLabel = m.homeFrom;
-      let awayLabel = m.awayFrom;
+const koQuarters = (bracket.quarters || [])
+  .map((m) => {
+    let homeLabel = m.homeFrom;
+    let awayLabel = m.awayFrom;
 
-      if (typeof m.homeIndex === "number") {
-        homeLabel = tournament.teams[m.homeIndex]?.name || homeLabel;
-      }
-      if (typeof m.awayIndex === "number") {
-        awayLabel = tournament.teams[m.awayIndex]?.name || awayLabel;
-      }
+    if (typeof m.homeIndex === "number") {
+      homeLabel = tournament.teams[m.homeIndex]?.name || homeLabel;
+    }
+    if (typeof m.awayIndex === "number") {
+      awayLabel = tournament.teams[m.awayIndex]?.name || awayLabel;
+    }
 
-      const hasScore = m.score && typeof m.score.home === "number";
-      const scoreStr = hasScore
-        ? `${m.score.home}–${m.score.away}`
-        : "vs";
+    let legStr = "";
+    if (m.legs && m.legs.length === 2) {
+      const l1 = m.legs[0];
+      const l2 = m.legs[1];
+      legStr = ` – 1st: ${l1.score.home}–${l1.score.away}, 2nd: ${l2.score.home}–${l2.score.away}`;
+    }
 
-      const winnerIndex =
-        typeof m.winnerIndex === "number" ? m.winnerIndex : null;
-      const homeWinner =
-        winnerIndex != null && winnerIndex === m.homeIndex;
-      const awayWinner =
-        winnerIndex != null && winnerIndex === m.awayIndex;
+    const aggStr = m.aggScore
+      ? ` (agg ${m.aggScore.home}–${m.aggScore.away})`
+      : "";
 
-      return `
-        <div class="bracket-match">
-          <div class="bracket-match-header">SF${idx + 1}</div>
-          <div class="bracket-team ${homeWinner ? "winner" : ""}">
-            <span class="team-name">${homeLabel}</span>
-            <span class="team-score">${hasScore ? m.score.home : ""}</span>
-          </div>
-          <div class="bracket-team ${awayWinner ? "winner" : ""}">
-            <span class="team-name">${awayLabel}</span>
-            <span class="team-score">${hasScore ? m.score.away : ""}</span>
-          </div>
-          <div class="bracket-score-line">${scoreStr}</div>
-        </div>
-      `;
-    })
-    .join("");
+    return `<li>${m.id}: ${homeLabel} vs ${awayLabel}${legStr}${aggStr}</li>`;
+  })
+  .join("");
 
-  // --- Final box ---
-  const koFinalHtml = (bracket.final || [])
-    .map((m) => {
-      let homeLabel = m.homeFrom;
-      let awayLabel = m.awayFrom;
+const koSemis = (bracket.semis || [])
+  .map((m) => {
+    let homeLabel = m.homeFrom;
+    let awayLabel = m.awayFrom;
 
-      if (typeof m.homeIndex === "number") {
-        homeLabel = tournament.teams[m.homeIndex]?.name || homeLabel;
-      }
-      if (typeof m.awayIndex === "number") {
-        awayLabel = tournament.teams[m.awayIndex]?.name || awayLabel;
-      }
+    if (typeof m.homeIndex === "number") {
+      homeLabel = tournament.teams[m.homeIndex]?.name || homeLabel;
+    }
+    if (typeof m.awayIndex === "number") {
+      awayLabel = tournament.teams[m.awayIndex]?.name || awayLabel;
+    }
 
-      const hasScore = m.score && typeof m.score.home === "number";
-      const scoreStr = hasScore
-        ? `${m.score.home}–${m.score.away}`
-        : "vs";
+    let legStr = "";
+    if (m.legs && m.legs.length === 2) {
+      const l1 = m.legs[0];
+      const l2 = m.legs[1];
+      legStr = ` – 1st: ${l1.score.home}–${l1.score.away}, 2nd: ${l2.score.home}–${l2.score.away}`;
+    }
 
-      const winnerIndex =
-        typeof m.winnerIndex === "number" ? m.winnerIndex : null;
-      const homeWinner =
-        winnerIndex != null && winnerIndex === m.homeIndex;
-      const awayWinner =
-        winnerIndex != null && winnerIndex === m.awayIndex;
+    const aggStr = m.aggScore
+      ? ` (agg ${m.aggScore.home}–${m.aggScore.away})`
+      : "";
 
-      return `
-        <div class="bracket-match final">
-          <div class="bracket-match-header">Final</div>
-          <div class="bracket-team ${homeWinner ? "winner" : ""}">
-            <span class="team-name">${homeLabel}</span>
-            <span class="team-score">${hasScore ? m.score.home : ""}</span>
-          </div>
-          <div class="bracket-team ${awayWinner ? "winner" : ""}">
-            <span class="team-name">${awayLabel}</span>
-            <span class="team-score">${hasScore ? m.score.away : ""}</span>
-          </div>
-          <div class="bracket-score-line">${scoreStr}</div>
-        </div>
-      `;
-    })
-    .join("");
+    return `<li>${m.id}: ${homeLabel} vs ${awayLabel}${legStr}${aggStr}</li>`;
+  })
+  .join("");
 
-  // --- Champion display ---
-  let championHtml = "";
-  if (typeof tournament.championIndex === "number") {
-    const champName =
-      tournament.teams[tournament.championIndex]?.name || "Unknown";
-    championHtml = `
-      <div class="bracket-champion">
-        <div class="bracket-match-header">Champion</div>
-        <div class="champion-name">${champName}</div>
-      </div>
-    `;
-  }
+const koFinalList = (bracket.final || [])
+  .map((m) => {
+    let homeLabel = m.homeFrom;
+    let awayLabel = m.awayFrom;
 
-  const koHtml = `
-    <div class="card mini">
-      <div class="draft-head"><strong>Knockout Bracket</strong></div>
-      <div class="bracket">
-        <div class="bracket-column">
-          <h4>Semi-finals</h4>
-          ${koSemisHtml || '<p class="pill">Semi-finals not set yet.</p>'}
-        </div>
-        <div class="bracket-column">
-          <h4>Final & Champion</h4>
-          ${koFinalHtml || '<p class="pill">Final not set yet.</p>'}
-          ${championHtml}
-        </div>
-      </div>
-    </div>
-  `;
+    if (typeof m.homeIndex === "number") {
+      homeLabel = tournament.teams[m.homeIndex]?.name || homeLabel;
+    }
+    if (typeof m.awayIndex === "number") {
+      awayLabel = tournament.teams[m.awayIndex]?.name || awayLabel;
+    }
+
+    let scoreStr = "";
+    if (m.score) {
+      scoreStr = ` (${m.score.home}–${m.score.away})`;
+    }
+
+    return `<li>${m.id}: ${homeLabel} vs ${awayLabel}${scoreStr}</li>`;
+  })
+  .join("");
+
+let championHtml = "";
+if (typeof tournament.championIndex === "number") {
+  const champName =
+    tournament.teams[tournament.championIndex]?.name || "Unknown";
+  championHtml = `<p><strong>Champion: ${champName}</strong></p>`;
+}
+
+const koHtml = `
+  <div class="card mini">
+    <div class="draft-head"><strong>Knockouts</strong></div>
+    <h4>Quarter-finals (two legs)</h4>
+    <ul>${koQuarters || "<li>Not set yet.</li>"}</ul>
+    <h4>Semi-finals (two legs)</h4>
+    <ul>${koSemis || "<li>Not set yet.</li>"}</ul>
+    <h4>Final</h4>
+    <ul>${koFinalList || "<li>Not set yet.</li>"}</ul>
+    ${championHtml}
+  </div>
+`;
 
   container.innerHTML = `
     <div class="group-grid">${groupsHtml}</div>
@@ -1897,25 +1880,71 @@ function createEmptyTables() {
   return tables;
 }
 
-// Simple empty knockout bracket: 2 semis + a final
+// Simple empty knockout bracket: 2 quarters + 2 semis + a final
 function createEmptyKO() {
   const ko = {
-    semis: [
+    quarters: [
       {
-        id: "SF1",
+        id: "QF1",
         homeFrom: "Winner Group A",
         awayFrom: "Runner-up Group B",
         homeIndex: null,
         awayIndex: null,
-        score: null,
+        legs: [],
+        aggScore: null,
+        winnerIndex: null,
       },
       {
-        id: "SF2",
+        id: "QF2",
         homeFrom: "Winner Group C",
         awayFrom: "Runner-up Group D",
         homeIndex: null,
         awayIndex: null,
-        score: null,
+        legs: [],
+        aggScore: null,
+        winnerIndex: null,
+      },
+      {
+        id: "QF3",
+        homeFrom: "Runner-up Group A",
+        awayFrom: "Winner Group B",
+        homeIndex: null,
+        awayIndex: null,
+        legs: [],
+        aggScore: null,
+        winnerIndex: null,
+      },
+      {
+        id: "QF4",
+        homeFrom: "Runner-up Group C",
+        awayFrom: "Winner Group D",
+        homeIndex: null,
+        awayIndex: null,
+        legs: [],
+        aggScore: null,
+        winnerIndex: null,
+      },
+    ],
+    semis: [
+      {
+        id: "SF1",
+        homeFrom: "Winner QF1",
+        awayFrom: "Winner QF2",
+        homeIndex: null,
+        awayIndex: null,
+        legs: [],
+        aggScore: null,
+        winnerIndex: null,
+      },
+      {
+        id: "SF2",
+        homeFrom: "Winner QF3",
+        awayFrom: "Winner QF4",
+        homeIndex: null,
+        awayIndex: null,
+        legs: [],
+        aggScore: null,
+        winnerIndex: null,
       },
     ],
     final: [
@@ -1926,6 +1955,7 @@ function createEmptyKO() {
         homeIndex: null,
         awayIndex: null,
         score: null,
+        winnerIndex: null,
       },
     ],
   };
@@ -1933,6 +1963,7 @@ function createEmptyKO() {
   tournament.ko = ko;
   return ko;
 }
+
 
 // Simulate all remaining unplayed GROUP fixtures (AI vs AI)
 function simulateAllRemainingGroupFixtures() {
@@ -1949,7 +1980,7 @@ function buildKnockoutsFromGroups() {
   const ko = tournament.ko || createEmptyKO();
 
   function getPlaces(groupName) {
-    const group = tournament.groups.find(g => g.name === groupName);
+    const group = tournament.groups.find((g) => g.name === groupName);
     if (!group || !group.table || group.table.length < 2) {
       return [null, null];
     }
@@ -1962,27 +1993,61 @@ function buildKnockoutsFromGroups() {
   const [wC, rC] = getPlaces("Group C");
   const [wD, rD] = getPlaces("Group D");
 
-  // SF1: Winner A vs Runner-up B
-  if (ko.semis[0]) {
-    ko.semis[0].homeIndex = wA;
-    ko.semis[0].awayIndex = rB;
+  // Quarter-finals mapping:
+  // QF1: Winner A vs Runner-up B
+  // QF2: Winner C vs Runner-up D
+  // QF3: Runner-up A vs Winner B
+  // QF4: Runner-up C vs Winner D
+
+  if (ko.quarters && ko.quarters[0]) {
+    ko.quarters[0].homeIndex = wA;
+    ko.quarters[0].awayIndex = rB;
     if (typeof wA === "number") {
-      ko.semis[0].homeFrom = tournament.teams[wA]?.name || ko.semis[0].homeFrom;
+      ko.quarters[0].homeFrom =
+        tournament.teams[wA]?.name || ko.quarters[0].homeFrom;
     }
     if (typeof rB === "number") {
-      ko.semis[0].awayFrom = tournament.teams[rB]?.name || ko.semis[0].awayFrom;
+      ko.quarters[0].awayFrom =
+        tournament.teams[rB]?.name || ko.quarters[0].awayFrom;
     }
   }
 
-  // SF2: Winner C vs Runner-up D
-  if (ko.semis[1]) {
-    ko.semis[1].homeIndex = wC;
-    ko.semis[1].awayIndex = rD;
+  if (ko.quarters && ko.quarters[1]) {
+    ko.quarters[1].homeIndex = wC;
+    ko.quarters[1].awayIndex = rD;
     if (typeof wC === "number") {
-      ko.semis[1].homeFrom = tournament.teams[wC]?.name || ko.semis[1].homeFrom;
+      ko.quarters[1].homeFrom =
+        tournament.teams[wC]?.name || ko.quarters[1].homeFrom;
     }
     if (typeof rD === "number") {
-      ko.semis[1].awayFrom = tournament.teams[rD]?.name || ko.semis[1].awayFrom;
+      ko.quarters[1].awayFrom =
+        tournament.teams[rD]?.name || ko.quarters[1].awayFrom;
+    }
+  }
+
+  if (ko.quarters && ko.quarters[2]) {
+    ko.quarters[2].homeIndex = rA;
+    ko.quarters[2].awayIndex = wB;
+    if (typeof rA === "number") {
+      ko.quarters[2].homeFrom =
+        tournament.teams[rA]?.name || ko.quarters[2].homeFrom;
+    }
+    if (typeof wB === "number") {
+      ko.quarters[2].awayFrom =
+        tournament.teams[wB]?.name || ko.quarters[2].awayFrom;
+    }
+  }
+
+  if (ko.quarters && ko.quarters[3]) {
+    ko.quarters[3].homeIndex = rC;
+    ko.quarters[3].awayIndex = wD;
+    if (typeof rC === "number") {
+      ko.quarters[3].homeFrom =
+        tournament.teams[rC]?.name || ko.quarters[3].homeFrom;
+    }
+    if (typeof wD === "number") {
+      ko.quarters[3].awayFrom =
+        tournament.teams[wD]?.name || ko.quarters[3].awayFrom;
     }
   }
 
@@ -2025,32 +2090,164 @@ function simulateKOMatch(homeIndex, awayIndex) {
   return { gh, ga, winnerIndex };
 }
 
+function simulateTwoLegTie(homeIndex, awayIndex) {
+  const home = tournament.teams[homeIndex];
+  const away = tournament.teams[awayIndex];
+  if (!home || !away) return null;
+
+  function simulateLeg(hIndex, aIndex) {
+    const h = tournament.teams[hIndex];
+    const a = tournament.teams[aIndex];
+    if (!h || !a) return { gh: 0, ga: 0 };
+
+    const base = 1.4;
+    const diff = (h.rating ?? 75) - (a.rating ?? 75);
+
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+    const homeXG = clamp(base + diff / 25, 0.2, 4.5);
+    const awayXG = clamp(base - diff / 25, 0.2, 4.5);
+
+    const sampleGoals = (lambda) => {
+      let goals = 0;
+      const steps = 8;
+      const p = lambda / steps;
+      for (let i = 0; i < steps; i++) {
+        if (Math.random() < p) goals++;
+      }
+      return goals;
+    };
+
+    const gh = sampleGoals(homeXG);
+    const ga = sampleGoals(awayXG);
+    return { gh, ga };
+  }
+
+  // First leg: homeIndex at home
+  const leg1 = simulateLeg(homeIndex, awayIndex);
+  // Second leg: awayIndex at home
+  const leg2 = simulateLeg(awayIndex, homeIndex);
+
+  const aggHome = leg1.gh + leg2.ga;
+  const aggAway = leg1.ga + leg2.gh;
+
+  let winnerIndex = null;
+  if (aggHome > aggAway) {
+    winnerIndex = homeIndex;
+  } else if (aggAway > aggHome) {
+    winnerIndex = awayIndex;
+  } else {
+    // tie on aggregate -> random winner
+    winnerIndex = Math.random() < 0.5 ? homeIndex : awayIndex;
+  }
+
+  return {
+    leg1,
+    leg2,
+    aggScore: { home: aggHome, away: aggAway },
+    winnerIndex,
+  };
+}
+
+
 // Play both semis + the final and record the champion
 function simulateKnockouts() {
   const ko = tournament.ko;
   if (!ko) return;
 
-  // Semis
-  ko.semis.forEach(m => {
-    if (typeof m.homeIndex !== "number" || typeof m.awayIndex !== "number") return;
-    const res = simulateKOMatch(m.homeIndex, m.awayIndex);
+  // --- Quarter-finals: two-legged ties ---
+  (ko.quarters || []).forEach((tie) => {
+    if (
+      typeof tie.homeIndex !== "number" ||
+      typeof tie.awayIndex !== "number"
+    )
+      return;
+
+    const res = simulateTwoLegTie(tie.homeIndex, tie.awayIndex);
     if (!res) return;
-    m.score = { home: res.gh, away: res.ga };
-    m.winnerIndex = res.winnerIndex;
+
+    tie.legs = [
+      {
+        homeIndex: tie.homeIndex,
+        awayIndex: tie.awayIndex,
+        score: { home: res.leg1.gh, away: res.leg1.ga },
+      },
+      {
+        homeIndex: tie.awayIndex,
+        awayIndex: tie.homeIndex,
+        score: { home: res.leg2.gh, away: res.leg2.ga },
+      },
+    ];
+    tie.aggScore = res.aggScore;
+    tie.winnerIndex = res.winnerIndex;
   });
 
-  const sf1Winner = ko.semis[0]?.winnerIndex;
-  const sf2Winner = ko.semis[1]?.winnerIndex;
+  const qWinners = (ko.quarters || [])
+    .map((t) => t.winnerIndex)
+    .filter((idx) => typeof idx === "number");
 
-  // Final
-  if (typeof sf1Winner === "number" && typeof sf2Winner === "number" && ko.final && ko.final[0]) {
+  // --- Semis: two-legged ties based on QF winners ---
+  if (qWinners.length >= 4) {
+    if (ko.semis[0]) {
+      ko.semis[0].homeIndex = qWinners[0];
+      ko.semis[0].awayIndex = qWinners[1];
+      ko.semis[0].homeFrom =
+        tournament.teams[qWinners[0]]?.name || ko.semis[0].homeFrom;
+      ko.semis[0].awayFrom =
+        tournament.teams[qWinners[1]]?.name || ko.semis[0].awayFrom;
+    }
+    if (ko.semis[1]) {
+      ko.semis[1].homeIndex = qWinners[2];
+      ko.semis[1].awayIndex = qWinners[3];
+      ko.semis[1].homeFrom =
+        tournament.teams[qWinners[2]]?.name || ko.semis[1].homeFrom;
+      ko.semis[1].awayFrom =
+        tournament.teams[qWinners[3]]?.name || ko.semis[1].awayFrom;
+    }
+  }
+
+  // Simulate semis as two-legged ties
+  (ko.semis || []).forEach((tie) => {
+    if (
+      typeof tie.homeIndex !== "number" ||
+      typeof tie.awayIndex !== "number"
+    )
+      return;
+
+    const res = simulateTwoLegTie(tie.homeIndex, tie.awayIndex);
+    if (!res) return;
+
+    tie.legs = [
+      {
+        homeIndex: tie.homeIndex,
+        awayIndex: tie.awayIndex,
+        score: { home: res.leg1.gh, away: res.leg1.ga },
+      },
+      {
+        homeIndex: tie.awayIndex,
+        awayIndex: tie.homeIndex,
+        score: { home: res.leg2.gh, away: res.leg2.ga },
+      },
+    ];
+    tie.aggScore = res.aggScore;
+    tie.winnerIndex = res.winnerIndex;
+  });
+
+  const sfWinners = (ko.semis || [])
+    .map((t) => t.winnerIndex)
+    .filter((idx) => typeof idx === "number");
+
+  // --- Final: single match between SF winners ---
+  if (sfWinners.length >= 2 && ko.final && ko.final[0]) {
     const final = ko.final[0];
-    final.homeIndex = sf1Winner;
-    final.awayIndex = sf2Winner;
-    final.homeFrom = tournament.teams[sf1Winner]?.name || final.homeFrom;
-    final.awayFrom = tournament.teams[sf2Winner]?.name || final.awayFrom;
+    final.homeIndex = sfWinners[0];
+    final.awayIndex = sfWinners[1];
+    final.homeFrom =
+      tournament.teams[sfWinners[0]]?.name || final.homeFrom;
+    final.awayFrom =
+      tournament.teams[sfWinners[1]]?.name || final.awayFrom;
 
-    const resF = simulateKOMatch(sf1Winner, sf2Winner);
+    // reuse your existing simulateKOMatch for a one-off final
+    const resF = simulateKOMatch(sfWinners[0], sfWinners[1]);
     if (resF) {
       final.score = { home: resF.gh, away: resF.ga };
       final.winnerIndex = resF.winnerIndex;
@@ -2058,6 +2255,7 @@ function simulateKnockouts() {
     }
   }
 }
+
 
 function updateTournamentRestartButton() {
   const btn = $("btn-new-tournament");
