@@ -1342,26 +1342,53 @@ function renderTournamentDraftStep() {
       ] || "ST";
   }
 
-  // --- NEW: Build candidates from Supabase pool ---
+  // --- Build candidates from Supabase pool ---
 
   // helper to check if player already taken in this draft
   const isTaken = (p) => draftState.taken.has(keyOf(p));
 
-  // candidates matching the desired position
-  let candidates = tournamentPool.filter(
-    (p) => p.Position === desiredPos && !isTaken(p)
-  );
+  // shuffle helper
+  const localShuffle = (arr) => shuffle([ ...arr ]);
 
-  // shuffle helper (reuse your global shuffle if you like)
-  const localShuffle = (arr) => shuffle([...arr]);
+  let candidates = [];
 
-  candidates = localShuffle(candidates).slice(0, 4);
+  if (!isSubPick) {
+    // ---- XI picks: keep old behaviour (all 4 same required position) ----
+    const poolForPos = tournamentPool.filter(
+      (p) => p.Position === desiredPos && !isTaken(p)
+    );
 
-  // fallback: if we couldn't get any for that position, use any untaken players
-  if (!candidates.length) {
-    const untaken = tournamentPool.filter((p) => !isTaken(p));
-    candidates = localShuffle(untaken).slice(0, 4);
+    candidates = localShuffle(poolForPos).slice(0, 4);
+
+    // fallback: if we couldn't get any for that position, use any untaken players
+    if (!candidates.length) {
+      const untaken = tournamentPool.filter((p) => !isTaken(p));
+      candidates = localShuffle(untaken).slice(0, 4);
+    }
+  } else {
+    // ---- SUB PICKS: mix positions, max 2 per position in this set of 4 ----
+    const untaken = localShuffle(
+      tournamentPool.filter((p) => !isTaken(p))
+    );
+
+    const posCounts = {};
+    for (const p of untaken) {
+      const pos = p.Position;
+      const count = posCounts[pos] || 0;
+      if (count >= 2) continue;        // already have 2 of this position
+
+      candidates.push(p);
+      posCounts[pos] = count + 1;
+
+      if (candidates.length >= 4) break; // stop once we have 4 options
+    }
+
+    // absolute fallback: if something went weird, just take any 4 untaken
+    if (!candidates.length) {
+      candidates = untaken.slice(0, 4);
+    }
   }
+
 
   // Still nothing? Show a message
   if (!candidates.length) {
