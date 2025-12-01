@@ -206,6 +206,44 @@
       </div>
     </section>
 
+<!-- ============ TOURNAMENT PREMATCH PANEL ============ -->
+<div id="tournamentPrematch" class="card hidden">
+  <div class="draft-head">
+    <strong>Pick Your XI</strong>
+    <span id="tournamentMatchVs" class="pill">Your Club vs Opponent</span>
+  </div>
+
+  <div class="row">
+    <label for="tournamentMatchFormation"><strong>Formation for this match</strong></label>
+    <select id="tournamentMatchFormation" class="select">
+      <option>3-4-3</option>
+      <option>3-5-2</option>
+      <option>4-4-2</option>
+      <option>4-1-2-1-2</option>
+      <option>4-2-3-1</option>
+      <option>4-3-3 (Holding)</option>
+      <option>4-3-3 (Flat)</option>
+      <option>4-3-3 (Attack)</option>
+    </select>
+  </div>
+
+  <p class="pill">Select exactly 11 players. They must fit the formation.</p>
+
+  <div id="tournamentPrematchPool" class="player-list">
+    <!-- JS fills squad checkboxes here -->
+  </div>
+
+  <div id="tournamentMatchError" class="pill error"></div>
+
+  <div class="row">
+    <button id="btn-tournament-play-match" class="primary">
+      ▶️ Play this Match
+    </button>
+  </div>
+</div>
+<!-- ============ END PREMATCH PANEL ============ -->
+
+
     <!-- Proper two-column layout -->
     <div class="tournament-layout">
 

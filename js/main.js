@@ -783,7 +783,12 @@ function updateTablesFromFixture(fix) {
 }
 
 // Tiny xG-ish generator based on rating
-function simulateFixtureAtIndex(idx, isUserMatch) {
+function simulateFixtureAtIndex(
+  idx,
+  isUserMatch,
+  overrideHomeRating,
+  overrideAwayRating
+) {
   const fix = tournament.fixtures[idx];
   if (!fix || fix.played) return;
 
@@ -791,14 +796,16 @@ function simulateFixtureAtIndex(idx, isUserMatch) {
   const away = tournament.teams[fix.awayIndex];
   if (!home || !away) return;
 
-  const homeRating = home.rating ?? 75;
-  const awayRating = away.rating ?? 75;
+  // If overrides are provided (for the user's XI), use them
+  const homeRating =
+    overrideHomeRating != null ? overrideHomeRating : (home.rating ?? 75);
+  const awayRating =
+    overrideAwayRating != null ? overrideAwayRating : (away.rating ?? 75);
 
   const base = 1.4;
   const diff = homeRating - awayRating;
 
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-
   const homeXG = clamp(base + diff / 25, 0.2, 4.5);
   const awayXG = clamp(base - diff / 25, 0.2, 4.5);
 
@@ -851,7 +858,185 @@ function showNextMatchPanel() {
   label.textContent = getFixtureLabel(fix);
 }
 
-// Called when user clicks "Pick XI & Play Next" (for now: auto-sim)
+// Show the prematch panel for the current tournament fixture
+function showTournamentPrematch() {
+  const panel = $("tournamentPrematch");
+  const poolEl = $("tournamentPrematchPool");
+  const formationSelect = $("tournamentMatchFormation");
+  const errorEl = $("tournamentMatchError");
+  const vsLabel = $("tournamentMatchVs");
+
+  if (!panel || !poolEl || !formationSelect) {
+    console.warn("Tournament prematch elements missing.");
+    return;
+  }
+
+  if (errorEl) errorEl.textContent = "";
+
+  const idx = tournament.currentMatchIndex;
+  const fix =
+    idx != null && idx >= 0 ? tournament.fixtures[idx] : null;
+
+  const userTeam = tournament.teams[tournament.userTeamIndex];
+  const squad = userTeam?.squad || [];
+
+  // Show "You vs Opponent"
+  if (fix && userTeam && vsLabel) {
+    const isHome = fix.homeIndex === tournament.userTeamIndex;
+    const oppTeam =
+      tournament.teams[isHome ? fix.awayIndex : fix.homeIndex];
+    vsLabel.textContent = `${userTeam.name} vs ${
+      oppTeam?.name || "Opponent"
+    }`;
+  }
+
+  // Build checkbox list of your 15-man squad
+  poolEl.innerHTML = squad
+    .map(
+      (p, i) => `
+      <label class="player-row">
+        <input 
+          type="checkbox"
+          class="tournament-xi-checkbox"
+          data-idx="${i}"
+        />
+        <span class="name">${p.Name}</span>
+        <span class="pos">${p.Position}</span>
+        <span class="rating">${p.Rating}</span>
+      </label>
+    `
+    )
+    .join("");
+
+  // Default formation: last used, otherwise the one chosen at tournament start
+  const defaultFormation =
+    (tournament.previousXI && tournament.previousXI.formation) ||
+    tournament.userFormation ||
+    "4-3-3 (Holding)";
+
+  const options = Array.from(formationSelect.options).map(o => o.value);
+  if (options.includes(defaultFormation)) {
+    formationSelect.value = defaultFormation;
+  }
+
+  // If we have a previous XI, pre-tick those players
+  if (tournament.previousXI && Array.isArray(tournament.previousXI.keys)) {
+    const prevKeys = new Set(tournament.previousXI.keys);
+    squad.forEach((p, i) => {
+      if (prevKeys.has(keyOf(p))) {
+        const input = poolEl.querySelector(
+          `input.tournament-xi-checkbox[data-idx="${i}"]`
+        );
+        if (input) input.checked = true;
+      }
+    });
+  }
+
+  // Show prematch panel, hide simple "Next match" card while picking
+  panel.classList.remove("hidden");
+  const nextPanel = $("tournamentNextMatch");
+  if (nextPanel) nextPanel.classList.add("hidden");
+}
+
+function getTournamentChosenXI() {
+  const userTeam = tournament.teams[tournament.userTeamIndex];
+  const squad = userTeam?.squad || [];
+  const panel = $("tournamentPrematch");
+  if (!panel) return null;
+
+  const checks = Array.from(
+    panel.querySelectorAll('input.tournament-xi-checkbox:checked')
+  );
+  const indices = checks.map(c => Number(c.dataset.idx));
+
+  if (indices.length !== 11) return null;
+
+  return indices
+    .map(i => squad[i])
+    .filter(Boolean);
+}
+
+function playTournamentMatch() {
+  const errorEl = $("tournamentMatchError");
+  if (errorEl) errorEl.textContent = "";
+
+  const chosen = getTournamentChosenXI();
+  if (!chosen) {
+    if (errorEl) {
+      errorEl.textContent = "Select exactly 11 players for your XI.";
+    } else {
+      alert("Select exactly 11 players for your XI.");
+    }
+    return;
+  }
+
+  const formationSelect = $("tournamentMatchFormation");
+  const formationKey =
+    formationSelect?.value ||
+    tournament.userFormation ||
+    "4-3-3 (Holding)";
+
+  // Enforce formation using the same logic as Series mode
+  const yourAssigned = assignToFormation(chosen, formationKey);
+  if (!yourAssigned) {
+    const msg = `Your 11 don't fit ${formationKey}. Try a different combination or formation.`;
+    if (errorEl) errorEl.textContent = msg;
+    else alert(msg);
+    return;
+  }
+
+  const idx = tournament.currentMatchIndex;
+  if (idx == null || idx < 0 || !tournament.fixtures[idx]) {
+    console.warn("No current tournament fixture to play.");
+    return;
+  }
+
+  const fix = tournament.fixtures[idx];
+  const isHome = fix.homeIndex === tournament.userTeamIndex;
+  const oppIndex = isHome ? fix.awayIndex : fix.homeIndex;
+  const oppTeam = tournament.teams[oppIndex];
+
+  // Average rating of your XI vs AI team rating
+  const userAvgRating = yourAssigned.length
+    ? Math.round(
+        yourAssigned.reduce(
+          (sum, p) => sum + (Number(p.Rating) || 0),
+          0
+        ) / yourAssigned.length
+      )
+    : (tournament.teams[tournament.userTeamIndex].rating ?? 75);
+
+  const oppRating = oppTeam?.rating ?? 75;
+
+  const homeOverride = isHome ? userAvgRating : oppRating;
+  const awayOverride = isHome ? oppRating : userAvgRating;
+
+  // Remember last XI so you can basically “use same team as last game”
+  tournament.previousXI = {
+    formation: formationKey,
+    keys: yourAssigned.map(p => keyOf(p)),
+  };
+  tournament.userFormation = formationKey;
+
+  // Actually simulate this match
+  simulateFixtureAtIndex(idx, true, homeOverride, awayOverride);
+
+  // Hide prematch panel and bring back the standard tournament view
+  const prematchPanel = $("tournamentPrematch");
+  if (prematchPanel) prematchPanel.classList.add("hidden");
+
+  renderTournament();
+  showNextMatchPanel();
+
+  // If that was your last group game, move into KO/finish
+  const another = getNextUserFixtureIndex();
+  if (another === -1) {
+    finishTournamentFromGroups();
+  }
+}
+
+
+// Called when user clicks "Next tournament match" → opens prematch
 function playNextGroupMatch() {
   const nextIdx = getNextUserFixtureIndex();
   if (nextIdx === -1) {
@@ -870,18 +1055,11 @@ function playNextGroupMatch() {
     }
   }
 
-  // Now play your own match
-  simulateFixtureAtIndex(nextIdx, true);
+  // Store which fixture this prematch is for
+  tournament.currentMatchIndex = nextIdx;
 
-  // Re-render and update the panel for the next match (if any)
-  renderTournament();
-  showNextMatchPanel();
-
-  // If you have no more group matches, finish the tournament
-  const another = getNextUserFixtureIndex();
-  if (another === -1) {
-    finishTournamentFromGroups();
-  }
+  // Open the prematch XI/formation picker for this game
+  showTournamentPrematch();
 }
 
 
@@ -1766,6 +1944,11 @@ $("btn-tournament-play-next")?.addEventListener("click", () => {
   $("btn-new-tournament")?.addEventListener("click", () => {
     initTournament();
   });
+
+/* ---------------- Tournament Prematch "Play" Button ---------------- */
+$("btn-tournament-play-match")?.addEventListener("click", () => {
+  playTournamentMatch();
+});
 
   /* ---------------- Initial Home Page Render ---------------- */
   generate(false);
