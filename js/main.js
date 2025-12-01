@@ -38,18 +38,29 @@ let tournamentTeams = [];      // user + 15 AI teams
 
 async function loadTournamentPoolFromSupabase() {
   try {
-   const { data, error } = await supabase
-  .from("players")
-  .select("*");
+    const { data, error } = await supabase
+      .from("players")
+      .select("*")
+      .gte("Rating", 80)          // 👈 only players 80+
+      .lte("Rating", 99)          // 👈 and max 99
+      .order("Rating", { ascending: false }); // 👈 highest first
 
     if (error) {
       console.error("Supabase load error:", error);
       return [];
     }
 
-    tournamentPool = (data || []).sort((a, b) => b.Rating - a.Rating);
+    // Still sort + normalise rating as number just in case
+    tournamentPool = (data || []).sort(
+      (a, b) => Number(b.Rating) - Number(a.Rating)
+    );
 
     console.log("🎯 Loaded Supabase tournament pool:", tournamentPool.length);
+    console.log(
+      "Top 5 ratings in pool:",
+      tournamentPool.slice(0, 5).map(p => p.Rating)
+    );
+
     return tournamentPool;
 
   } catch (err) {
