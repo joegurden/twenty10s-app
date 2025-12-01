@@ -782,12 +782,14 @@ function updateTablesFromFixture(fix) {
   }
 }
 
-// Tiny xG-ish generator based on rating
+// Tiny xG-ish generator based on rating + create scorers
 function simulateFixtureAtIndex(
   idx,
   isUserMatch,
   overrideHomeRating,
-  overrideAwayRating
+  overrideAwayRating,
+  homeLineup,
+  awayLineup
 ) {
   const fix = tournament.fixtures[idx];
   if (!fix || fix.played) return;
@@ -825,6 +827,40 @@ function simulateFixtureAtIndex(
   fix.played = true;
   fix.score = { home: gh, away: ga };
 
+  // --- NEW: build scorers for both sides ---
+  const homeSquad = homeLineup && homeLineup.length ? homeLineup : (home.squad || []);
+  const awaySquad = awayLineup && awayLineup.length ? awayLineup : (away.squad || []);
+
+  function randomFrom(list, fallbackName) {
+    if (!list || !list.length) {
+      return { Name: fallbackName };
+    }
+    return list[Math.floor(Math.random() * list.length)];
+  }
+
+  function buildScorers(goals, squad, fallbackName) {
+    const events = [];
+    for (let i = 0; i < goals; i++) {
+      const minute = 1 + Math.floor(Math.random() * 90);
+      const p = randomFrom(squad, fallbackName);
+      events.push({
+        name: p.Name || p.name || fallbackName,
+        minute,
+      });
+    }
+    // sort by minute so it looks like a real timeline
+    events.sort((a, b) => a.minute - b.minute);
+    return events;
+  }
+
+  const homeScorers = buildScorers(gh, homeSquad, "Home Player");
+  const awayScorers = buildScorers(ga, awaySquad, "Away Player");
+
+  fix.scorers = {
+    home: homeScorers,
+    away: awayScorers,
+  };
+
   updateTablesFromFixture(fix);
 
   if (isUserMatch) {
@@ -834,8 +870,18 @@ function simulateFixtureAtIndex(
     const yourTeam = tournament.teams[tournament.userTeamIndex];
     const oppTeam = tournament.teams[isHome ? fix.awayIndex : fix.homeIndex];
 
+    const yourScorers = (isHome ? homeScorers : awayScorers)
+      .map(g => `${g.name} (${g.minute}')`)
+      .join(", ") || "None";
+
+    const oppScorers = (isHome ? awayScorers : homeScorers)
+      .map(g => `${g.name} (${g.minute}')`)
+      .join(", ") || "None";
+
     alert(
-      `Result: ${yourTeam.name} ${yourGoals}–${oppGoals} ${oppTeam.name}`
+      `Result: ${yourTeam.name} ${yourGoals}–${oppGoals} ${oppTeam.name}\n\n` +
+      `${yourTeam.name} scorers: ${yourScorers}\n` +
+      `${oppTeam.name} scorers: ${oppScorers}`
     );
   }
 }
@@ -938,6 +984,37 @@ function showTournamentPrematch() {
   if (nextPanel) nextPanel.classList.add("hidden");
 }
 
+function applyPreviousTournamentXI() {
+  const userTeam = tournament.teams[tournament.userTeamIndex];
+  const squad = userTeam?.squad || [];
+  const panel = $("tournamentPrematch");
+  const poolEl = $("tournamentPrematchPool");
+  const formationSelect = $("tournamentMatchFormation");
+
+  if (!panel || !poolEl || !tournament.previousXI) return;
+
+  const prevKeys = new Set(tournament.previousXI.keys || []);
+
+  // Clear all checks first
+  const allChecks = poolEl.querySelectorAll("input.tournament-xi-checkbox");
+  allChecks.forEach(c => (c.checked = false));
+
+  // Re-check the previous XI
+  squad.forEach((p, i) => {
+    if (prevKeys.has(keyOf(p))) {
+      const input = poolEl.querySelector(
+        `input.tournament-xi-checkbox[data-idx="${i}"]`
+      );
+      if (input) input.checked = true;
+    }
+  });
+
+  // Restore previous formation
+  if (formationSelect && tournament.previousXI.formation) {
+    formationSelect.value = tournament.previousXI.formation;
+  }
+}
+
 function getTournamentChosenXI() {
   const userTeam = tournament.teams[tournament.userTeamIndex];
   const squad = userTeam?.squad || [];
@@ -1018,8 +1095,19 @@ function playTournamentMatch() {
   };
   tournament.userFormation = formationKey;
 
-  // Actually simulate this match
-  simulateFixtureAtIndex(idx, true, homeOverride, awayOverride);
+  // Work out lineups for both sides for scorer generation
+  const homeLineup = isHome ? yourAssigned : (oppTeam.squad || []);
+  const awayLineup = isHome ? (oppTeam.squad || []) : yourAssigned;
+
+  // Actually simulate this match with overrides + lineups
+  simulateFixtureAtIndex(
+    idx,
+    true,
+    homeOverride,
+    awayOverride,
+    homeLineup,
+    awayLineup
+  );
 
   // Hide prematch panel and bring back the standard tournament view
   const prematchPanel = $("tournamentPrematch");
@@ -1976,6 +2064,11 @@ $("btn-tournament-play-next")?.addEventListener("click", () => {
 $("btn-tournament-play-match")?.addEventListener("click", () => {
   playTournamentMatch();
 });
+
+$("btn-tournament-use-last-xi")?.addEventListener("click", () => {
+  applyPreviousTournamentXI();
+});
+
 
   /* ---------------- Initial Home Page Render ---------------- */
   generate(false);
