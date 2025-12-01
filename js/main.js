@@ -1621,7 +1621,50 @@ function renderTournament(tables, ko) {
 
   const bracket = ko || tournament.ko || { semis: [], final: [] };
 
-  const koSemis = (bracket.semis || [])
+  // --- Build semi-final matches as bracket boxes ---
+  const koSemisHtml = (bracket.semis || [])
+    .map((m, idx) => {
+      let homeLabel = m.homeFrom;
+      let awayLabel = m.awayFrom;
+
+      if (typeof m.homeIndex === "number") {
+        homeLabel = tournament.teams[m.homeIndex]?.name || homeLabel;
+      }
+      if (typeof m.awayIndex === "number") {
+        awayLabel = tournament.teams[m.awayIndex]?.name || awayLabel;
+      }
+
+      const hasScore = m.score && typeof m.score.home === "number";
+      const scoreStr = hasScore
+        ? `${m.score.home}–${m.score.away}`
+        : "vs";
+
+      const winnerIndex =
+        typeof m.winnerIndex === "number" ? m.winnerIndex : null;
+      const homeWinner =
+        winnerIndex != null && winnerIndex === m.homeIndex;
+      const awayWinner =
+        winnerIndex != null && winnerIndex === m.awayIndex;
+
+      return `
+        <div class="bracket-match">
+          <div class="bracket-match-header">SF${idx + 1}</div>
+          <div class="bracket-team ${homeWinner ? "winner" : ""}">
+            <span class="team-name">${homeLabel}</span>
+            <span class="team-score">${hasScore ? m.score.home : ""}</span>
+          </div>
+          <div class="bracket-team ${awayWinner ? "winner" : ""}">
+            <span class="team-name">${awayLabel}</span>
+            <span class="team-score">${hasScore ? m.score.away : ""}</span>
+          </div>
+          <div class="bracket-score-line">${scoreStr}</div>
+        </div>
+      `;
+    })
+    .join("");
+
+  // --- Final box ---
+  const koFinalHtml = (bracket.final || [])
     .map((m) => {
       let homeLabel = m.homeFrom;
       let awayLabel = m.awayFrom;
@@ -1633,51 +1676,62 @@ function renderTournament(tables, ko) {
         awayLabel = tournament.teams[m.awayIndex]?.name || awayLabel;
       }
 
-      let scoreStr = "";
-      if (m.score) {
-        scoreStr = ` (${m.score.home}–${m.score.away})`;
-      }
+      const hasScore = m.score && typeof m.score.home === "number";
+      const scoreStr = hasScore
+        ? `${m.score.home}–${m.score.away}`
+        : "vs";
 
-      return `<li>${homeLabel} vs ${awayLabel}${scoreStr}</li>`;
+      const winnerIndex =
+        typeof m.winnerIndex === "number" ? m.winnerIndex : null;
+      const homeWinner =
+        winnerIndex != null && winnerIndex === m.homeIndex;
+      const awayWinner =
+        winnerIndex != null && winnerIndex === m.awayIndex;
+
+      return `
+        <div class="bracket-match final">
+          <div class="bracket-match-header">Final</div>
+          <div class="bracket-team ${homeWinner ? "winner" : ""}">
+            <span class="team-name">${homeLabel}</span>
+            <span class="team-score">${hasScore ? m.score.home : ""}</span>
+          </div>
+          <div class="bracket-team ${awayWinner ? "winner" : ""}">
+            <span class="team-name">${awayLabel}</span>
+            <span class="team-score">${hasScore ? m.score.away : ""}</span>
+          </div>
+          <div class="bracket-score-line">${scoreStr}</div>
+        </div>
+      `;
     })
     .join("");
 
-  const koFinalList = (bracket.final || [])
-    .map((m) => {
-      let homeLabel = m.homeFrom;
-      let awayLabel = m.awayFrom;
-
-      if (typeof m.homeIndex === "number") {
-        homeLabel = tournament.teams[m.homeIndex]?.name || homeLabel;
-      }
-      if (typeof m.awayIndex === "number") {
-        awayLabel = tournament.teams[m.awayIndex]?.name || awayLabel;
-      }
-
-      let scoreStr = "";
-      if (m.score) {
-        scoreStr = ` (${m.score.home}–${m.score.away})`;
-      }
-
-      return `<li>${homeLabel} vs ${awayLabel}${scoreStr}</li>`;
-    })
-    .join("");
-
+  // --- Champion display ---
   let championHtml = "";
   if (typeof tournament.championIndex === "number") {
     const champName =
       tournament.teams[tournament.championIndex]?.name || "Unknown";
-    championHtml = `<p><strong>Champion: ${champName}</strong></p>`;
+    championHtml = `
+      <div class="bracket-champion">
+        <div class="bracket-match-header">Champion</div>
+        <div class="champion-name">${champName}</div>
+      </div>
+    `;
   }
 
   const koHtml = `
     <div class="card mini">
-      <div class="draft-head"><strong>Knockouts</strong></div>
-      <h4>Semi-finals</h4>
-      <ul>${koSemis}</ul>
-      <h4>Final</h4>
-      <ul>${koFinalList}</ul>
-      ${championHtml}
+      <div class="draft-head"><strong>Knockout Bracket</strong></div>
+      <div class="bracket">
+        <div class="bracket-column">
+          <h4>Semi-finals</h4>
+          ${koSemisHtml || '<p class="pill">Semi-finals not set yet.</p>'}
+        </div>
+        <div class="bracket-column">
+          <h4>Final & Champion</h4>
+          ${koFinalHtml || '<p class="pill">Final not set yet.</p>'}
+          ${championHtml}
+        </div>
+      </div>
     </div>
   `;
 
