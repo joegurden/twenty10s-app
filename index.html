@@ -247,11 +247,29 @@
 <!-- ============ END PREMATCH PANEL ============ -->
 
 
-    <!-- Proper two-column layout -->
-    <div class="tournament-layout">
+ <!-- Proper two-column layout -->
+<div class="tournament-layout">
 
-<!-- LEFT SIDE: Groups + Knockouts -->
-<div id="tournamentOutput" class="pool">
+  <!-- LEFT SIDE: Groups + Knockouts -->
+  <div id="tournamentOutput" class="pool">
+    <div class="pill">Click “Run Full Tournament” to generate a tournament.</div>
+  </div>
+
+  <!-- RIGHT SIDE: Team Detail -->
+  <aside id="tournamentTeamDetail" class="card mini hidden">
+    <div class="draft-head">
+      <div>
+        <strong id="tournamentTeamDetailName">Team</strong>
+        <span id="tournamentTeamDetailMeta" class="pill"></span>
+      </div>
+      <button id="btn-close-team-detail" class="secondary small">✕</button>
+    </div>
+
+    <div id="tournamentTeamDetailBody"></div>
+  </aside>
+
+</div> <!-- end .tournament-layout -->
+
   <div class="pill">Click “Run Full Tournament” to generate a tournament.</div>
 </div>
 

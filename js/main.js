@@ -1568,20 +1568,29 @@ function renderTournament(tables, ko) {
           const isUser =
             row.teamIndex === tournament.userTeamIndex;
 
-          return `
-          <tr${isUser ? ' class="highlight-row"' : ""}>
-            <td>${idx + 1}</td>
-            <td>${name}</td>
-            <td>${row.played}</td>
-            <td>${row.won}</td>
-            <td>${row.drawn}</td>
-            <td>${row.lost}</td>
-            <td>${row.gf}</td>
-            <td>${row.ga}</td>
-            <td>${row.gd}</td>
-            <td>${row.points}</td>
-          </tr>
-        `;
+ return `
+  <tr${isUser ? ' class="highlight-row"' : ""}>
+    <td>${idx + 1}</td>
+    <td>
+      <button
+        type="button"
+        class="table-team-link"
+        data-team-index="${row.teamIndex}"
+      >
+        ${name}
+      </button>
+    </td>
+    <td>${row.played}</td>
+    <td>${row.won}</td>
+    <td>${row.drawn}</td>
+    <td>${row.lost}</td>
+    <td>${row.gf}</td>
+    <td>${row.ga}</td>
+    <td>${row.gd}</td>
+    <td>${row.points}</td>
+  </tr>
+`;
+
         })
         .join("");
 
@@ -1678,6 +1687,132 @@ function renderTournament(tables, ko) {
     ${koHtml}
   `;
 }
+
+// Decide which formation a team uses in tournament view
+function getTeamFormation(team) {
+  const keys = Object.keys(FORMATION_POSITIONS);
+
+  // User team: stick to the tournament user formation
+  if (team.isUser) {
+    return tournament.userFormation || "4-3-3 (Holding)";
+  }
+
+  // If AI already has a formation and it's valid, use it
+  if (team.formation && FORMATION_POSITIONS[team.formation]) {
+    return team.formation;
+  }
+
+  // Otherwise, assign a random formation from the available ones
+  const randomKey = keys[Math.floor(Math.random() * keys.length)];
+  team.formation = randomKey;
+  return randomKey;
+}
+
+// Build "best XI" and subs for a squad & formation
+function pickBestXIFromSquad(squad, formationKey) {
+  const slots =
+    FORMATION_POSITIONS[formationKey] ||
+    FORMATION_POSITIONS["4-3-3 (Holding)"];
+
+  // Sort whole squad by rating (highest first)
+  const remaining = [...(squad || [])].sort(
+    (a, b) => (Number(b.Rating) || 0) - (Number(a.Rating) || 0)
+  );
+
+  const xi = [];
+  const used = new Set();
+
+  for (const desiredPos of slots) {
+    // 1) Best player in exact position
+    let idx = remaining.findIndex(
+      (p) => p.Position === desiredPos && !used.has(keyOf(p))
+    );
+
+    // 2) Fallback: best remaining player at all
+    if (idx === -1) {
+      idx = remaining.findIndex((p) => !used.has(keyOf(p)));
+    }
+
+    if (idx === -1) continue; // squad too small, just skip
+
+    const player = remaining[idx];
+    xi.push(player);
+    used.add(keyOf(player));
+    remaining.splice(idx, 1);
+  }
+
+  // Rest are subs (still in rating order)
+  const subs = remaining;
+
+  return { xi, subs };
+}
+
+// Render a clicked team into the right-hand detail card
+function showTournamentTeamDetail(teamIndex) {
+  const panel = $("tournamentTeamDetail");
+  const nameEl = $("tournamentTeamDetailName");
+  const metaEl = $("tournamentTeamDetailMeta");
+  const bodyEl = $("tournamentTeamDetailBody");
+
+  if (!panel || !nameEl || !metaEl || !bodyEl) return;
+
+  const team = tournament.teams[teamIndex];
+  if (!team) return;
+
+  const formation = getTeamFormation(team);
+  const { xi, subs } = pickBestXIFromSquad(team.squad || [], formation);
+
+  const squadRating =
+    typeof team.rating === "number"
+      ? team.rating
+      : Math.round(
+          (team.squad || []).reduce(
+            (sum, p) => sum + (Number(p.Rating) || 0),
+            0
+          ) / Math.max(1, (team.squad || []).length)
+        );
+
+  nameEl.textContent = team.name || `Team ${teamIndex + 1}`;
+  metaEl.textContent = `Formation: ${formation} · Squad rating: ${squadRating}`;
+
+  const xiHtml = (xi || [])
+    .map(
+      (p) => `
+      <li>
+        <span class="pos">${p.Position}</span>
+        <span class="name">${p.Name}</span>
+        <span class="rating">${p.Rating}</span>
+      </li>
+    `
+    )
+    .join("");
+
+  const subsHtml = (subs || [])
+    .map(
+      (p) => `
+      <li class="sub-row">
+        <span class="pos">${p.Position}</span>
+        <span class="name">${p.Name}</span>
+        <span class="rating">${p.Rating}</span>
+      </li>
+    `
+    )
+    .join("");
+
+  bodyEl.innerHTML = `
+    <h4>Best XI</h4>
+    <ul class="mini-list">
+      ${xiHtml || "<li>No players in squad.</li>"}
+    </ul>
+    <h4>Subs</h4>
+    <ul class="mini-list">
+      ${subsHtml || "<li>No subs.</li>"}
+    </ul>
+  `;
+
+  panel.classList.remove("hidden");
+}
+
 
 // Build empty group tables (all 0s) based on the drawn groups
 function createEmptyTables() {
@@ -2068,6 +2203,25 @@ $("btn-tournament-play-match")?.addEventListener("click", () => {
 $("btn-tournament-use-last-xi")?.addEventListener("click", () => {
   applyPreviousTournamentXI();
 });
+
+  /* ---------------- Tournament Team Detail: close button ---------------- */
+  $("btn-close-team-detail")?.addEventListener("click", () => {
+    $("tournamentTeamDetail")?.classList.add("hidden");
+  });
+
+  /* ---------------- Tournament Team Detail: click team in table ---------------- */
+  $("tournamentOutput")?.addEventListener("click", (evt) => {
+    const target = evt.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    const link = target.closest(".table-team-link");
+    if (!link) return;
+
+    const idx = Number(link.dataset.teamIndex);
+    if (!Number.isFinite(idx)) return;
+
+    showTournamentTeamDetail(idx);
+  });
 
 
   /* ---------------- Initial Home Page Render ---------------- */
