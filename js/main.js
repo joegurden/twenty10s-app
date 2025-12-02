@@ -859,48 +859,6 @@ function scorerWeight(player, ctx) {
   return base * starBoost * jitter;
 }
 
-function pickScorer(players) {
-  if (!players || !players.length) return null;
-
-  const ctx = buildLineRatingContext(players);
-
-  // Tiny "miracle GK goal" chance (but extremely rare now)
-  const gks = players.filter((p) => getLineForPos(p.Position) === "gk");
-  if (gks.length && Math.random() < 1 / 5000) {
-    return gks[Math.floor(Math.random() * gks.length)];
-  }
-
-  // Everyone else: weighted by line + rating
-  const weights = players.map((p) => scorerWeight(p, ctx));
-  const total = weights.reduce((a, b) => a + b, 0) || 1;
-
-  let r = Math.random() * total;
-  for (let i = 0; i < players.length; i++) {
-    r -= weights[i];
-    if (r <= 0) return players[i];
-  }
-  return players[players.length - 1];
-}
-
-// Turn a goal count into scorer + minute events
-function simulateGoalsForTeam(players, goals) {
-  const events = [];
-  if (!players || !players.length || !goals) return events;
-
-  for (let i = 0; i < goals; i++) {
-    const minute = 1 + Math.floor(Math.random() * 95);
-    const scorer = pickScorer(players);
-    events.push({
-      minute,
-      scorer,
-    });
-  }
-
-  // chronological order
-  events.sort((a, b) => a.minute - b.minute);
-  return events;
-}
-
 // Tiny xG-ish generator based on rating + line-aware scorers
 function simulateFixtureAtIndex(
   idx,
