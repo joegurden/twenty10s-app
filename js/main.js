@@ -996,7 +996,6 @@ function simulateFixtureAtIndex(
       `${oppTeam.name} scorers: ${oppScorers}`
     );
   }
-}
 
 // Show / hide the "Next Group Match" card
 function showNextMatchPanel() {
