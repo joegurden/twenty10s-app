@@ -306,37 +306,6 @@ function showPage(pageId){
   }
 }
 
-/* --- GOAL SCORER WEIGHTS & SELECTION --- */
-
-// Base scoring weight by line
-function baseLineWeight(line) {
-  if (line === "gk") return 0.01;
-  if (line === "def") return 0.4;
-  if (line === "mid") return 1.0;
-  if (line === "att") return 2.5;
-  return 1.0;
-}
-
-// Rating-aware scoring weight for a single player
-function scorerWeight(player, ctx) {
-  const line = getLineForPos(player.Position);
-  const base = baseLineWeight(line);
-
-  const rating = Number(player.Rating) || ctx.teamAvg || 70;
-  const lineAvg = ctx.lineAvg[line] || ctx.teamAvg || 70;
-
-  // How good is this player compared to their line?
-  const rel = lineAvg > 0 ? rating / lineAvg : 1;
-
-  // Exponent > 1 makes stars stand out more
-  const starBoost = Math.pow(rel, 1.4); // e.g. 90 vs 75 ≈ 1.25x
-
-  // Small random jitter so it’s not deterministic
-  const jitter = 0.8 + Math.random() * 0.4; // 0.8–1.2
-
-  return base * starBoost * jitter;
-}
-
 function pickScorer(players) {
   if (!players || !players.length) return null;
 
