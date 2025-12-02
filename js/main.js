@@ -308,54 +308,77 @@ function showPage(pageId){
 
 /* --- GOAL SCORER WEIGHTS & SELECTION --- */
 
-function scorerWeightByPosition(pos){
-  if (pos === "GK") return 0.01;     // keepers almost never score
-
-  if (pos === "ST" || pos === "CF") return 5;       // strikers
-  if (pos === "RW" || pos === "LW") return 4;       // wide forwards
-  if (pos === "CAM")               return 3.5;
-  if (pos === "CM" || pos === "RM" || pos === "LM" || pos === "CDM") return 2;
-  if (pos === "RWB" || pos === "LWB") return 1.5;
-  if (pos === "RB" || pos === "LB" || pos === "CB") return 1;
-
-  return 2;
+// Base scoring weight by line
+function baseLineWeight(line) {
+  if (line === "gk") return 0.01;
+  if (line === "def") return 0.4;
+  if (line === "mid") return 1.0;
+  if (line === "att") return 2.5;
+  return 1.0;
 }
 
-function pickScorer(players){
-  if (!players.length) return null;
+// Rating-aware scoring weight for a single player
+function scorerWeight(player, ctx) {
+  const line = getLineForPos(player.Position);
+  const base = baseLineWeight(line);
 
-  // Miracle GK goal (1 in 1000)
-  if (Math.random() < 1/1000){
-    const gk = players.find(p => p.Position === "GK");
-    if (gk) return gk;
+  const rating = Number(player.Rating) || ctx.teamAvg || 70;
+  const lineAvg = ctx.lineAvg[line] || ctx.teamAvg || 70;
+
+  // How good is this player compared to their line?
+  const rel = lineAvg > 0 ? rating / lineAvg : 1;
+
+  // Exponent > 1 makes stars stand out more
+  const starBoost = Math.pow(rel, 1.4); // e.g. 90 vs 75 ≈ 1.25x
+
+  // Small random jitter so it’s not deterministic
+  const jitter = 0.8 + Math.random() * 0.4; // 0.8–1.2
+
+  return base * starBoost * jitter;
+}
+
+function pickScorer(players) {
+  if (!players || !players.length) return null;
+
+  const ctx = buildLineRatingContext(players);
+
+  // Tiny "miracle GK goal" chance (but essentially never)
+  const gks = players.filter((p) => getLineForPos(p.Position) === "gk");
+  if (gks.length && Math.random() < 1 / 5000) {
+    return gks[Math.floor(Math.random() * gks.length)];
   }
 
-  const weights = players.map(p => {
-    const w = scorerWeightByPosition(p.Position);
-    const jitter = 0.5 + Math.random() * 0.5;
-    return w * jitter;
-  });
+  // Everyone else: weighted by line + rating
+  const weights = players.map((p) => scorerWeight(p, ctx));
+  const total = weights.reduce((a, b) => a + b, 0) || 1;
 
-  const total = weights.reduce((a,b)=>a+b,0);
   let r = Math.random() * total;
-
-  for (let i = 0; i < players.length; i++){
+  for (let i = 0; i < players.length; i++) {
     r -= weights[i];
     if (r <= 0) return players[i];
   }
   return players[players.length - 1];
 }
 
-function simulateGoalsForTeam(players, goals){
+// Turn a goal count into scorer + minute events
+function simulateGoalsForTeam(players, goals) {
   const events = [];
-  for (let i = 0; i < goals; i++){
-    const minute = 1 + Math.floor(Math.random() * 95); // realistic minutes
+  if (!players || !players.length || !goals) return events;
+
+  for (let i = 0; i < goals; i++) {
+    const minute = 1 + Math.floor(Math.random() * 95);
     const scorer = pickScorer(players);
-    events.push({ minute, scorer });
+    events.push({
+      minute,
+      scorer,
+    });
   }
-  events.sort((a,b)=>a.minute - b.minute);
+
+  // chronological order
+  events.sort((a, b) => a.minute - b.minute);
   return events;
 }
+
 
 /* ---------------- Draft helpers ---------------- */
 async function buildGlobalPool(){
@@ -783,6 +806,133 @@ function updateTablesFromFixture(fix) {
 }
 
 // Tiny xG-ish generator based on rating + create scorers
+
+// ---------- Scorer helpers: line + rating aware ----------
+
+// Classify a player's line (for scoring logic)
+function getLineForPos(pos) {
+  if (!pos) return "mid";
+  const p = String(pos).toUpperCase();
+
+  if (p === "GK") return "gk";
+
+  if (["CB", "LCB", "RCB", "LB", "RB", "LWB", "RWB"].includes(p)) {
+    return "def";
+  }
+
+  if (
+    ["CDM", "CM", "LCM", "RCM", "LDM", "RDM", "LM", "RM", "CAM"].includes(p)
+  ) {
+    return "mid";
+  }
+
+  if (["LW", "RW", "LF", "RF", "CF", "ST"].includes(p)) {
+    return "att";
+  }
+
+  // default any weird ones to midfield
+  return "mid";
+}
+
+// Compute team + line average ratings for an XI
+function buildLineRatingContext(players) {
+  const sums = { gk: 0, def: 0, mid: 0, att: 0 };
+  const counts = { gk: 0, def: 0, mid: 0, att: 0 };
+
+  let teamSum = 0;
+  let teamCount = 0;
+
+  for (const p of players || []) {
+    const r = Number(p.Rating) || 0;
+    const line = getLineForPos(p.Position);
+    sums[line] += r;
+    counts[line] += 1;
+    teamSum += r;
+    teamCount += 1;
+  }
+
+  const lineAvg = {};
+  for (const key of ["gk", "def", "mid", "att"]) {
+    lineAvg[key] = counts[key] ? sums[key] / counts[key] : null;
+  }
+
+  const teamAvg = teamCount ? teamSum / teamCount : 0;
+
+  return { lineAvg, teamAvg };
+}
+
+// Base scoring weight by line
+function baseLineWeight(line) {
+  if (line === "gk") return 0.01;
+  if (line === "def") return 0.4;
+  if (line === "mid") return 1.0;
+  if (line === "att") return 2.5;
+  return 1.0;
+}
+
+// Rating-aware scoring weight for a single player
+function scorerWeight(player, ctx) {
+  const line = getLineForPos(player.Position);
+  const base = baseLineWeight(line);
+
+  const rating = Number(player.Rating) || ctx.teamAvg || 70;
+  const lineAvg = ctx.lineAvg[line] || ctx.teamAvg || 70;
+
+  // How good is this player compared to their line?
+  const rel = lineAvg > 0 ? rating / lineAvg : 1;
+
+  // Exponent > 1 makes stars stand out more
+  const starBoost = Math.pow(rel, 1.4); // 90 vs 75 ≈ 1.25x-ish
+
+  // Small random jitter so it’s not always the exact same guy
+  const jitter = 0.8 + Math.random() * 0.4; // 0.8–1.2
+
+  return base * starBoost * jitter;
+}
+
+function pickScorer(players) {
+  if (!players || !players.length) return null;
+
+  const ctx = buildLineRatingContext(players);
+
+  // Tiny "miracle GK goal" chance (but extremely rare now)
+  const gks = players.filter((p) => getLineForPos(p.Position) === "gk");
+  if (gks.length && Math.random() < 1 / 5000) {
+    return gks[Math.floor(Math.random() * gks.length)];
+  }
+
+  // Everyone else: weighted by line + rating
+  const weights = players.map((p) => scorerWeight(p, ctx));
+  const total = weights.reduce((a, b) => a + b, 0) || 1;
+
+  let r = Math.random() * total;
+  for (let i = 0; i < players.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return players[i];
+  }
+  return players[players.length - 1];
+}
+
+// Turn a goal count into scorer + minute events
+function simulateGoalsForTeam(players, goals) {
+  const events = [];
+  if (!players || !players.length || !goals) return events;
+
+  for (let i = 0; i < goals; i++) {
+    const minute = 1 + Math.floor(Math.random() * 95);
+    const scorer = pickScorer(players);
+    events.push({
+      minute,
+      scorer,
+    });
+  }
+
+  // chronological order
+  events.sort((a, b) => a.minute - b.minute);
+  return events;
+}
+
+// Tiny xG-ish generator based on rating + line-aware scorers
 function simulateFixtureAtIndex(
   idx,
   isUserMatch,
@@ -827,16 +977,51 @@ function simulateFixtureAtIndex(
   fix.played = true;
   fix.score = { home: gh, away: ga };
 
-  // --- NEW: build scorers for both sides ---
-  const homeSquad = homeLineup && homeLineup.length ? homeLineup : (home.squad || []);
-  const awaySquad = awayLineup && awayLineup.length ? awayLineup : (away.squad || []);
+  // ---- Build realistic scorers using the line-aware logic ----
+  const homeSquad =
+    homeLineup && homeLineup.length ? homeLineup : (home.squad || []);
+  const awaySquad =
+    awayLineup && awayLineup.length ? awayLineup : (away.squad || []);
 
-  function randomFrom(list, fallbackName) {
-    if (!list || !list.length) {
-      return { Name: fallbackName };
-    }
-    return list[Math.floor(Math.random() * list.length)];
+  const homeEvents = simulateGoalsForTeam(homeSquad, gh);
+  const awayEvents = simulateGoalsForTeam(awaySquad, ga);
+
+  fix.scorers = {
+    home: homeEvents.map((e) => ({
+      name: e.scorer?.Name || e.scorer?.name || "Home Player",
+      minute: e.minute,
+    })),
+    away: awayEvents.map((e) => ({
+      name: e.scorer?.Name || e.scorer?.name || "Away Player",
+      minute: e.minute,
+    })),
+  };
+
+  updateTablesFromFixture(fix);
+
+  if (isUserMatch) {
+    const isHome = fix.homeIndex === tournament.userTeamIndex;
+    const yourGoals = isHome ? gh : ga;
+    const oppGoals = isHome ? ga : gh;
+    const yourTeam = tournament.teams[tournament.userTeamIndex];
+    const oppTeam = tournament.teams[isHome ? fix.awayIndex : fix.homeIndex];
+
+    const yourScorersList = (isHome ? fix.scorers.home : fix.scorers.away)
+      .map((g) => `${g.name} (${g.minute}')`)
+      .join(", ") || "None";
+
+    const oppScorersList = (isHome ? fix.scorers.away : fix.scorers.home)
+      .map((g) => `${g.name} (${g.minute}')`)
+      .join(", ") || "None";
+
+    alert(
+      `Result: ${yourTeam.name} ${yourGoals}–${oppGoals} ${oppTeam.name}\n\n` +
+      `${yourTeam.name} scorers: ${yourScorersList}\n` +
+      `${oppTeam.name} scorers: ${oppScorersList}`
+    );
   }
+}
+
 
   function buildScorers(goals, squad, fallbackName) {
     const events = [];
