@@ -949,54 +949,6 @@ function simulateFixtureAtIndex(
   }
 }
 
-
-  function buildScorers(goals, squad, fallbackName) {
-    const events = [];
-    for (let i = 0; i < goals; i++) {
-      const minute = 1 + Math.floor(Math.random() * 90);
-      const p = randomFrom(squad, fallbackName);
-      events.push({
-        name: p.Name || p.name || fallbackName,
-        minute,
-      });
-    }
-    // sort by minute so it looks like a real timeline
-    events.sort((a, b) => a.minute - b.minute);
-    return events;
-  }
-
-  const homeScorers = buildScorers(gh, homeSquad, "Home Player");
-  const awayScorers = buildScorers(ga, awaySquad, "Away Player");
-
-  fix.scorers = {
-    home: homeScorers,
-    away: awayScorers,
-  };
-
-  updateTablesFromFixture(fix);
-
-  if (isUserMatch) {
-    const isHome = fix.homeIndex === tournament.userTeamIndex;
-    const yourGoals = isHome ? gh : ga;
-    const oppGoals = isHome ? ga : gh;
-    const yourTeam = tournament.teams[tournament.userTeamIndex];
-    const oppTeam = tournament.teams[isHome ? fix.awayIndex : fix.homeIndex];
-
-    const yourScorers = (isHome ? homeScorers : awayScorers)
-      .map(g => `${g.name} (${g.minute}')`)
-      .join(", ") || "None";
-
-    const oppScorers = (isHome ? awayScorers : homeScorers)
-      .map(g => `${g.name} (${g.minute}')`)
-      .join(", ") || "None";
-
-    alert(
-      `Result: ${yourTeam.name} ${yourGoals}–${oppGoals} ${oppTeam.name}\n\n` +
-      `${yourTeam.name} scorers: ${yourScorers}\n` +
-      `${oppTeam.name} scorers: ${oppScorers}`
-    );
-  }
-
 // Show / hide the "Next Group Match" card
 function showNextMatchPanel() {
   const panel = $("tournamentNextMatch");
