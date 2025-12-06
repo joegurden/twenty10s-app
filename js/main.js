@@ -40,10 +40,8 @@ async function loadTournamentPoolFromSupabase() {
   try {
     const { data, error } = await supabase
       .from("players")
-      .select("*")
-      .gte("Rating", 80)          // 👈 only players 80+
-      .lte("Rating", 99)          // 👈 and max 99
-      .order("Rating", { ascending: false }); // 👈 highest first
+      .select("*")                 // 👈 no rating filter now
+      .order("Rating", { ascending: false });
 
     if (error) {
       console.error("Supabase load error:", error);
