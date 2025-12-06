@@ -2567,11 +2567,20 @@ document.addEventListener("DOMContentLoaded", () => {
     $("tournamentSquad")?.classList.add("hidden");
   });
 
-  /* ---------------- Tournament Button ---------------- */
-  $("btn-run-tournament")?.addEventListener("click", () => {
-    showPage("page-tournament");
-    initTournament();   // new tournament flow with draft
-  });
+ /* ---------------- Tournament Button ---------------- */
+$("btn-run-tournament")?.addEventListener("click", async () => {
+  console.log("▶ Run Full Tournament clicked");
+  showPage("page-tournament");
+
+  try {
+    await initTournament();   // new tournament flow with draft
+    console.log("✅ initTournament finished");
+  } catch (err) {
+    console.error("❌ initTournament crashed:", err);
+    alert("There was an error starting the tournament. Check the console for details.");
+  }
+});
+
 
   /* ---------------- Tournament Squad / Draft Events ---------------- */
   $("btn-save-tournament-squad")?.addEventListener("click", () => {
