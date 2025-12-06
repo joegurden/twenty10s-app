@@ -859,6 +859,67 @@ function scorerWeight(player, ctx) {
   return base * starBoost * jitter;
 }
 
+// Update the "Last Match" summary card for the user's most recent game
+function updateLastMatchPanel(fix, isHomePerspective) {
+  const panel = $("tournamentLastMatch");
+  const labelEl = $("tournamentLastMatchLabel");
+  const bodyEl  = $("tournamentLastMatchBody");
+
+  if (!panel || !labelEl || !bodyEl || !fix) return;
+
+  const homeTeam = tournament.teams[fix.homeIndex];
+  const awayTeam = tournament.teams[fix.awayIndex];
+  const homeName = homeTeam?.name || "Home";
+  const awayName = awayTeam?.name || "Away";
+
+  const gh = fix.score?.home ?? 0;
+  const ga = fix.score?.away ?? 0;
+
+  const groupPart = fix.groupName ? `${fix.groupName} · ` : "";
+  const legPart = fix.leg ? ` (Leg ${fix.leg})` : "";
+
+  // From the user's point of view
+  const userIsHome = isHomePerspective;
+  const userIdx = tournament.userTeamIndex;
+  const userTeam = tournament.teams[userIdx];
+
+  const yourGoals = userIsHome ? gh : ga;
+  const oppGoals  = userIsHome ? ga : gh;
+  const oppTeam   = userIsHome ? awayTeam : homeTeam;
+
+  labelEl.textContent =
+    `${groupPart}${userTeam?.name || "Your Club"} ${yourGoals}–${oppGoals} ${oppTeam?.name || "Opponent"}${legPart}`;
+
+  // Build scorer lists
+  const homeScorers = (fix.scorers?.home || []).map(
+    g => `${g.name} (${g.minute}')`
+  );
+  const awayScorers = (fix.scorers?.away || []).map(
+    g => `${g.name} (${g.minute}')`
+  );
+
+  const yourScorers = userIsHome ? homeScorers : awayScorers;
+  const oppScorers  = userIsHome ? awayScorers : homeScorers;
+
+  const yourScorersStr = yourScorers.length
+    ? yourScorers.join(", ")
+    : "None";
+
+  const oppScorersStr = oppScorers.length
+    ? oppScorers.join(", ")
+    : "None";
+
+  bodyEl.innerHTML = `
+    <p><strong>${userTeam?.name || "Your Club"}</strong> scorers:</p>
+    <p>${yourScorersStr}</p>
+    <hr />
+    <p><strong>${oppTeam?.name || "Opponent"}</strong> scorers:</p>
+    <p>${oppScorersStr}</p>
+  `;
+
+  panel.classList.remove("hidden");
+}
+
 // Tiny xG-ish generator based on rating + line-aware scorers
 function simulateFixtureAtIndex(
   idx,
@@ -928,24 +989,7 @@ function simulateFixtureAtIndex(
 
   if (isUserMatch) {
     const isHome = fix.homeIndex === tournament.userTeamIndex;
-    const yourGoals = isHome ? gh : ga;
-    const oppGoals = isHome ? ga : gh;
-    const yourTeam = tournament.teams[tournament.userTeamIndex];
-    const oppTeam = tournament.teams[isHome ? fix.awayIndex : fix.homeIndex];
-
-    const yourScorersList = (isHome ? fix.scorers.home : fix.scorers.away)
-      .map((g) => `${g.name} (${g.minute}')`)
-      .join(", ") || "None";
-
-    const oppScorersList = (isHome ? fix.scorers.away : fix.scorers.home)
-      .map((g) => `${g.name} (${g.minute}')`)
-      .join(", ") || "None";
-
-    alert(
-      `Result: ${yourTeam.name} ${yourGoals}–${oppGoals} ${oppTeam.name}\n\n` +
-      `${yourTeam.name} scorers: ${yourScorersList}\n` +
-      `${oppTeam.name} scorers: ${oppScorersList}`
-    );
+    updateLastMatchPanel(fix, isHome);
   }
 }
 

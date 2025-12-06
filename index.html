@@ -194,17 +194,34 @@
     </div>
  
    <!-- NEXT GROUP MATCH CARD -->
-    <section id="tournamentNextMatch" class="card mini hidden">
-      <div class="draft-head">
-        <div>
-          <strong>Next Group Match</strong>
-          <span id="tournamentNextLabel" class="pill"></span>
-        </div>
-        <button id="btn-tournament-play-next" class="primary">
-          ⚽ Pick XI & Play
-        </button>
-      </div>
-    </section>
+   <section id="tournamentNextMatch" class="card mini hidden">
+     <div class="draft-head">
+       <div>
+         <strong>Next Group Match</strong>
+         <span id="tournamentNextLabel" class="pill"></span>
+       </div>
+       <button id="btn-tournament-play-next" class="primary">
+         ⚽ Pick XI & Play
+       </button>
+     </div>
+   </section>
+
+   <!-- LAST MATCH SUMMARY CARD -->
+   <section id="tournamentLastMatch" class="card mini hidden">
+     <div class="draft-head">
+       <div>
+         <strong>Last Match</strong>
+         <span id="tournamentLastMatchLabel" class="pill"></span>
+       </div>
+     </div>
+     <div id="tournamentLastMatchBody" class="pool">
+       <!-- Filled by JS after each user match -->
+     </div>
+   </section>
+
+   <!-- ============ TOURNAMENT PREMATCH PANEL ============ -->
+   <div id="tournamentPrematch" class="card hidden">
+     ...
 
 <!-- ============ TOURNAMENT PREMATCH PANEL ============ -->
 <div id="tournamentPrematch" class="card hidden">
