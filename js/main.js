@@ -1646,7 +1646,6 @@ function setupTournamentSlotDropHandlers() {
 
   // Draw the first 4 candidates
   renderTournamentDraftStep();
-}
 
 function renderTournamentDraftStep() {
   const panel = $("tournamentSquad");
