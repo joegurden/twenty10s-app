@@ -167,7 +167,9 @@
     </section>
 
 <!-- TOURNAMENT PAGE -->
+<!-- TOURNAMENT PAGE -->
 <section id="page-tournament" class="page hidden">
+  <!-- Top tournament header card -->
   <div class="card">
     <div class="draft-head">
       <strong>Tournament</strong>
@@ -176,7 +178,7 @@
 
     <div class="row">
       <button id="btn-run-tournament" class="primary">🏆 Run Full Tournament</button>
-      <span class="pill">Generates 16 strong teams and simulates groups, semis & final.</span>
+      <span class="pill">Generates 16 strong teams and simulates groups, semis &amp; final.</span>
     </div>
 
     <div class="row">
@@ -185,6 +187,7 @@
         <option>3-4-3</option>
         <option>3-5-2</option>
         <option>4-4-2</option>
+        <option>3-5-2</option>
         <option>4-1-2-1-2</option>
         <option>4-2-3-1</option>
         <option selected>4-3-3 (Holding)</option>
@@ -192,136 +195,127 @@
         <option>4-3-3 (Attack)</option>
       </select>
     </div>
- 
-   <!-- NEXT GROUP MATCH CARD -->
-   <section id="tournamentNextMatch" class="card mini hidden">
-     <div class="draft-head">
-       <div>
-         <strong>Next Group Match</strong>
-         <span id="tournamentNextLabel" class="pill"></span>
-       </div>
-       <button id="btn-tournament-play-next" class="primary">
-         ⚽ Pick XI & Play
-       </button>
-     </div>
-   </section>
-
-   <!-- LAST MATCH SUMMARY CARD -->
-   <section id="tournamentLastMatch" class="card mini hidden">
-     <div class="draft-head">
-       <div>
-         <strong>Last Match</strong>
-         <span id="tournamentLastMatchLabel" class="pill"></span>
-       </div>
-     </div>
-     <div id="tournamentLastMatchBody" class="pool">
-       <!-- Filled by JS after each user match -->
-     </div>
-   </section>
-
-   <!-- ============ TOURNAMENT PREMATCH PANEL ============ -->
-   <div id="tournamentPrematch" class="card hidden">
-     ...
-
-<!-- ============ TOURNAMENT PREMATCH PANEL ============ -->
-<div id="tournamentPrematch" class="card hidden">
-  <div class="draft-head">
-    <strong>Pick Your XI</strong>
-    <span id="tournamentMatchVs" class="pill">Your Club vs Opponent</span>
   </div>
 
-  <div class="row">
-    <label for="tournamentMatchFormation"><strong>Formation for this match</strong></label>
-    <select id="tournamentMatchFormation" class="select">
-      <option>3-4-3</option>
-      <option>3-5-2</option>
-      <option>4-4-2</option>
-      <option>4-1-2-1-2</option>
-      <option>4-2-3-1</option>
-      <option>4-3-3 (Holding)</option>
-      <option>4-3-3 (Flat)</option>
-      <option>4-3-3 (Attack)</option>
-    </select>
-  </div>
-
-  <p class="pill">Select exactly 11 players. They must fit the formation.</p>
-
-  <div id="tournamentPrematchPool" class="player-list">
-    <!-- JS fills squad checkboxes here -->
-  </div>
-
-  <div id="tournamentMatchError" class="pill error"></div>
-
-  <div class="row">
-    <button id="btn-tournament-play-match" class="primary">
-      ▶️ Play this Match
-    </button>
-    <button id="btn-tournament-use-last-xi" class="secondary">
-      Use Last XI
-    </button>
-  </div>
-</div>
-<!-- ============ END PREMATCH PANEL ============ -->
-
-
- <!-- Proper two-column layout -->
-<div class="tournament-layout">
-
-  <!-- LEFT SIDE: Groups + Knockouts -->
-  <div id="tournamentOutput" class="pool">
-    <div class="pill">Click “Run Full Tournament” to generate a tournament.</div>
-  </div>
-
-  <!-- RIGHT SIDE: Team Detail -->
-  <aside id="tournamentTeamDetail" class="card mini hidden">
+  <!-- NEXT GROUP MATCH CARD -->
+  <section id="tournamentNextMatch" class="card mini hidden">
     <div class="draft-head">
       <div>
-        <strong id="tournamentTeamDetailName">Team</strong>
-        <span id="tournamentTeamDetailMeta" class="pill"></span>
+        <strong>Next Group Match</strong>
+        <span id="tournamentNextLabel" class="pill"></span>
       </div>
-      <button id="btn-close-team-detail" class="secondary small">✕</button>
+      <button id="btn-tournament-play-next" class="primary">
+        ⚽ Pick XI &amp; Play
+      </button>
+    </div>
+  </section>
+
+  <!-- LAST MATCH SUMMARY CARD -->
+  <section id="tournamentLastMatch" class="card mini hidden">
+    <div class="draft-head">
+      <div>
+        <strong>Last Match</strong>
+        <span id="tournamentLastMatchLabel" class="pill"></span>
+      </div>
+    </div>
+    <div id="tournamentLastMatchBody" class="pool">
+      <!-- Filled by JS after each user match -->
+    </div>
+  </section>
+
+  <!-- ============ TOURNAMENT PREMATCH PANEL ============ -->
+  <div id="tournamentPrematch" class="card hidden">
+    <div class="draft-head">
+      <strong>Pick Your XI</strong>
+      <span id="tournamentMatchVs" class="pill">Your Club vs Opponent</span>
     </div>
 
-    <div id="tournamentTeamDetailBody"></div>
-  </aside>
+    <div class="row">
+      <label for="tournamentMatchFormation"><strong>Formation for this match</strong></label>
+      <select id="tournamentMatchFormation" class="select">
+        <option>3-4-3</option>
+        <option>3-5-2</option>
+        <option>4-4-2</option>
+        <option>4-1-2-1-2</option>
+        <option>4-2-3-1</option>
+        <option>4-3-3 (Holding)</option>
+        <option>4-3-3 (Flat)</option>
+        <option>4-3-3 (Attack)</option>
+      </select>
+    </div>
 
-</div> <!-- end .tournament-layout -->
+    <p class="pill">Select exactly 11 players. They must fit the formation.</p>
 
-<!-- NEW: New Tournament Button -->
-<div class="row">
-  <button id="btn-new-tournament" class="secondary hidden">
-    🔁 New Tournament
-  </button>
-</div>
+    <div id="tournamentPrematchPool" class="player-list">
+      <!-- JS fills squad checkboxes here -->
+    </div>
 
-      <!-- RIGHT SIDE: Team Details / Tournament Squad Panel -->
-      <div id="tournamentSquad" class="team-details card hidden">
-        <div class="draft-head" style="display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <strong id="squadTitle">Squad</strong>
-            <span id="squadSubtitle" class="pill"></span>
-          </div>
-          <button id="btn-close-squad" class="ghost">✖ Close</button>
+    <div id="tournamentMatchError" class="pill error"></div>
+
+    <div class="row">
+      <button id="btn-tournament-play-match" class="primary">
+        ▶️ Play this Match
+      </button>
+      <button id="btn-tournament-use-last-xi" class="secondary">
+        Use Last XI
+      </button>
+    </div>
+  </div>
+  <!-- ============ END PREMATCH PANEL ============ -->
+
+  <!-- Main layout: tables + detail + squad draft -->
+  <div class="tournament-layout">
+    <!-- LEFT SIDE: Groups + Knockouts -->
+    <div id="tournamentOutput" class="pool">
+      <div class="pill">Click “Run Full Tournament” to generate a tournament.</div>
+    </div>
+
+    <!-- RIGHT SIDE: Team Detail -->
+    <aside id="tournamentTeamDetail" class="card mini hidden">
+      <div class="draft-head">
+        <div>
+          <strong id="tournamentTeamDetailName">Team</strong>
+          <span id="tournamentTeamDetailMeta" class="pill"></span>
         </div>
-
-        <!-- NEW: 15-man selection counter -->
-        <p id="tournamentSquadCount" class="pill">0 / 15 selected</p>
-
-        <!-- NEW: list container used by JS (showTournamentSquadSelection) -->
-        <div id="tournamentSquadList" class="pool">
-          <!-- Filled by JS with checkboxes -->
-        </div>
-
-        <!-- NEW: save button for the 15-man squad -->
-        <div class="row">
-          <button id="btn-save-tournament-squad" class="primary">Next Player</button>
-        </div>
+        <button id="btn-close-team-detail" class="secondary small">✕</button>
       </div>
 
-    </div><!-- end .tournament-layout -->
+      <div id="tournamentTeamDetailBody"></div>
+    </aside>
 
+    <!-- RIGHT SIDE: Tournament Squad Draft Panel -->
+    <div id="tournamentSquad" class="team-details card hidden">
+      <div class="draft-head" style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <strong id="squadTitle">Squad</strong>
+          <span id="squadSubtitle" class="pill"></span>
+        </div>
+        <button id="btn-close-squad" class="ghost">✖ Close</button>
+      </div>
+
+      <!-- 15-man selection counter -->
+      <p id="tournamentSquadCount" class="pill">0 / 15 selected</p>
+
+      <!-- List container used by JS (renderTournamentDraftStep) -->
+      <div id="tournamentSquadList" class="pool">
+        <!-- Filled by JS with radio options -->
+      </div>
+
+      <!-- Next Player button -->
+      <div class="row">
+        <button id="btn-save-tournament-squad" class="primary">Next Player</button>
+      </div>
+    </div>
+  </div> <!-- end .tournament-layout -->
+
+  <!-- New Tournament button -->
+  <div class="row">
+    <button id="btn-new-tournament" class="secondary hidden">
+      🔁 New Tournament
+    </button>
   </div>
 </section>
+
 
 
 </main> <!-- if you see a <main> tag earlier, close it -->
