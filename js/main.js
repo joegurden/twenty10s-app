@@ -1530,8 +1530,6 @@ async function initTournament() {
   showTournamentSquadSelection();
 }
 
-
-
 // Show the tournament draft panel and start at pick 1 (Supabase-backed)
 function showTournamentSquadSelection() {
   draftState.active = true;
@@ -1545,6 +1543,10 @@ function showTournamentSquadSelection() {
 
   // Build the XI + subs slots based on the user's formation
   setupTournamentSquadSlots();
+
+  // Draw the first 4 candidates
+  renderTournamentDraftStep();
+}
 
 function highlightCurrentDraftSlot() {
   const slots = document.querySelectorAll(
@@ -1615,7 +1617,6 @@ function setupTournamentSquadSlots() {
   setupTournamentSlotDropHandlers();
 }
 
-
 function setupTournamentSlotDropHandlers() {
   const slots = document.querySelectorAll(
     "#tournamentSquadXI .xi-slot, #tournamentSquadSubs .xi-slot"
@@ -1642,7 +1643,6 @@ function setupTournamentSlotDropHandlers() {
     });
   });
 }
-
 
   // Draw the first 4 candidates
   renderTournamentDraftStep();
