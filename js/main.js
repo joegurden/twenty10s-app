@@ -1525,6 +1525,56 @@ async function initTournament() {
     );
     return;
   }
+function setupTournamentSquadSlots() {
+  const xiContainer = $("tournamentSquadXI");
+  const subsContainer = $("tournamentSquadSubs");
+  if (!xiContainer || !subsContainer) return;
+
+  const formationKey = tournament.userFormation || "4-3-3 (Holding)";
+  const slots =
+    FORMATION_POSITIONS[formationKey] ||
+    FORMATION_POSITIONS["4-3-3 (Holding)"];
+
+  // Build XI slots (one per position)
+  xiContainer.innerHTML = slots
+    .map(
+      (pos, i) => `
+      <div 
+        class="xi-slot player-row"
+        data-slot-index="${i}"
+        data-slot-type="xi"
+        data-required-pos="${pos}"
+        style="cursor:default; margin-bottom:0.5rem; display:flex; justify-content:space-between; align-items:center; border-radius:999px; padding:6px 10px;"
+      >
+        <span class="pos">${pos}</span>
+        <span class="slot-name" style="opacity:0.7;">Empty</span>
+      </div>
+    `
+    )
+    .join("");
+
+  // Build 4 sub slots
+  const subs = [];
+  for (let i = 0; i < DRAFT_SUB_PICKS; i++) {
+    const idx = slots.length + i;
+    subs.push(`
+      <div 
+        class="xi-slot player-row"
+        data-slot-index="${idx}"
+        data-slot-type="sub"
+        data-required-pos="SUB"
+        style="cursor:default; flex:1 0 100px; border-radius:999px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center;"
+      >
+        <span class="pos">SUB</span>
+        <span class="slot-name" style="opacity:0.7;">Empty</span>
+      </div>
+    `);
+  }
+  subsContainer.innerHTML = subs.join("");
+
+  highlightCurrentDraftSlot();
+  setupTournamentSlotDropHandlers();
+}
 
   // 3) Start the 15-man draft using real Supabase players
   showTournamentSquadSelection();
@@ -1541,9 +1591,58 @@ function showTournamentSquadSelection() {
   draftState.totalSteps = xiCount + DRAFT_SUB_PICKS; // 11 + 4 = 15
   draftState.picks = [];
   draftState.currentCandidates = [];
-  draftState.taken = new Set();  // reset taken set
+  draftState.taken = new Set();
 
-  // 👉 actually draw the first set of options
+  // Build the XI + subs slots based on the user's formation
+  setupTournamentSquadSlots();
+
+function highlightCurrentDraftSlot() {
+  const slots = document.querySelectorAll(
+    "#tournamentSquadXI .xi-slot, #tournamentSquadSubs .xi-slot"
+  );
+
+  slots.forEach((slot) => {
+    slot.style.outline = "1px dashed rgba(255,255,255,0.15)";
+  });
+
+  const currentIndex = draftState.step;
+  const current = Array.from(slots).find(
+    (s) => Number(s.dataset.slotIndex) === currentIndex
+  );
+  if (current) {
+    current.style.outline = "2px solid rgba(255,255,255,0.7)";
+  }
+}
+
+function setupTournamentSlotDropHandlers() {
+  const slots = document.querySelectorAll(
+    "#tournamentSquadXI .xi-slot, #tournamentSquadSubs .xi-slot"
+  );
+
+  slots.forEach((slot) => {
+    if (slot.dataset.dndInit === "1") return;
+    slot.dataset.dndInit = "1";
+
+    slot.addEventListener("dragover", (e) => {
+      e.preventDefault();
+    });
+
+    slot.addEventListener("drop", (e) => {
+      e.preventDefault();
+      const slotIndex = Number(slot.dataset.slotIndex);
+      if (slotIndex !== draftState.step) return; // only active slot
+
+      const idxStr = e.dataTransfer.getData("text/plain");
+      const idx = Number(idxStr);
+      if (!Number.isFinite(idx)) return;
+
+      confirmTournamentDraftPick(idx);
+    });
+  });
+}
+
+
+  // Draw the first 4 candidates
   renderTournamentDraftStep();
 }
 
@@ -1559,27 +1658,18 @@ function renderTournamentDraftStep() {
     return;
   }
 
-  console.log(
-    "renderTournamentDraftStep()",
-    "step =", draftState.step,
-    "totalSteps =", draftState.totalSteps
-  );
-
-  // If we've already picked all players, finish the draft
+  // Finished all picks?
   if (draftState.step >= draftState.totalSteps) {
     finishTournamentDraft();
     return;
   }
 
-  // Show the panel
   panel.classList.remove("hidden");
-
-  // 👇 Make sure you see it
   try {
     panel.scrollIntoView({ behavior: "smooth", block: "start" });
-  } catch (_) {
-    // older browsers: ignore
-  }
+  } catch (_) {}
+
+  highlightCurrentDraftSlot();
 
   const xiCount = tournament.requiredPositions?.length || 11;
   const isSubPick = draftState.step >= xiCount;
@@ -1598,52 +1688,41 @@ function renderTournamentDraftStep() {
 
   // --- Build candidates from Supabase pool ---
 
-  // helper to check if player already taken in this draft
   const isTaken = (p) => draftState.taken.has(keyOf(p));
-
-  // shuffle helper
   const localShuffle = (arr) => shuffle([...arr]);
 
   let candidates = [];
 
   if (!isSubPick) {
-    // ---- XI picks: all 4 same required position ----
+    // XI picks: try to give 4 players of required position
     const poolForPos = tournamentPool.filter(
       (p) => p.Position === desiredPos && !isTaken(p)
     );
-
     candidates = localShuffle(poolForPos).slice(0, 4);
 
-    // fallback: if we couldn't get any for that position, use any untaken players
     if (!candidates.length) {
       const untaken = tournamentPool.filter((p) => !isTaken(p));
       candidates = localShuffle(untaken).slice(0, 4);
     }
   } else {
-    // ---- SUB PICKS: mix positions, max 2 per position in this set of 4 ----
+    // Sub picks: mixed positions, max 2 per position
     const untaken = localShuffle(
       tournamentPool.filter((p) => !isTaken(p))
     );
-
     const posCounts = {};
     for (const p of untaken) {
       const pos = p.Position;
       const count = posCounts[pos] || 0;
-      if (count >= 2) continue;        // already have 2 of this position
-
+      if (count >= 2) continue;
       candidates.push(p);
       posCounts[pos] = count + 1;
-
-      if (candidates.length >= 4) break; // stop once we have 4 options
+      if (candidates.length >= 4) break;
     }
-
-    // absolute fallback: if something went weird, just take any 4 untaken
     if (!candidates.length) {
       candidates = untaken.slice(0, 4);
     }
   }
 
-  // Still nothing? Show a message
   if (!candidates.length) {
     list.innerHTML = `
       <div class="pill">
@@ -1659,19 +1738,21 @@ function renderTournamentDraftStep() {
   const total = draftState.totalSteps;
   const pickLabel = isSubPick
     ? `Pick ${pickNumber} of ${total} (Sub)`
-    : `Pick ${pickNumber} of ${total}`;
+    : `Pick ${pickNumber} of ${total} — ${desiredPos}`;
 
-  // Update header text
   const titleEl = $("squadTitle");
   const subtitleEl = $("squadSubtitle");
   if (titleEl) titleEl.textContent = "Tournament Squad Draft";
   if (subtitleEl) subtitleEl.textContent = pickLabel;
 
-  // Render 4 radio options
   list.innerHTML = candidates
     .map(
       (p, i) => `
-      <label class="player-row">
+      <label 
+        class="player-row tournament-candidate"
+        draggable="true"
+        data-index="${i}"
+      >
         <input 
           type="radio"
           name="tournament-cand"
@@ -1687,45 +1768,76 @@ function renderTournamentDraftStep() {
     .join("");
 
   countLabel.textContent = `${draftState.picks.length} / ${draftState.totalSteps} selected`;
+
+  // Make candidates draggable
+  list.querySelectorAll(".tournament-candidate").forEach((el) => {
+    el.addEventListener("dragstart", (e) => {
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", el.dataset.index || "");
+    });
+  });
+
+  // Ensure slot drop handlers are wired
+  setupTournamentSlotDropHandlers();
 }
 
 
+
 // Called when the "Next Player" button is clicked
-function confirmDraftPick() {
+function confirmTournamentDraftPick(idxFromDrag) {
   if (!draftState.active) return;
 
-  const list = $("tournamentSquadList");
   const countLabel = $("tournamentSquadCount");
-  if (!list || !countLabel) return;
+  const list = $("tournamentSquadList");
+  if (!countLabel || !list) return;
 
-  const selected = list.querySelector(
-    'input[name="tournament-cand"]:checked'
-  );
-  if (!selected) {
-    alert("Please select a player first.");
-    return;
+  let idx = idxFromDrag;
+
+  // If not coming from drag, use the selected radio
+  if (idx == null) {
+    const selected = list.querySelector(
+      'input[name="tournament-cand"]:checked'
+    );
+    if (!selected) {
+      alert("Please select a player first (or drag them into the slot).");
+      return;
+    }
+    idx = Number(selected.dataset.index);
   }
 
-  const idx = Number(selected.dataset.index);
   const chosen = draftState.currentCandidates[idx];
   if (!chosen) return;
+
+  // Update the slot UI for the current pick
+  const slot = document.querySelector(
+    `.xi-slot[data-slot-index="${draftState.step}"]`
+  );
+  if (slot) {
+    const nameEl =
+      slot.querySelector(".slot-name") || slot.querySelector(".name");
+    if (nameEl) {
+      nameEl.textContent = `${chosen.Name} (${chosen.Position} ${chosen.Rating})`;
+      nameEl.style.opacity = "1";
+    }
+  }
 
   // Record pick
   draftState.picks.push(chosen);
   draftState.step++;
-
-  // Mark this player as taken so we don't offer them again
   draftState.taken.add(keyOf(chosen));
 
   countLabel.textContent = `${draftState.picks.length} / ${draftState.totalSteps} selected`;
 
   if (draftState.step >= draftState.totalSteps) {
-    // All 15 chosen → build the tournament
     finishTournamentDraft();
   } else {
-    // Move to next pick
     renderTournamentDraftStep();
   }
+}
+
+function confirmDraftPick() {
+  // Keep the existing event wiring but delegate
+  confirmTournamentDraftPick(null);
 }
 
 function renderTournament(tables, ko) {

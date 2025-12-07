@@ -284,28 +284,50 @@
     </aside>
 
     <!-- RIGHT SIDE: Tournament Squad Draft Panel -->
-    <div id="tournamentSquad" class="team-details card hidden">
-      <div class="draft-head" style="display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <strong id="squadTitle">Squad</strong>
-          <span id="squadSubtitle" class="pill"></span>
-        </div>
-        <button id="btn-close-squad" class="ghost">✖ Close</button>
+<div id="tournamentSquad" class="team-details card hidden">
+  <div class="draft-head" style="display:flex; justify-content:space-between; align-items:center;">
+    <div>
+      <strong id="squadTitle">Tournament Squad Draft</strong>
+      <span id="squadSubtitle" class="pill"></span>
+    </div>
+    <button id="btn-close-squad" class="ghost">✖ Close</button>
+  </div>
+
+  <p id="tournamentSquadCount" class="pill">0 / 15 selected</p>
+
+  <!-- Layout: left = XI + subs slots, right = candidate list -->
+  <div class="tournament-squad-layout" style="display:flex; gap:1.5rem; align-items:flex-start; flex-wrap:wrap;">
+    <!-- LEFT: position slots -->
+    <div class="tournament-squad-slots" style="flex:1; min-width:220px;">
+      <div class="pill" style="margin-bottom:0.5rem;">Starting XI</div>
+      <div id="tournamentSquadXI">
+        <!-- JS builds 11 position boxes -->
       </div>
 
-      <!-- 15-man selection counter -->
-      <p id="tournamentSquadCount" class="pill">0 / 15 selected</p>
-
-      <!-- List container used by JS (renderTournamentDraftStep) -->
-      <div id="tournamentSquadList" class="pool">
-        <!-- Filled by JS with radio options -->
-      </div>
-
-      <!-- Next Player button -->
-      <div class="row">
-        <button id="btn-save-tournament-squad" class="primary">Next Player</button>
+      <div class="pill" style="margin:0.75rem 0 0.5rem;">Subs</div>
+      <div id="tournamentSquadSubs" style="display:flex; flex-wrap:wrap; gap:0.5rem;">
+        <!-- JS builds 4 sub boxes -->
       </div>
     </div>
+
+    <!-- RIGHT: 4 candidate players -->
+    <div class="tournament-squad-pool" style="flex:1.2; min-width:260px;">
+      <div class="pill" style="margin-bottom:0.5rem;">
+        Drag a player into the highlighted slot, or click then press “Confirm pick”.
+      </div>
+      <div id="tournamentSquadList" class="pool">
+        <!-- Filled by JS with candidates -->
+      </div>
+
+      <div class="row">
+        <button id="btn-save-tournament-squad" class="primary">
+          Confirm pick
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
   </div> <!-- end .tournament-layout -->
 
   <!-- New Tournament button -->
