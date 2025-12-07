@@ -1341,7 +1341,8 @@ function buildAITeamsPlaceholder() {
       break;
     }
 
-    const squad = [...xi];
+const squad = [...xi];
+
 
     // Fill up to TOURNAMENT_SQUAD_SIZE with random subs (any unused players)
     while (squad.length < TOURNAMENT_SQUAD_SIZE) {
@@ -1494,6 +1495,16 @@ async function initTournament() {
   // Hide the "New Tournament" button at the start of a fresh tournament
   updateTournamentRestartButton();
 
+  // Let the user know we’re in draft mode now
+  const out = $("tournamentOutput");
+  if (out) {
+    out.innerHTML = `
+      <div class="pill">
+        Pick your 15-man squad in the panel below. Once you’re done, we’ll build the groups & fixtures.
+      </div>
+    `;
+  }
+
   // 1) Read the user's chosen formation for their XI later
   const formationSelect = $("tournamentFormation");
   const selectedFormation = formationSelect?.value || "4-3-3 (Holding)";
@@ -1552,7 +1563,15 @@ function renderTournamentDraftStep() {
     return;
   }
 
+  // Show the panel
   panel.classList.remove("hidden");
+
+  // 👇 Auto-scroll so it’s obvious something happened
+  try {
+    panel.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (_) {
+    // older browsers: ignore
+  }
 
   const xiCount = tournament.requiredPositions?.length || 11;
   const isSubPick = draftState.step >= xiCount;
@@ -1575,12 +1594,12 @@ function renderTournamentDraftStep() {
   const isTaken = (p) => draftState.taken.has(keyOf(p));
 
   // shuffle helper
-  const localShuffle = (arr) => shuffle([ ...arr ]);
+  const localShuffle = (arr) => shuffle([...arr]);
 
   let candidates = [];
 
   if (!isSubPick) {
-    // ---- XI picks: keep old behaviour (all 4 same required position) ----
+    // ---- XI picks: all 4 same required position ----
     const poolForPos = tournamentPool.filter(
       (p) => p.Position === desiredPos && !isTaken(p)
     );
@@ -1616,7 +1635,6 @@ function renderTournamentDraftStep() {
     }
   }
 
-
   // Still nothing? Show a message
   if (!candidates.length) {
     list.innerHTML = `
@@ -1629,6 +1647,19 @@ function renderTournamentDraftStep() {
 
   draftState.currentCandidates = candidates;
 
+  const pickNumber = draftState.step + 1;
+  const total = draftState.totalSteps;
+  const pickLabel = isSubPick
+    ? `Pick ${pickNumber} of ${total} (Sub)`
+    : `Pick ${pickNumber} of ${total}`;
+
+  // Update header text
+  const titleEl = $("squadTitle");
+  const subtitleEl = $("squadSubtitle");
+  if (titleEl) titleEl.textContent = "Tournament Squad Draft";
+  if (subtitleEl) subtitleEl.textContent = pickLabel;
+
+  // Render 4 radio options
   list.innerHTML = candidates
     .map(
       (p, i) => `
@@ -1649,6 +1680,7 @@ function renderTournamentDraftStep() {
 
   countLabel.textContent = `${draftState.picks.length} / ${draftState.totalSteps} selected`;
 }
+
 
 // Called when the "Next Player" button is clicked
 function confirmDraftPick() {
@@ -1890,10 +1922,10 @@ function pickBestXIFromSquad(squad, formationKey) {
     FORMATION_POSITIONS[formationKey] ||
     FORMATION_POSITIONS["4-3-3 (Holding)"];
 
-  // Sort whole squad by rating (highest first)
-  const remaining = [...(squad || [])].sort(
-    (a, b) => (Number(b.Rating) || 0) - (Number(a.Rating) || 0)
-  );
+// Sort whole squad by rating (highest first)
+const remaining = [...(squad || [])].sort(
+  (a, b) => (Number(b.Rating) || 0) - (Number(a.Rating) || 0)
+);
 
   const xi = [];
   const used = new Set();
@@ -1987,6 +2019,13 @@ function showTournamentTeamDetail(teamIndex) {
   `;
 
   panel.classList.remove("hidden");
+  // Auto-scroll to the squad panel so it’s obvious something happened
+  try {
+    panel.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (_) {
+    // older browsers: ignore
+  }
+
 }
 
 
