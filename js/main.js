@@ -1525,6 +1525,45 @@ async function initTournament() {
     );
     return;
   }
+
+  // 3) Start the 15-man draft using real Supabase players
+  showTournamentSquadSelection();
+}
+
+
+
+// Show the tournament draft panel and start at pick 1 (Supabase-backed)
+function showTournamentSquadSelection() {
+  draftState.active = true;
+  draftState.step = 0;
+
+  const xiCount = tournament.requiredPositions?.length || 11;
+  draftState.totalSteps = xiCount + DRAFT_SUB_PICKS; // 11 + 4 = 15
+  draftState.picks = [];
+  draftState.currentCandidates = [];
+  draftState.taken = new Set();
+
+  // Build the XI + subs slots based on the user's formation
+  setupTournamentSquadSlots();
+
+function highlightCurrentDraftSlot() {
+  const slots = document.querySelectorAll(
+    "#tournamentSquadXI .xi-slot, #tournamentSquadSubs .xi-slot"
+  );
+
+  slots.forEach((slot) => {
+    slot.style.outline = "1px dashed rgba(255,255,255,0.15)";
+  });
+
+  const currentIndex = draftState.step;
+  const current = Array.from(slots).find(
+    (s) => Number(s.dataset.slotIndex) === currentIndex
+  );
+  if (current) {
+    current.style.outline = "2px solid rgba(255,255,255,0.7)";
+  }
+}
+
 function setupTournamentSquadSlots() {
   const xiContainer = $("tournamentSquadXI");
   const subsContainer = $("tournamentSquadSubs");
@@ -1576,43 +1615,6 @@ function setupTournamentSquadSlots() {
   setupTournamentSlotDropHandlers();
 }
 
-  // 3) Start the 15-man draft using real Supabase players
-  showTournamentSquadSelection();
-}
-
-
-
-// Show the tournament draft panel and start at pick 1 (Supabase-backed)
-function showTournamentSquadSelection() {
-  draftState.active = true;
-  draftState.step = 0;
-
-  const xiCount = tournament.requiredPositions?.length || 11;
-  draftState.totalSteps = xiCount + DRAFT_SUB_PICKS; // 11 + 4 = 15
-  draftState.picks = [];
-  draftState.currentCandidates = [];
-  draftState.taken = new Set();
-
-  // Build the XI + subs slots based on the user's formation
-  setupTournamentSquadSlots();
-
-function highlightCurrentDraftSlot() {
-  const slots = document.querySelectorAll(
-    "#tournamentSquadXI .xi-slot, #tournamentSquadSubs .xi-slot"
-  );
-
-  slots.forEach((slot) => {
-    slot.style.outline = "1px dashed rgba(255,255,255,0.15)";
-  });
-
-  const currentIndex = draftState.step;
-  const current = Array.from(slots).find(
-    (s) => Number(s.dataset.slotIndex) === currentIndex
-  );
-  if (current) {
-    current.style.outline = "2px solid rgba(255,255,255,0.7)";
-  }
-}
 
 function setupTournamentSlotDropHandlers() {
   const slots = document.querySelectorAll(
