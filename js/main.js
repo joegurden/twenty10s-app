@@ -1495,12 +1495,13 @@ async function initTournament() {
   // Hide the "New Tournament" button at the start of a fresh tournament
   updateTournamentRestartButton();
 
-  // Let the user know we’re in draft mode now
+  // 👇 NEW: show a message in the main output area so the user knows they’re drafting
   const out = $("tournamentOutput");
   if (out) {
     out.innerHTML = `
       <div class="pill">
-        Pick your 15-man squad in the panel below. Once you’re done, we’ll build the groups & fixtures.
+        Tournament started. Pick your 15-man squad in the panel below. 
+        Once you’re done, we’ll build the groups & fixtures.
       </div>
     `;
   }
@@ -1530,6 +1531,7 @@ async function initTournament() {
 }
 
 
+
 // Show the tournament draft panel and start at pick 1 (Supabase-backed)
 function showTournamentSquadSelection() {
   draftState.active = true;
@@ -1557,6 +1559,12 @@ function renderTournamentDraftStep() {
     return;
   }
 
+  console.log(
+    "renderTournamentDraftStep()",
+    "step =", draftState.step,
+    "totalSteps =", draftState.totalSteps
+  );
+
   // If we've already picked all players, finish the draft
   if (draftState.step >= draftState.totalSteps) {
     finishTournamentDraft();
@@ -1566,7 +1574,7 @@ function renderTournamentDraftStep() {
   // Show the panel
   panel.classList.remove("hidden");
 
-  // 👇 Auto-scroll so it’s obvious something happened
+  // 👇 Make sure you see it
   try {
     panel.scrollIntoView({ behavior: "smooth", block: "start" });
   } catch (_) {
