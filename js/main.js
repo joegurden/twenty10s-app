@@ -1746,12 +1746,11 @@ function renderTournamentDraftStep() {
   if (titleEl) titleEl.textContent = "Tournament Squad Draft";
   if (subtitleEl) subtitleEl.textContent = pickLabel;
 
-  list.innerHTML = candidates
-    .map(
-      (p, i) => `
+list.innerHTML = candidates
+  .map(
+    (p, i) => `
       <label 
-        class="player-row tournament-candidate"
-        draggable="true"
+        class="player-row tournament-candidate-box"
         data-index="${i}"
       >
         <input 
@@ -1760,28 +1759,32 @@ function renderTournamentDraftStep() {
           class="tournament-squad-radio"
           data-index="${i}"
         />
-        <span class="name">${p.Name}</span>
-        <span class="pos">${p.Position}</span>
-        <span class="rating">${p.Rating}</span>
+        <span class="candidate-pos">${p.Position}</span>
+        <span class="candidate-name">${p.Name}</span>
+        <span class="candidate-rating">${p.Rating}</span>
       </label>
     `
-    )
-    .join("");
+  )
+  .join("");
+
 
   countLabel.textContent = `${draftState.picks.length} / ${draftState.totalSteps} selected`;
 
-  // Make candidates draggable
-  list.querySelectorAll(".tournament-candidate").forEach((el) => {
-    el.addEventListener("dragstart", (e) => {
-      e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", el.dataset.index || "");
-    });
+// When a radio is selected, visually highlight its box
+const radios = list.querySelectorAll(".tournament-squad-radio");
+radios.forEach((radio) => {
+  radio.addEventListener("change", () => {
+    list.querySelectorAll(".tournament-candidate-box")
+      .forEach((box) => box.classList.remove("selected"));
+
+    const parent = radio.closest(".tournament-candidate-box");
+    if (parent) parent.classList.add("selected");
   });
+});
 
-  // Ensure slot drop handlers are wired
-  setupTournamentSlotDropHandlers();
+// Slot highlighting still works, just no drag & drop any more
+setupTournamentSlotDropHandlers();
 }
-
 
 
 // Called when the "Next Player" button is clicked
@@ -1799,10 +1802,10 @@ function confirmTournamentDraftPick(idxFromDrag) {
     const selected = list.querySelector(
       'input[name="tournament-cand"]:checked'
     );
-    if (!selected) {
-      alert("Please select a player first (or drag them into the slot).");
-      return;
-    }
+if (!selected) {
+  alert("Please select one of the players first, then click \"Confirm pick\".");
+  return;
+}
     idx = Number(selected.dataset.index);
   }
 

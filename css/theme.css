@@ -176,3 +176,43 @@ li:first-child{border-top:0}
 .link-button:hover{
   text-decoration:underline;
 }
+
+/* Tournament draft: 4 candidate options on the right */
+.tournament-squad-pool .tournament-candidate-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 6px 12px;
+  margin-bottom: 8px;
+  border-radius: 999px;
+  background: #06163a;          /* slightly darker blue than the card */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.tournament-candidate-box input[type="radio"] {
+  margin-right: 0.5rem;
+}
+
+.tournament-candidate-box .candidate-pos {
+  opacity: 0.8;
+  min-width: 2.5rem;
+}
+
+.tournament-candidate-box .candidate-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tournament-candidate-box .candidate-rating {
+  font-weight: 600;
+}
+
+.tournament-candidate-box.selected {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
