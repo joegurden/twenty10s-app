@@ -216,3 +216,67 @@ li:first-child{border-top:0}
   border-color: #ffffff;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
+
+/* Right-hand column of the Tournament Squad Draft */
+.tournament-squad-pool {
+  flex: 1.2;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;        /* centre everything in this column */
+}
+
+/* The list that holds the 4 candidate boxes */
+.tournament-squad-pool #tournamentSquadList {
+  width: 100%;
+  max-width: 420px;           /* keep it nice and compact */
+  margin: 0 auto 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 on top, 2 below */
+  gap: 0.5rem 0.75rem;
+}
+
+/* Individual candidate “pills” */
+.tournament-squad-pool .tournament-candidate-box {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #06163a;          /* dark blue to match the XI slots */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+/* Radio alignment */
+.tournament-candidate-box input[type="radio"] {
+  margin-right: 0.3rem;
+}
+
+/* Position label on the left */
+.tournament-candidate-box .candidate-pos {
+  opacity: 0.8;
+  min-width: 2.4rem;
+}
+
+/* Player name in the middle */
+.tournament-candidate-box .candidate-name {
+  flex: 1;
+  min-width: 0;                 /* allows ellipsis instead of stretching card */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Rating on the right */
+.tournament-candidate-box .candidate-rating {
+  font-weight: 600;
+}
+
+/* Selected state (when radio is chosen) */
+.tournament-candidate-box.selected {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+
