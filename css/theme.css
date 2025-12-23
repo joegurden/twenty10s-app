@@ -342,3 +342,30 @@ li:first-child{border-top:0}
   }
 }
 
+/* ================================
+   TOURNAMENT DRAFT PANEL WIDTH
+   ================================ */
+
+/* Make the dark blue draft panel wider */
+.team-details {
+  width: 760px;          /* 🔥 increase overall draft width */
+  max-width: 760px;
+}
+
+/* Ensure layout allows that width */
+.tournament-layout {
+  grid-template-columns: auto 1fr;
+}
+
+/* Draft-only phase: keep it left aligned */
+#page-tournament.draft-only .team-details {
+  margin-left: 0;
+}
+
+/* Responsive safety */
+@media (max-width: 820px) {
+  .team-details {
+    width: 100%;
+    max-width: 100%;
+  }
+}
