@@ -280,3 +280,30 @@ li:first-child{border-top:0}
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
 
+/* =========================================
+   TOURNAMENT: Draft-only phase (show ONLY selection)
+   Put this at the END of theme.css
+   ========================================= */
+
+#page-tournament.draft-only .tournament-layout {
+  display: block;            /* disable 2-col layout during draft */
+}
+
+/* Hide everything EXCEPT the team selection panel */
+#page-tournament.draft-only .tournament-layout > :not(.team-details) {
+  display: none !important;
+}
+
+/* Make team selection panel sit on the left and a good size */
+#page-tournament.draft-only .team-details {
+  width: min(560px, 96vw);
+  margin: 0;                 /* left aligned */
+  max-height: none;          /* no scroll container */
+  overflow: visible;
+}
+
+/* Optional: tighten the slots so it feels clean */
+#page-tournament.draft-only .team-details li {
+  padding: 6px 8px;
+}
+

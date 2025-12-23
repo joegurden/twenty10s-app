@@ -26,6 +26,16 @@ const FORMATIONS = {
 const BACKLINE = new Set(["GK","RB","CB","LB","RWB","LWB"]);
 const $ = (id) => document.getElementById(id);
 
+function setTournamentDraftOnlyMode(on) {
+  const page = $("page-tournament");
+  if (!page) return;
+
+  page.classList.toggle("draft-only", !!on);
+
+  // Ensure the draft panel is visible during draft-only
+  if (on) $("tournamentSquad")?.classList.remove("hidden");
+}
+
 /* ---------------- Tournament (Supabase) Globals ---------------- */
 
 // no TOURNAMENT_SQUAD_SIZE here
@@ -1534,6 +1544,13 @@ async function initTournament() {
 function showTournamentSquadSelection() {
   draftState.active = true;
   draftState.step = 0;
+  // ✅ Phase 1: ONLY show team selection (left aligned)
+  setTournamentDraftOnlyMode(true);
+
+  // Optional: clear the output so only the selection panel is visible
+  const out = $("tournamentOutput");
+  if (out) out.innerHTML = "";
+
 
   const xiCount = tournament.requiredPositions?.length || 11;
   draftState.totalSteps = xiCount + DRAFT_SUB_PICKS; // 11 + 4 = 15
@@ -2592,6 +2609,8 @@ function finishTournamentFromGroups() {
 
 function finishTournamentDraft() {
   draftState.active = false;
+  // ✅ Phase 2: bring back the normal tournament layout
+  setTournamentDraftOnlyMode(false);
 
   const userSquad = draftState.picks || [];
   userTournamentSquad = userSquad;  // store globally too
