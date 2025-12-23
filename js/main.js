@@ -26,6 +26,31 @@ const FORMATIONS = {
 const BACKLINE = new Set(["GK","RB","CB","LB","RWB","LWB"]);
 const $ = (id) => document.getElementById(id);
 
+function normalizeTournamentCandidateWidths() {
+  const list = document.getElementById("tournamentSquadList");
+  if (!list) return;
+
+  const boxes = Array.from(
+    list.querySelectorAll(".tournament-candidate-box")
+  );
+  if (!boxes.length) return;
+
+  // Reset widths so natural size can be measured
+  boxes.forEach(b => (b.style.width = "fit-content"));
+
+  let maxWidth = 0;
+  boxes.forEach(b => {
+    const w = b.getBoundingClientRect().width;
+    if (w > maxWidth) maxWidth = w;
+  });
+
+  // Apply the widest width to all boxes
+  boxes.forEach(b => {
+    b.style.width = `${maxWidth}px`;
+  });
+}
+
+
 function setTournamentDraftOnlyMode(on) {
   const page = $("page-tournament");
   if (!page) return;
@@ -1905,7 +1930,8 @@ function renderTournament(tables, ko) {
 
         })
         .join("");
-
+// ✅ ADD THIS EXACT LINE HERE
+normalizeTournamentCandidateWidths();
       return `
       <div class="card mini">
         <div class="draft-head"><strong>${group.name}</strong></div>

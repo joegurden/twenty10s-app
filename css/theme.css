@@ -306,4 +306,13 @@ li:first-child{border-top:0}
 #page-tournament.draft-only .team-details li {
   padding: 6px 8px;
 }
+/* Candidate pills: allow natural width so JS can measure */
+.tournament-squad-pool #tournamentSquadList {
+  justify-content: center;
+}
+
+.tournament-squad-pool .tournament-candidate-box {
+  width: fit-content;   /* important */
+  min-width: 0;
+}
 
