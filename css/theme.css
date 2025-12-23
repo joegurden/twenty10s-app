@@ -315,4 +315,30 @@ li:first-child{border-top:0}
   width: fit-content;   /* important */
   min-width: 0;
 }
+/* --- Tournament candidate pills: fixed width, no overlap --- */
+.tournament-squad-pool #tournamentSquadList{
+  display: grid;
+  grid-template-columns: repeat(2, 340px); /* <- fixed columns */
+  gap: 12px 14px;
+  justify-content: start;                  /* left align within panel */
+  align-content: start;
+}
+
+/* fixed pill width to match the column */
+.tournament-squad-pool .tournament-candidate-box{
+  width: 340px;            /* <- must match column width */
+  max-width: 340px;
+  box-sizing: border-box;
+}
+
+/* If screen is too narrow, stack to 1 column automatically */
+@media (max-width: 760px){
+  .tournament-squad-pool #tournamentSquadList{
+    grid-template-columns: 1fr;
+  }
+  .tournament-squad-pool .tournament-candidate-box{
+    width: 100%;
+    max-width: 100%;
+  }
+}
 

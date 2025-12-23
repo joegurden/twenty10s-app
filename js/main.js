@@ -1930,8 +1930,7 @@ function renderTournament(tables, ko) {
 
         })
         .join("");
-// ✅ ADD THIS EXACT LINE HERE
-normalizeTournamentCandidateWidths();
+
       return `
       <div class="card mini">
         <div class="draft-head"><strong>${group.name}</strong></div>
