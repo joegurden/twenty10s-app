@@ -59,39 +59,24 @@ li:first-child{border-top:0}
 .pick input{margin-right:8px}
 
 /* Top nav ribbon */
-.nav{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  margin-top:8px;
-}
-.nav-btn{
-  font-size:14px;
-  padding:6px 10px;
-}
-.nav-btn.primary{
-  background:#0f2f7a;
-}
-.page{
-  margin-top:12px;
+.nav {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
 }
 
-/* Top nav ribbon + pages */
-.nav{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  margin-top:8px;
+.nav-btn {
+  font-size: 14px;
+  padding: 6px 10px;
 }
-.nav-btn{
-  font-size:14px;
-  padding:6px 10px;
+
+.nav-btn.primary {
+  background: #0f2f7a;
 }
-.nav-btn.primary{
-  background:#0f2f7a;
-}
-.page{
-  margin-top:12px;
+
+.page {
+  margin-top: 12px;
 }
 
 /* Tournament layout */
@@ -296,9 +281,9 @@ li:first-child{border-top:0}
 
 /* Make team selection panel sit on the left and a good size */
 #page-tournament.draft-only .team-details {
-  width: min(560px, 96vw);
+  width: min(980px, 96vw);   /* ✅ wider “dark blue mode box” */
   margin: 0;                 /* left aligned */
-  max-height: none;          /* no scroll container */
+  max-height: none;
   overflow: visible;
 }
 
@@ -306,15 +291,7 @@ li:first-child{border-top:0}
 #page-tournament.draft-only .team-details li {
   padding: 6px 8px;
 }
-/* Candidate pills: allow natural width so JS can measure */
-.tournament-squad-pool #tournamentSquadList {
-  justify-content: center;
-}
 
-.tournament-squad-pool .tournament-candidate-box {
-  width: fit-content;   /* important */
-  min-width: 0;
-}
 /* --- Tournament candidate pills: fixed width, no overlap --- */
 .tournament-squad-pool #tournamentSquadList{
   display: grid;
