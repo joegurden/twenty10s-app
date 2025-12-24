@@ -162,109 +162,6 @@ li:first-child{border-top:0}
   text-decoration:underline;
 }
 
-/* Tournament draft: 4 candidate options on the right */
-.tournament-squad-pool .tournament-candidate-box {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 6px 12px;
-  margin-bottom: 8px;
-  border-radius: 999px;
-  background: #06163a;          /* slightly darker blue than the card */
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  cursor: pointer;
-  font-size: 0.9rem;
-}
-
-.tournament-candidate-box input[type="radio"] {
-  margin-right: 0.5rem;
-}
-
-.tournament-candidate-box .candidate-pos {
-  opacity: 0.8;
-  min-width: 2.5rem;
-}
-
-.tournament-candidate-box .candidate-name {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.tournament-candidate-box .candidate-rating {
-  font-weight: 600;
-}
-
-.tournament-candidate-box.selected {
-  border-color: #ffffff;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4);
-}
-
-/* Right-hand column of the Tournament Squad Draft */
-.tournament-squad-pool {
-  flex: 1.2;
-  min-width: 260px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;        /* centre everything in this column */
-}
-
-/* The list that holds the 4 candidate boxes */
-.tournament-squad-pool #tournamentSquadList {
-  width: 100%;
-  max-width: 420px;           /* keep it nice and compact */
-  margin: 0 auto 1rem;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr)); /* 2 on top, 2 below */
-  gap: 0.5rem 0.75rem;
-}
-
-/* Individual candidate “pills” */
-.tournament-squad-pool .tournament-candidate-box {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: #06163a;          /* dark blue to match the XI slots */
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  cursor: pointer;
-  font-size: 0.85rem;
-}
-
-/* Radio alignment */
-.tournament-candidate-box input[type="radio"] {
-  margin-right: 0.3rem;
-}
-
-/* Position label on the left */
-.tournament-candidate-box .candidate-pos {
-  opacity: 0.8;
-  min-width: 2.4rem;
-}
-
-/* Player name in the middle */
-.tournament-candidate-box .candidate-name {
-  flex: 1;
-  min-width: 0;                 /* allows ellipsis instead of stretching card */
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Rating on the right */
-.tournament-candidate-box .candidate-rating {
-  font-weight: 600;
-}
-
-/* Selected state (when radio is chosen) */
-.tournament-candidate-box.selected {
-  border-color: #ffffff;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4);
-}
-
 /* =========================================
    TOURNAMENT: Draft-only phase (show ONLY selection)
    Put this at the END of theme.css
@@ -292,33 +189,6 @@ li:first-child{border-top:0}
   padding: 6px 8px;
 }
 
-/* --- Tournament candidate pills: fixed width, no overlap --- */
-.tournament-squad-pool #tournamentSquadList{
-  display: grid;
-  grid-template-columns: repeat(2, 340px); /* <- fixed columns */
-  gap: 12px 14px;
-  justify-content: start;                  /* left align within panel */
-  align-content: start;
-}
-
-/* fixed pill width to match the column */
-.tournament-squad-pool .tournament-candidate-box{
-  width: 340px;            /* <- must match column width */
-  max-width: 340px;
-  box-sizing: border-box;
-}
-
-/* If screen is too narrow, stack to 1 column automatically */
-@media (max-width: 760px){
-  .tournament-squad-pool #tournamentSquadList{
-    grid-template-columns: 1fr;
-  }
-  .tournament-squad-pool .tournament-candidate-box{
-    width: 100%;
-    max-width: 100%;
-  }
-}
-
 /* ================================
    TOURNAMENT DRAFT PANEL WIDTH
    ================================ */
@@ -344,5 +214,51 @@ li:first-child{border-top:0}
   .team-details {
     width: 100%;
     max-width: 100%;
+  }
+}
+
+/* ================================
+   Tournament Draft – tidy candidates layout
+   ================================ */
+
+/* Keep children clipped inside panel */
+.team-details {
+  overflow: hidden;
+}
+
+/* Right-side candidates column */
+.tournament-squad-pool {
+  width: 100%;
+  max-width: 520px;
+  align-items: flex-start;
+}
+
+/* 2×2 grid that always fits */
+#tournamentSquadList {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+
+/* Pills fill grid cell (no overflow) */
+.tournament-candidate-box {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Text handling */
+.tournament-candidate-box .candidate-name {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Stack on small screens */
+@media (max-width: 760px) {
+  #tournamentSquadList {
+    grid-template-columns: 1fr;
   }
 }
