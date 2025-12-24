@@ -2055,11 +2055,17 @@ const koHtml = `
   </div>
 `;
 
-  container.innerHTML = `
-    <div class="group-grid">${groupsHtml}</div>
-    <hr />
-    ${koHtml}
-  `;
+ container.innerHTML = `
+  <div class="t-stage-grid">
+    <div class="t-groups-col">
+      ${groupsHtml}
+    </div>
+
+    <div class="t-knockouts-col">
+      ${koHtml}
+    </div>
+  </div>
+`;
 }
 
 // Decide which formation a team uses in tournament view

@@ -293,27 +293,44 @@ li:first-child{border-top:0}
   grid-template-columns: 1.6fr 0.9fr;
 }
 /* ================================
-   Tournament: bring Groups & Knockouts toward the centre line
+   Groups + Knockouts grid (yellow arrow + red cutoff)
    ================================ */
 
-/* Make the LEFT tournament area (Groups+Knockouts) use space better */
-#tournamentOutput {
+.t-stage-grid{
   display: grid;
-  grid-template-columns: 1.15fr 1.45fr; /* Groups column + wider Knockouts column */
-  gap: 22px;                            /* reduce the dead space between them */
+  grid-template-columns: minmax(380px, 520px) minmax(760px, 1fr);
+  gap: 18px;                 /* reduces dead space between them */
   align-items: start;
 }
 
-/* Ensure both panels can actually expand */
-#tournamentOutput .t-group-card,
-#tournamentOutput .t-knockout {
+/* RED line "cut off": both columns stop at same height and scroll internally */
+.t-groups-col,
+.t-knockouts-col{
+  max-height: 78vh;          /* adjust up/down to match your red line */
+  overflow-y: auto;
+  padding-right: 6px;        /* keeps scrollbar from covering content */
+}
+
+/* Make knockouts actually fill its new column */
+.t-knockouts-col .card.mini{
   width: 100%;
   max-width: none;
 }
 
-/* On smaller screens, stack */
-@media (max-width: 1100px) {
-  #tournamentOutput {
+/* Keep group cards full width */
+.t-groups-col .card.mini{
+  width: 100%;
+}
+
+/* Responsive fallback */
+@media (max-width: 1100px){
+  .t-stage-grid{
     grid-template-columns: 1fr;
   }
+  .t-groups-col,
+  .t-knockouts-col{
+    max-height: none;
+    overflow: visible;
+  }
 }
+
