@@ -391,3 +391,6 @@ li:first-child{border-top:0}
 .last-match-leg {
   opacity: 0.8;
 }
+.last-match-score {
+  color: var(--text); /* matches rest of UI text */
+}
