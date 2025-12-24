@@ -292,3 +292,28 @@ li:first-child{border-top:0}
 .tournament-layout {
   grid-template-columns: 1.6fr 0.9fr;
 }
+/* ================================
+   Tournament: bring Groups & Knockouts toward the centre line
+   ================================ */
+
+/* Make the LEFT tournament area (Groups+Knockouts) use space better */
+#tournamentOutput {
+  display: grid;
+  grid-template-columns: 1.15fr 1.45fr; /* Groups column + wider Knockouts column */
+  gap: 22px;                            /* reduce the dead space between them */
+  align-items: start;
+}
+
+/* Ensure both panels can actually expand */
+#tournamentOutput .t-group-card,
+#tournamentOutput .t-knockout {
+  width: 100%;
+  max-width: none;
+}
+
+/* On smaller screens, stack */
+@media (max-width: 1100px) {
+  #tournamentOutput {
+    grid-template-columns: 1fr;
+  }
+}
