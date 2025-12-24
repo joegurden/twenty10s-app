@@ -920,8 +920,13 @@ function updateLastMatchPanel(fix, isHomePerspective) {
   const oppGoals  = userIsHome ? ga : gh;
   const oppTeam   = userIsHome ? awayTeam : homeTeam;
 
-  labelEl.textContent =
-    `${groupPart}${userTeam?.name || "Your Club"} ${yourGoals}–${oppGoals} ${oppTeam?.name || "Opponent"}${legPart}`;
+labelEl.innerHTML = `
+  <span class="last-match-context">${groupPart}</span>
+  <span class="last-match-score">
+    ${userTeam?.name || "Your Club"} ${yourGoals}–${oppGoals} ${oppTeam?.name || "Opponent"}
+  </span>
+  <span class="last-match-leg">${legPart}</span>
+`;
 
   // Build scorer lists
   const homeScorers = (fix.scorers?.home || []).map(

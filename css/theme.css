@@ -365,3 +365,29 @@ li:first-child{border-top:0}
   }
 }
 
+/* ================================
+   Last Match – prominent score line
+   ================================ */
+
+#tournamentLastMatchLabel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+}
+
+/* Context (Group D ·) */
+.last-match-context {
+  opacity: 0.85;
+}
+
+/* ⭐ Score + teams (prominent) */
+.last-match-score {
+  font-size: 18px;       /* matches "Last Match" heading */
+  font-weight: 700;
+}
+
+/* (Leg 2) */
+.last-match-leg {
+  opacity: 0.8;
+}
