@@ -303,13 +303,7 @@ li:first-child{border-top:0}
   align-items: start;
 }
 
-/* RED line "cut off": both columns stop at same height and scroll internally */
-.t-groups-col,
-.t-knockouts-col{
-  max-height: 78vh;          /* adjust up/down to match your red line */
-  overflow-y: auto;
-  padding-right: 6px;        /* keeps scrollbar from covering content */
-}
+
 
 /* Make knockouts actually fill its new column */
 .t-knockouts-col .card.mini{
@@ -331,6 +325,43 @@ li:first-child{border-top:0}
   .t-knockouts-col{
     max-height: none;
     overflow: visible;
+  }
+}
+/* ================================
+   Groups + Knockouts: 2-column layout (NO inner scrolling)
+   ================================ */
+
+.t-stage-grid{
+  display: grid;
+  grid-template-columns: minmax(420px, 560px) minmax(720px, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+/* Make sure both columns stretch naturally (no clipping/scrolling) */
+.t-groups-col,
+.t-knockouts-col{
+  overflow: visible;
+  max-height: none;
+}
+
+/* Ensure knockouts fills its column */
+.t-knockouts-col .card,
+.t-knockouts-col .t-knockout{
+  width: 100%;
+  max-width: none;
+}
+
+/* Ensure groups fill their column */
+.t-groups-col .t-group-card{
+  width: 100%;
+  max-width: none;
+}
+
+/* Responsive */
+@media (max-width: 1100px){
+  .t-stage-grid{
+    grid-template-columns: 1fr;
   }
 }
 
