@@ -262,3 +262,33 @@ li:first-child{border-top:0}
     grid-template-columns: 1fr;
   }
 }
+/* ================================
+   Tournament results layout – widen & align
+   ================================ */
+
+/* Pull the whole tournament layout left */
+.tournament-layout {
+  margin-left: 0;
+  padding-left: 0;
+  grid-template-columns: 1.4fr 1fr; /* wider left, comfortable right */
+  gap: 20px;
+}
+
+/* Make both cards wider and aligned */
+.tournament-layout > .card {
+  width: 100%;
+  margin-left: 0;
+}
+
+/* Reduce internal congestion */
+.tournament-layout .card {
+  padding: 18px 20px;
+}
+
+/* Optional: slightly widen the squad panel specifically */
+.tournament-layout .team-details {
+  max-width: none;
+}
+.tournament-layout {
+  grid-template-columns: 1.6fr 0.9fr;
+}
