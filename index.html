@@ -246,9 +246,44 @@
 
     <p class="pill">Select exactly 11 players. They must fit the formation.</p>
 
-    <div id="tournamentPrematchPool" class="player-list">
-      <!-- JS fills squad checkboxes here -->
+<!-- Draft-style XI selection (replaces checkbox list) -->
+<div class="t-stage-grid" style="grid-template-columns: 420px 1fr; gap: 1.5rem;">
+
+  <!-- LEFT: XI slots -->
+  <div id="tournamentPrematchSlots" class="tournament-squad-slots">
+    <!-- JS fills 11 position slots here -->
+  </div>
+
+  <!-- RIGHT: candidate picks -->
+  <div class="tournament-squad-pool">
+    <div class="pill" style="margin-bottom:0.5rem;">
+      Click one option, then press “Confirm pick”.
     </div>
+
+    <div id="tournamentPrematchCandidates" class="pool">
+      <!-- JS fills 4 candidates here -->
+    </div>
+
+    <div class="row">
+      <button
+        id="btn-tournament-confirm-xi"
+        class="primary"
+        disabled
+      >
+        Confirm pick
+      </button>
+
+      <span
+        id="tournamentPrematchCount"
+        class="pill"
+      >
+        0 / 11 selected
+      </span>
+    </div>
+  </div>
+
+</div>
+
 
     <div id="tournamentMatchError" class="pill error"></div>
 

@@ -394,3 +394,14 @@ li:first-child{border-top:0}
 .last-match-score {
   color: var(--text); /* matches rest of UI text */
 }
+
+/* Prematch XI draft (between games) */
+#tournamentPrematchCandidates{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+
+#tournamentPrematchSlots .xi-slot.active{
+  outline: 2px solid rgba(255,255,255,0.6);
+}

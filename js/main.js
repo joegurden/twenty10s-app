@@ -653,6 +653,14 @@ function nextMatch(){
 }
 /* ---------- Tournament Mode State ---------- */
 
+const matchXiDraft = {
+  active: false,
+  step: 0,
+  requiredPositions: [],
+  picks: [],
+  taken: new Set(),
+  currentCandidates: [],
+};
 
 const FORMATION_POSITIONS = {
   "3-4-3":      ["GK","CB","CB","CB","RM","CM","CM","LM","RW","ST","LW"],
@@ -1081,23 +1089,8 @@ function showTournamentPrematch() {
     }`;
   }
 
-  // Build checkbox list of your 15-man squad
-  poolEl.innerHTML = squad
-    .map(
-      (p, i) => `
-      <label class="player-row">
-        <input 
-          type="checkbox"
-          class="tournament-xi-checkbox"
-          data-idx="${i}"
-        />
-        <span class="name">${p.Name}</span>
-        <span class="pos">${p.Position}</span>
-        <span class="rating">${p.Rating}</span>
-      </label>
-    `
-    )
-    .join("");
+// Start draft-style XI selection (replaces checkbox list)
+startTournamentPrematchXiDraft();
 
   // Default formation: last used, otherwise the one chosen at tournament start
   const defaultFormation =
@@ -1182,7 +1175,7 @@ function playTournamentMatch() {
   const errorEl = $("tournamentMatchError");
   if (errorEl) errorEl.textContent = "";
 
-  const chosen = getTournamentChosenXI();
+const chosen = getTournamentChosenXIFromDraft();
   if (!chosen) {
     if (errorEl) {
       errorEl.textContent = "Select exactly 11 players for your XI.";
@@ -1889,6 +1882,152 @@ if (!selected) {
 function confirmDraftPick() {
   // Keep the existing event wiring but delegate
   confirmTournamentDraftPick(null);
+}
+function startTournamentPrematchXiDraft() {
+  const userTeam = tournament.teams[tournament.userTeamIndex];
+  const squad = userTeam?.squad || [];
+
+  matchXiDraft.active = true;
+  matchXiDraft.step = 0;
+  matchXiDraft.picks = [];
+  matchXiDraft.taken = new Set();
+  matchXiDraft.currentCandidates = [];
+
+  const formationSelect = $("tournamentMatchFormation");
+  const formationKey =
+    formationSelect?.value ||
+    tournament.userFormation ||
+    "4-3-3 (Holding)";
+
+  matchXiDraft.requiredPositions =
+    FORMATION_POSITIONS[formationKey] ||
+    FORMATION_POSITIONS["4-3-3 (Holding)"];
+
+  // Build XI slots UI into the prematch panel
+  const slotsEl = $("tournamentPrematchSlots");
+  if (slotsEl) {
+    slotsEl.innerHTML = matchXiDraft.requiredPositions
+      .slice(0, 11)
+      .map(
+        (pos, i) => `
+        <div class="xi-slot player-row ${i === 0 ? "active" : ""}" data-slot-index="${i}">
+          <span class="pos">${pos}</span>
+          <span class="slot-name" style="opacity:0.7;">Empty</span>
+        </div>`
+      )
+      .join("");
+  }
+
+  renderTournamentPrematchDraftStep(squad);
+}
+
+function renderTournamentPrematchDraftStep(squad) {
+  const list = $("tournamentPrematchCandidates");
+  const btn = $("btn-tournament-confirm-xi");
+  const count = $("tournamentPrematchCount");
+
+  if (!list || !btn) return;
+
+  // Finished XI
+  if (matchXiDraft.step >= 11) {
+    matchXiDraft.active = false;
+    btn.setAttribute("disabled", "disabled");
+    if (count) count.textContent = `11 / 11 selected`;
+    return;
+  }
+
+  const desiredPos = matchXiDraft.requiredPositions[matchXiDraft.step] || "ST";
+  const isTaken = (p) => matchXiDraft.taken.has(keyOf(p));
+
+  let candidates = shuffle(
+    squad.filter((p) => p.Position === desiredPos && !isTaken(p))
+  ).slice(0, 4);
+
+  if (candidates.length < 4) {
+    const filler = shuffle(squad.filter((p) => !isTaken(p))).filter(
+      (p) => !candidates.some((c) => keyOf(c) === keyOf(p))
+    );
+    candidates = candidates.concat(filler.slice(0, 4 - candidates.length));
+  }
+
+  matchXiDraft.currentCandidates = candidates;
+
+  list.innerHTML = candidates
+    .map(
+      (p, i) => `
+      <label class="player-row tournament-candidate-box">
+        <input type="radio" name="prematch-xi-cand" class="prematch-xi-radio" data-index="${i}">
+        <span class="candidate-pos">${p.Position}</span>
+        <span class="candidate-name">${p.Name}</span>
+        <span class="candidate-rating">${p.Rating}</span>
+      </label>
+    `
+    )
+    .join("");
+
+  // Disable confirm until selection
+  btn.setAttribute("disabled", "disabled");
+
+  list.querySelectorAll(".prematch-xi-radio").forEach((radio) => {
+    radio.addEventListener("change", () => {
+      list
+        .querySelectorAll(".tournament-candidate-box")
+        .forEach((b) => b.classList.remove("selected"));
+
+      radio.closest(".tournament-candidate-box")?.classList.add("selected");
+      btn.removeAttribute("disabled");
+    });
+  });
+
+  if (count) count.textContent = `${matchXiDraft.step} / 11 selected`;
+
+  // Highlight current slot
+  const slots = document.querySelectorAll("#tournamentPrematchSlots .xi-slot");
+  slots.forEach((s) => s.classList.remove("active"));
+  const current = document.querySelector(
+    `#tournamentPrematchSlots .xi-slot[data-slot-index="${matchXiDraft.step}"]`
+  );
+  current?.classList.add("active");
+}
+
+function confirmTournamentPrematchXiPick() {
+  if (!matchXiDraft.active) return;
+
+  const list = $("tournamentPrematchCandidates");
+  if (!list) return;
+
+  const selected = list.querySelector('input[name="prematch-xi-cand"]:checked');
+  if (!selected) return;
+
+  const idx = Number(selected.dataset.index);
+  const chosen = matchXiDraft.currentCandidates[idx];
+  if (!chosen) return;
+
+  // Write into slot
+  const slot = document.querySelector(
+    `#tournamentPrematchSlots .xi-slot[data-slot-index="${matchXiDraft.step}"]`
+  );
+  if (slot) {
+    const nameEl = slot.querySelector(".slot-name");
+    if (nameEl) {
+      nameEl.textContent = `${chosen.Name} (${chosen.Rating})`;
+      nameEl.style.opacity = "1";
+    }
+  }
+
+  matchXiDraft.picks.push(chosen);
+  matchXiDraft.taken.add(keyOf(chosen));
+  matchXiDraft.step += 1;
+
+  const userTeam = tournament.teams[tournament.userTeamIndex];
+  const squad = userTeam?.squad || [];
+  renderTournamentPrematchDraftStep(squad);
+}
+
+// Helper used by playTournamentMatch (replaces checkbox reader)
+function getTournamentChosenXIFromDraft() {
+  if (matchXiDraft.picks.length !== 11) return null;
+  return matchXiDraft.picks.slice(0, 11);
 }
 
 function renderTournament(tables, ko) {
@@ -2816,6 +2955,10 @@ $("btn-tournament-play-next")?.addEventListener("click", () => {
 /* ---------------- Tournament Prematch "Play" Button ---------------- */
 $("btn-tournament-play-match")?.addEventListener("click", () => {
   playTournamentMatch();
+});
+
+$("btn-tournament-confirm-xi")?.addEventListener("click", () => {
+  confirmTournamentPrematchXiPick();
 });
 
 $("btn-tournament-use-last-xi")?.addEventListener("click", () => {
