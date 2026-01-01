@@ -1059,16 +1059,22 @@ function showNextMatchPanel() {
 
 // Show the prematch panel for the current tournament fixture
 function showTournamentPrematch() {
-  const panel = $("tournamentPrematch");
-  const poolEl = $("tournamentPrematchPool");
-  const formationSelect = $("tournamentMatchFormation");
-  const errorEl = $("tournamentMatchError");
-  const vsLabel = $("tournamentMatchVs");
+const panel = $("tournamentPrematch");
+const formationSelect = $("tournamentMatchFormation");
+const errorEl = $("tournamentMatchError");
+const vsLabel = $("tournamentMatchVs");
 
-  if (!panel || !poolEl || !formationSelect) {
-    console.warn("Tournament prematch elements missing.");
-    return;
-  }
+// NEW prematch draft UI elements
+const slotsEl = $("tournamentPrematchSlots");
+const candEl = $("tournamentPrematchCandidates");
+const confirmBtn = $("btn-tournament-confirm-xi");
+const countEl = $("tournamentPrematchCount");
+
+if (!panel || !formationSelect || !slotsEl || !candEl || !confirmBtn || !countEl) {
+  console.warn("Tournament prematch elements missing.");
+  return;
+}
+
 
   if (errorEl) errorEl.textContent = "";
 
@@ -1089,9 +1095,6 @@ function showTournamentPrematch() {
     }`;
   }
 
-// Start draft-style XI selection (replaces checkbox list)
-startTournamentPrematchXiDraft();
-
   // Default formation: last used, otherwise the one chosen at tournament start
   const defaultFormation =
     (tournament.previousXI && tournament.previousXI.formation) ||
@@ -1103,23 +1106,13 @@ startTournamentPrematchXiDraft();
     formationSelect.value = defaultFormation;
   }
 
-  // If we have a previous XI, pre-tick those players
-  if (tournament.previousXI && Array.isArray(tournament.previousXI.keys)) {
-    const prevKeys = new Set(tournament.previousXI.keys);
-    squad.forEach((p, i) => {
-      if (prevKeys.has(keyOf(p))) {
-        const input = poolEl.querySelector(
-          `input.tournament-xi-checkbox[data-idx="${i}"]`
-        );
-        if (input) input.checked = true;
-      }
-    });
-  }
-
   // Show prematch panel, hide simple "Next match" card while picking
   panel.classList.remove("hidden");
   const nextPanel = $("tournamentNextMatch");
   if (nextPanel) nextPanel.classList.add("hidden");
+
+// Start draft-style XI selection (replaces checkbox list)
+startTournamentPrematchXiDraft();
 }
 
 function applyPreviousTournamentXI() {
