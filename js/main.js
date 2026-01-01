@@ -1880,6 +1880,60 @@ function startTournamentPrematchXiDraft() {
   const userTeam = tournament.teams[tournament.userTeamIndex];
   const squad = userTeam?.squad || [];
 
+  // reset draft state
+  matchXiDraft.active = true;
+  matchXiDraft.step = 0;
+  matchXiDraft.picks = [];
+  matchXiDraft.taken = new Set();
+  matchXiDraft.currentCandidates = [];
+
+  // disable play until XI complete
+  $("btn-tournament-play-match")?.setAttribute("disabled", "disabled");
+
+  // clear any previous error
+  const err = $("tournamentMatchError");
+  if (err) err.textContent = "";
+
+  // formation -> required positions
+  const formationSelect = $("tournamentMatchFormation");
+  const formationKey =
+    formationSelect?.value ||
+    tournament.userFormation ||
+    "4-3-3 (Holding)";
+
+  matchXiDraft.requiredPositions =
+    FORMATION_POSITIONS[formationKey] ||
+    FORMATION_POSITIONS["4-3-3 (Holding)"];
+
+  // update count label
+  const countEl = $("tournamentPrematchCount");
+  if (countEl) countEl.textContent = `0 / 11 selected`;
+
+  // Build XI slots UI
+  const slotsEl = $("tournamentPrematchSlots");
+  if (slotsEl) {
+    slotsEl.innerHTML = matchXiDraft.requiredPositions
+      .slice(0, 11)
+      .map(
+        (pos, i) => `
+          <div class="xi-slot player-row ${i === 0 ? "active" : ""}" data-slot-index="${i}">
+            <span class="pos">${pos}</span>
+            <span class="slot-name" style="opacity:0.7;">Empty</span>
+          </div>
+        `
+      )
+      .join("");
+  }
+
+  // render first pick
+  renderTournamentPrematchDraftStep(squad);
+}
+
+
+function resetTournamentPrematchXiDraftFromFormation() {
+  const userTeam = tournament.teams[tournament.userTeamIndex];
+  const squad = userTeam?.squad || [];
+
   matchXiDraft.active = true;
   matchXiDraft.step = 0;
   matchXiDraft.picks = [];
@@ -1896,20 +1950,25 @@ function startTournamentPrematchXiDraft() {
     FORMATION_POSITIONS[formationKey] ||
     FORMATION_POSITIONS["4-3-3 (Holding)"];
 
-  // Build XI slots UI into the prematch panel
+  // rebuild slots UI
   const slotsEl = $("tournamentPrematchSlots");
   if (slotsEl) {
     slotsEl.innerHTML = matchXiDraft.requiredPositions
       .slice(0, 11)
       .map(
         (pos, i) => `
-        <div class="xi-slot player-row ${i === 0 ? "active" : ""}" data-slot-index="${i}">
-          <span class="pos">${pos}</span>
-          <span class="slot-name" style="opacity:0.7;">Empty</span>
-        </div>`
+          <div class="xi-slot player-row ${i === 0 ? "active" : ""}" data-slot-index="${i}">
+            <span class="pos">${pos}</span>
+            <span class="slot-name" style="opacity:0.7;">Empty</span>
+          </div>
+        `
       )
       .join("");
   }
+
+  // reset counter + render first pick
+  const countEl = $("tournamentPrematchCount");
+  if (countEl) countEl.textContent = `0 / 11 selected`;
 
   renderTournamentPrematchDraftStep(squad);
 }
@@ -1918,6 +1977,8 @@ function renderTournamentPrematchDraftStep(squad) {
   const list = $("tournamentPrematchCandidates");
   const btn = $("btn-tournament-confirm-xi");
   const count = $("tournamentPrematchCount");
+  const playBtn = $("btn-tournament-play-match");
+  const err = $("tournamentMatchError");
 
   if (!list || !btn) return;
 
@@ -1925,36 +1986,50 @@ function renderTournamentPrematchDraftStep(squad) {
   if (matchXiDraft.step >= 11) {
     matchXiDraft.active = false;
     btn.setAttribute("disabled", "disabled");
+    playBtn?.removeAttribute("disabled");
     if (count) count.textContent = `11 / 11 selected`;
+    if (err) err.textContent = "";
     return;
   }
+
+  playBtn?.setAttribute("disabled", "disabled");
 
   const desiredPos = matchXiDraft.requiredPositions[matchXiDraft.step] || "ST";
   const isTaken = (p) => matchXiDraft.taken.has(keyOf(p));
 
-  let candidates = shuffle(
+  // ✅ STRICT: only players who naturally play the position needed
+  const candidates = shuffle(
     squad.filter((p) => p.Position === desiredPos && !isTaken(p))
   ).slice(0, 4);
 
-  if (candidates.length < 4) {
-    const filler = shuffle(squad.filter((p) => !isTaken(p))).filter(
-      (p) => !candidates.some((c) => keyOf(c) === keyOf(p))
-    );
-    candidates = candidates.concat(filler.slice(0, 4 - candidates.length));
+  // If none available, user must change formation or restart
+  if (!candidates.length) {
+    list.innerHTML = `
+      <div class="pill">
+        No available <b>${desiredPos}</b>s left in your squad for this pick.
+        Change formation or restart XI selection.
+      </div>
+    `;
+    btn.setAttribute("disabled", "disabled");
+    if (count) count.textContent = `${matchXiDraft.step} / 11 selected`;
+    if (err) err.textContent = `No ${desiredPos}s available. Try a different formation.`;
+    return;
   }
+
+  if (err) err.textContent = "";
 
   matchXiDraft.currentCandidates = candidates;
 
   list.innerHTML = candidates
     .map(
       (p, i) => `
-      <label class="player-row tournament-candidate-box">
-        <input type="radio" name="prematch-xi-cand" class="prematch-xi-radio" data-index="${i}">
-        <span class="candidate-pos">${p.Position}</span>
-        <span class="candidate-name">${p.Name}</span>
-        <span class="candidate-rating">${p.Rating}</span>
-      </label>
-    `
+        <label class="player-row tournament-candidate-box">
+          <input type="radio" name="prematch-xi-cand" class="prematch-xi-radio" data-index="${i}">
+          <span class="candidate-pos">${p.Position}</span>
+          <span class="candidate-name">${p.Name}</span>
+          <span class="candidate-rating">${p.Rating}</span>
+        </label>
+      `
     )
     .join("");
 
@@ -1995,6 +2070,10 @@ function confirmTournamentPrematchXiPick() {
   const idx = Number(selected.dataset.index);
   const chosen = matchXiDraft.currentCandidates[idx];
   if (!chosen) return;
+
+  // ✅ ADD THESE TWO LINES RIGHT HERE
+  const desiredPos = matchXiDraft.requiredPositions[matchXiDraft.step] || "ST";
+  if (chosen.Position !== desiredPos) return;
 
   // Write into slot
   const slot = document.querySelector(
