@@ -1168,7 +1168,7 @@ function playTournamentMatch() {
   const errorEl = $("tournamentMatchError");
   if (errorEl) errorEl.textContent = "";
 
-const chosen = getTournamentChosenXIFromDraft();
+  const chosen = getTournamentChosenXIFromDraft();
   if (!chosen) {
     if (errorEl) {
       errorEl.textContent = "Select exactly 11 players for your XI.";
@@ -1177,6 +1177,15 @@ const chosen = getTournamentChosenXIFromDraft();
     }
     return;
   }
+
+  // ✅ Remember last XI (for "Use Last XI")
+  tournament.previousXI = {
+    formation: $("tournamentMatchFormation")?.value || tournament.userFormation,
+    keys: chosen.map((p) => keyOf(p)),
+  };
+
+  // ... existing match simulation continues below
+
 
   const formationSelect = $("tournamentMatchFormation");
   const formationKey =
@@ -1929,6 +1938,87 @@ function startTournamentPrematchXiDraft() {
   renderTournamentPrematchDraftStep(squad);
 }
 
+function applyLastXIToPrematchDraft() {
+  const userTeam = tournament.teams[tournament.userTeamIndex];
+  const squad = userTeam?.squad || [];
+  if (!squad.length) return;
+
+  const prev = tournament.previousXI;
+  if (!prev || !Array.isArray(prev.keys) || !prev.keys.length) return;
+
+  // Reset draft from current formation (so slots match dropdown)
+  startTournamentPrematchXiDraft();
+
+  const required = matchXiDraft.requiredPositions.slice(0, 11);
+  const remaining = new Set(prev.keys); // keys we still want to place
+
+  // Helper to pull a player from squad by key
+  const byKey = new Map(squad.map((p) => [keyOf(p), p]));
+
+  matchXiDraft.picks = [];
+  matchXiDraft.taken = new Set();
+
+  // Fill slots in order, only if position matches
+  required.forEach((pos, i) => {
+    // Find a previous player that fits this position and isn't used yet
+    let chosen = null;
+
+    for (const k of Array.from(remaining)) {
+      const p = byKey.get(k);
+      if (!p) continue;
+      if (p.Position !== pos) continue;
+      chosen = p;
+      remaining.delete(k);
+      break;
+    }
+
+    // If no matching previous player, leave empty
+    if (!chosen) return;
+
+    matchXiDraft.picks[i] = chosen;
+    matchXiDraft.taken.add(keyOf(chosen));
+
+    const slot = document.querySelector(
+      `#tournamentPrematchSlots .xi-slot[data-slot-index="${i}"]`
+    );
+    if (slot) {
+      const nameEl = slot.querySelector(".slot-name");
+      if (nameEl) {
+        nameEl.textContent = `${chosen.Name} (${chosen.Rating})`;
+        nameEl.style.opacity = "1";
+      }
+    }
+  });
+
+  // Move step to first empty slot
+  let nextStep = 0;
+  while (nextStep < 11 && matchXiDraft.picks[nextStep]) nextStep++;
+  matchXiDraft.step = nextStep;
+
+  // Update count + highlight
+  const count = $("tournamentPrematchCount");
+  const pickedCount = matchXiDraft.picks.filter(Boolean).length;
+  if (count) count.textContent = `${pickedCount} / 11 selected`;
+
+  document.querySelectorAll("#tournamentPrematchSlots .xi-slot")
+    .forEach((s) => s.classList.remove("active"));
+  document.querySelector(
+    `#tournamentPrematchSlots .xi-slot[data-slot-index="${matchXiDraft.step}"]`
+  )?.classList.add("active");
+
+  // Enable play if complete, otherwise render next pick candidates
+  const playBtn = $("btn-tournament-play-match");
+  if (pickedCount === 11) {
+    matchXiDraft.active = false;
+    playBtn?.removeAttribute("disabled");
+    $("btn-tournament-confirm-xi")?.setAttribute("disabled", "disabled");
+    $("tournamentMatchError") && ($("tournamentMatchError").textContent = "");
+  } else {
+    matchXiDraft.active = true;
+    playBtn?.setAttribute("disabled", "disabled");
+    renderTournamentPrematchDraftStep(squad);
+  }
+}
 
 function resetTournamentPrematchXiDraftFromFormation() {
   const userTeam = tournament.teams[tournament.userTeamIndex];
@@ -3034,7 +3124,7 @@ $("btn-tournament-confirm-xi")?.addEventListener("click", () => {
 });
 
 $("btn-tournament-use-last-xi")?.addEventListener("click", () => {
-  applyPreviousTournamentXI();
+  applyLastXIToPrematchDraft();
 });
 
   /* ---------------- Tournament Team Detail: close button ---------------- */
