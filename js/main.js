@@ -1106,62 +1106,19 @@ if (!panel || !formationSelect || !slotsEl || !candEl || !confirmBtn || !countEl
     formationSelect.value = defaultFormation;
   }
 
+  // ✅ Live-update slots/candidates when formation changes
+  formationSelect.onchange = () => {
+    startTournamentPrematchXiDraft();
+  };
+
   // Show prematch panel, hide simple "Next match" card while picking
   panel.classList.remove("hidden");
   const nextPanel = $("tournamentNextMatch");
   if (nextPanel) nextPanel.classList.add("hidden");
 
-// Start draft-style XI selection (replaces checkbox list)
-startTournamentPrematchXiDraft();
-}
+  // Start draft-style XI selection (replaces checkbox list)
+  startTournamentPrematchXiDraft();
 
-function applyPreviousTournamentXI() {
-  const userTeam = tournament.teams[tournament.userTeamIndex];
-  const squad = userTeam?.squad || [];
-  const panel = $("tournamentPrematch");
-  const poolEl = $("tournamentPrematchPool");
-  const formationSelect = $("tournamentMatchFormation");
-
-  if (!panel || !poolEl || !tournament.previousXI) return;
-
-  const prevKeys = new Set(tournament.previousXI.keys || []);
-
-  // Clear all checks first
-  const allChecks = poolEl.querySelectorAll("input.tournament-xi-checkbox");
-  allChecks.forEach(c => (c.checked = false));
-
-  // Re-check the previous XI
-  squad.forEach((p, i) => {
-    if (prevKeys.has(keyOf(p))) {
-      const input = poolEl.querySelector(
-        `input.tournament-xi-checkbox[data-idx="${i}"]`
-      );
-      if (input) input.checked = true;
-    }
-  });
-
-  // Restore previous formation
-  if (formationSelect && tournament.previousXI.formation) {
-    formationSelect.value = tournament.previousXI.formation;
-  }
-}
-
-function getTournamentChosenXI() {
-  const userTeam = tournament.teams[tournament.userTeamIndex];
-  const squad = userTeam?.squad || [];
-  const panel = $("tournamentPrematch");
-  if (!panel) return null;
-
-  const checks = Array.from(
-    panel.querySelectorAll('input.tournament-xi-checkbox:checked')
-  );
-  const indices = checks.map(c => Number(c.dataset.idx));
-
-  if (indices.length !== 11) return null;
-
-  return indices
-    .map(i => squad[i])
-    .filter(Boolean);
 }
 
 function playTournamentMatch() {
