@@ -57,50 +57,28 @@ function setTournamentDraftOnlyMode(on) {
 
   page.classList.toggle("draft-only", !!on);
 
-  // Ensure the draft panel is visible during draft-only
-  if (on) $("tournamentSquad")?.classList.remove("hidden");
-}
+  const out = $("tournamentOutput");
+  const detail = $("tournamentTeamDetail");
+  const next = $("tournamentNextMatch");
+  const last = $("tournamentLastMatch");
+  const prematch = $("tournamentPrematch");
 
-/* ---------------- Tournament (Supabase) Globals ---------------- */
+  if (on) {
+    // During the initial 15-man squad draft: ONLY show the draft panel
+    out?.classList.add("hidden");
+    detail?.classList.add("hidden");
+    next?.classList.add("hidden");
+    last?.classList.add("hidden");
+    prematch?.classList.add("hidden");
 
-// no TOURNAMENT_SQUAD_SIZE here
-
-let tournamentPool = [];       // all eligible players (85–90 rated)
-let userTournamentSquad = [];  // user's chosen 15
-let tournamentTeams = [];      // user + 15 AI teams
-
-/* ---------------- Load players from Supabase ---------------- */
-
-async function loadTournamentPoolFromSupabase() {
-  try {
-    const { data, error } = await supabase
-      .from("players")
-      .select("*")                 // 👈 no rating filter now
-      .order("Rating", { ascending: false });
-
-    if (error) {
-      console.error("Supabase load error:", error);
-      return [];
-    }
-
-    // Still sort + normalise rating as number just in case
-    tournamentPool = (data || []).sort(
-      (a, b) => Number(b.Rating) - Number(a.Rating)
-    );
-
-    console.log("🎯 Loaded Supabase tournament pool:", tournamentPool.length);
-    console.log(
-      "Top 5 ratings in pool:",
-      tournamentPool.slice(0, 5).map(p => p.Rating)
-    );
-
-    return tournamentPool;
-
-  } catch (err) {
-    console.error("Unexpected Supabase load error:", err);
-    return [];
+    $("tournamentSquad")?.classList.remove("hidden");
+  } else {
+    // After draft is complete: bring back normal tournament UI
+    out?.classList.remove("hidden");
+    // detail stays hidden until user clicks a team (so we don't force it open)
   }
 }
+
 
 
 const keyOf = (p) => `${p.Name}|${p.Club}`;
