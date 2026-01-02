@@ -631,6 +631,10 @@ function nextMatch(){
 }
 /* ---------- Tournament Mode State ---------- */
 
+let userTournamentSquad = [];
+let tournamentTeams = [];
+let tournamentPool = [];
+
 const matchXiDraft = {
   active: false,
   step: 0,
