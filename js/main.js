@@ -1433,9 +1433,6 @@ function pickUserTeam() {
   console.log("User controls team:", tournament.teams[randomIndex]?.name);
 }
 
-// Make sure these globals exist (module scope)
-let tournamentPool = [];
-
 async function loadTournamentPoolFromSupabase() {
   const { data, error } = await supabase
     .from("players")
@@ -1637,9 +1634,6 @@ function setupTournamentSlotDropHandlers() {
     });
   });
 }
-
-  // Draw the first 4 candidates
-  renderTournamentDraftStep();
 
 function renderTournamentDraftStep() {
   const panel = $("tournamentSquad");
