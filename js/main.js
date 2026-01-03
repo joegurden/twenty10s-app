@@ -826,6 +826,28 @@ function getLineForPos(pos) {
   return "mid";
 }
 
+const POSITION_ALIASES = {
+  GK: [],
+  RB: ["RWB"],
+  LB: ["LWB"],
+  CB: ["LCB", "RCB"],
+  CDM: ["CM", "LDM", "RDM"],
+  CM: ["LCM", "RCM", "CDM", "CAM"],
+  CAM: ["CM"],
+  RM: ["RW"],
+  LM: ["LW"],
+  RW: ["RM", "RF"],
+  LW: ["LM", "LF"],
+  ST: ["CF", "LF", "RF"],
+  CF: ["ST", "LF", "RF"],
+};
+
+function acceptablePositions(desiredPos) {
+  const p = String(desiredPos).toUpperCase();
+  return [p, ...(POSITION_ALIASES[p] || [])];
+}
+
+
 // Compute team + line average ratings for an XI
 function buildLineRatingContext(players) {
   const sums = { gk: 0, def: 0, mid: 0, att: 0 };
@@ -1293,11 +1315,18 @@ function buildAITeamsPlaceholder() {
   }
 
   // Build each AI team
-  const formationKeys = Object.keys(FORMATION_POSITIONS);
-  const existingCount = tournament.teams.length; // should be 1 (user)
+const formationKeys = Object.keys(FORMATION_POSITIONS);
 
-  for (let i = existingCount; i < TOURNAMENT_NUM_TEAMS; i++) {
-    const formationKey = randItem(formationKeys);
+// shuffle once so AI teams get a nice spread
+const shuffledFormations = [...formationKeys].sort(() => Math.random() - 0.5);
+
+let formationCursor = 0;
+
+const existingCount = tournament.teams.length;
+
+for (let i = existingCount; i < TOURNAMENT_NUM_TEAMS; i++) {
+  const formationKey = shuffledFormations[formationCursor % shuffledFormations.length];
+  formationCursor++;
     const positions =
       FORMATION_POSITIONS[formationKey] ||
       FORMATION_POSITIONS["4-3-3 (Holding)"];
@@ -2358,24 +2387,50 @@ const remaining = [...(squad || [])].sort(
   const xi = [];
   const used = new Set();
 
-  for (const desiredPos of slots) {
-    // 1) Best player in exact position
-    let idx = remaining.findIndex(
-      (p) => p.Position === desiredPos && !used.has(keyOf(p))
+for (const desiredPos of slots) {
+  const desired = String(desiredPos).toUpperCase();
+  const ok = acceptablePositions(desired);
+
+  // 1) exact or alias match
+  let idx = remaining.findIndex(
+    (p) =>
+      ok.includes(String(p.Position || "").toUpperCase()) &&
+      !used.has(keyOf(p))
+  );
+
+  // 2) SAME LINE fallback (this is "2")
+  if (idx === -1) {
+    const targetLine = getLineForPos(desired);
+    idx = remaining.findIndex(
+      (p) =>
+        getLineForPos(p.Position) === targetLine &&
+        !used.has(keyOf(p))
     );
-
-    // 2) Fallback: best remaining player at all
-    if (idx === -1) {
-      idx = remaining.findIndex((p) => !used.has(keyOf(p)));
-    }
-
-    if (idx === -1) continue; // squad too small, just skip
-
-    const player = remaining[idx];
-    xi.push(player);
-    used.add(keyOf(player));
-    remaining.splice(idx, 1);
   }
+
+  // 3) ADJACENT LINE fallback (still safe)
+  if (idx === -1) {
+    const line = getLineForPos(desired);
+    const adjacent =
+      line === "att" ? ["mid"] :
+      line === "mid" ? ["att", "def"] :
+      line === "def" ? ["mid"] :
+      [];
+    idx = remaining.findIndex(
+      (p) =>
+        adjacent.includes(getLineForPos(p.Position)) &&
+        !used.has(keyOf(p))
+    );
+  }
+
+  // if still nothing, skip the slot
+  if (idx === -1) continue;
+
+  const player = remaining[idx];
+  xi.push(player);
+  used.add(keyOf(player));
+}
+
 
   // Rest are subs (still in rating order)
   const subs = remaining;
