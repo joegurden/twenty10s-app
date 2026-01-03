@@ -1555,6 +1555,9 @@ function highlightCurrentDraftSlot() {
   if (current) {
     current.style.outline = "2px solid rgba(255,255,255,0.7)";
   }
+
+  // ✅ start the first pick UI
+  renderTournamentDraftStep();
 }
 
 function setupTournamentSquadSlots() {
