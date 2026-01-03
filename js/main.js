@@ -1537,6 +1537,9 @@ function showTournamentSquadSelection() {
   // Build the XI + subs slots based on the user's formation
   setupTournamentSquadSlots();
 
+  // ✅ start first pick once
+  renderTournamentDraftStep();
+
 }
 
 function highlightCurrentDraftSlot() {
@@ -1556,8 +1559,6 @@ function highlightCurrentDraftSlot() {
     current.style.outline = "2px solid rgba(255,255,255,0.7)";
   }
 
-  // ✅ start the first pick UI
-  renderTournamentDraftStep();
 }
 
 function setupTournamentSquadSlots() {
