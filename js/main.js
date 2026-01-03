@@ -1433,6 +1433,21 @@ function pickUserTeam() {
   console.log("User controls team:", tournament.teams[randomIndex]?.name);
 }
 
+// Make sure these globals exist (module scope)
+let tournamentPool = [];
+
+async function loadTournamentPoolFromSupabase() {
+  const { data, error } = await supabase
+    .from("players")
+    .select("*")
+    .limit(5000);
+
+  if (error) throw new Error(error.message);
+
+  tournamentPool = data || [];
+  return tournamentPool;
+}
+
 async function initTournament() {
   // 🔁 Global reset so a "New Tournament" is always completely fresh
   userTournamentSquad = [];
@@ -1525,8 +1540,6 @@ function showTournamentSquadSelection() {
   // Build the XI + subs slots based on the user's formation
   setupTournamentSquadSlots();
 
-  // Draw the first 4 candidates
-  renderTournamentDraftStep();
 }
 
 function highlightCurrentDraftSlot() {

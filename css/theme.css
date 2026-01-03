@@ -405,3 +405,15 @@ li:first-child{border-top:0}
 #tournamentPrematchSlots .xi-slot.active{
   outline: 2px solid rgba(255,255,255,0.6);
 }
+/* When drafting the 15-man squad, hide everything except the draft panel */
+#page-tournament.draft-only #tournamentOutput,
+#page-tournament.draft-only #tournamentNextMatch,
+#page-tournament.draft-only #tournamentLastMatch,
+#page-tournament.draft-only #tournamentTeamDetail,
+#page-tournament.draft-only #tournamentPrematch {
+  display: none !important;
+}
+
+#page-tournament.draft-only #tournamentSquad {
+  display: block !important;
+}
