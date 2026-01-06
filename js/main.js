@@ -3037,20 +3037,28 @@ console.log("Tournament ready:", {
 
 /* ---------------- Wire up after DOM ready ---------------- */
 document.addEventListener("DOMContentLoaded", () => {
+
   /* ---------------- Navigation Buttons ---------------- */
   document.querySelectorAll(".nav-btn")?.forEach(btn => {
     btn.addEventListener("click", () => showPage(btn.dataset.target));
   });
 
-  // Start on Home
   showPage("page-home");
 
-  /* ---------------- Home Page Buttons ---------------- */
-  $("btn-generate")?.addEventListener("click", () => generate(false));
-  $("btn-rematch")?.addEventListener("click",  () => generate(false));
-  $("btn-goat")?.addEventListener("click",     () => generate(true));
+  /* ---------------- Home Hub Tiles ---------------- */
+  document.querySelectorAll(".app-tile").forEach(tile => {
+    tile.addEventListener("click", (e) => {
+      e.preventDefault();
 
-  /* ---------------- Draft Entry (Draft Page) ---------------- */
+      const target = tile.dataset.target;
+      const soon = tile.dataset.soon === "true";
+
+      if (target) return showPage(target);
+      if (soon) alert("Coming soon 👀");
+    });
+  });
+
+  /* ---------------- Draft Entry ---------------- */
   $("btn-draft")?.addEventListener("click", () => {
     showPage("page-draft");
     startSetup();
@@ -3058,100 +3066,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ---------------- Draft Setup Events ---------------- */
   $("btn-exit-setup")?.addEventListener("click", () => endSetup());
-
   $("setupFormation")?.addEventListener("change", e => {
     draft.formation = e.target.value;
     resetSetupSelections();
     renderSetup();
   });
-
   $("btn-setup-auto-subs")?.addEventListener("click", () => autoPickSubs());
   $("btn-setup-finish")?.addEventListener("click", () => finishSetup());
 
-  /* ---------------- Pre-match (Draft Series) ---------------- */
+  /* ---------------- Pre-match ---------------- */
   $("btn-exit-prematch")?.addEventListener("click", () =>
     togglePanels({ setup:false, prematch:false, series:false })
   );
-
-  $("prematchFormation")?.addEventListener("change", () => { /* stored on play */ });
-
   $("btn-play-match")?.addEventListener("click", () => playMatch());
 
-  /* ---------------- Series Page ---------------- */
+  /* ---------------- Series ---------------- */
   $("btn-exit-series")?.addEventListener("click", () =>
     togglePanels({ setup:false, prematch:false, series:false })
   );
-
   $("btn-next-match")?.addEventListener("click", () => nextMatch());
 
-  /* ---------------- Squad Panel Close Button ---------------- */
+  /* ---------------- Squad Panel ---------------- */
   $("btn-close-squad")?.addEventListener("click", () => {
     $("tournamentSquad")?.classList.add("hidden");
   });
 
- /* ---------------- Tournament Button ---------------- */
-$("btn-run-tournament")?.addEventListener("click", async () => {
-  console.log("▶ Run Full Tournament clicked");
-  showPage("page-tournament");
-
-  try {
-    await initTournament();   // new tournament flow with draft
-    console.log("✅ initTournament finished");
-  } catch (err) {
-    console.error("❌ initTournament crashed:", err);
-    alert("There was an error starting the tournament. Check the console for details.");
-  }
-});
-
-
-  /* ---------------- Tournament Squad / Draft Events ---------------- */
-  $("btn-save-tournament-squad")?.addEventListener("click", () => {
-    confirmDraftPick();
+  /* ---------------- Tournament ---------------- */
+  $("btn-run-tournament")?.addEventListener("click", async () => {
+    showPage("page-tournament");
+    try {
+      await initTournament();
+    } catch (err) {
+      console.error(err);
+      alert("There was an error starting the tournament.");
+    }
   });
 
-/* ---------------- Tournament "Next Match" Button ---------------- */
-$("btn-tournament-play-next")?.addEventListener("click", () => {
-  playNextGroupMatch();
-});
+  $("btn-save-tournament-squad")?.addEventListener("click", confirmDraftPick);
+  $("btn-tournament-play-next")?.addEventListener("click", playNextGroupMatch);
+  $("btn-new-tournament")?.addEventListener("click", initTournament);
+  $("btn-tournament-play-match")?.addEventListener("click", playTournamentMatch);
+  $("btn-tournament-confirm-xi")?.addEventListener("click", confirmTournamentPrematchXiPick);
+  $("btn-tournament-use-last-xi")?.addEventListener("click", applyLastXIToPrematchDraft);
 
-  /* ---------------- Tournament "New Tournament" Button ---------------- */
-  $("btn-new-tournament")?.addEventListener("click", () => {
-    initTournament();
-  });
-
-/* ---------------- Tournament Prematch "Play" Button ---------------- */
-$("btn-tournament-play-match")?.addEventListener("click", () => {
-  playTournamentMatch();
-});
-
-$("btn-tournament-confirm-xi")?.addEventListener("click", () => {
-  confirmTournamentPrematchXiPick();
-});
-
-$("btn-tournament-use-last-xi")?.addEventListener("click", () => {
-  applyLastXIToPrematchDraft();
-});
-
-  /* ---------------- Tournament Team Detail: close button ---------------- */
   $("btn-close-team-detail")?.addEventListener("click", () => {
     $("tournamentTeamDetail")?.classList.add("hidden");
   });
 
-  /* ---------------- Tournament Team Detail: click team in table ---------------- */
   $("tournamentOutput")?.addEventListener("click", (evt) => {
-    const target = evt.target;
-    if (!(target instanceof HTMLElement)) return;
-
-    const link = target.closest(".table-team-link");
+    const link = evt.target?.closest(".table-team-link");
     if (!link) return;
-
-    const idx = Number(link.dataset.teamIndex);
-    if (!Number.isFinite(idx)) return;
-
-    showTournamentTeamDetail(idx);
+    showTournamentTeamDetail(Number(link.dataset.teamIndex));
   });
 
+}); // ✅ THIS stays — one time, at the very end
 
-  /* ---------------- Initial Home Page Render ---------------- */
-  generate(false);
-});

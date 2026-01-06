@@ -21,31 +21,81 @@
 
   <main>
     <!-- HOME PAGE -->
-    <section id="page-home" class="page">
-      <div class="bar">
-        <button id="btn-generate">🎲 Generate</button>
-        <button id="btn-rematch">🔁 Rematch</button>
-        <button id="btn-goat">🐐 95+ on BOTH</button>
+<section id="page-home" class="page">
+  <div class="home-head">
+    <h2 class="home-title">Choose a game</h2>
+    <p class="pill">More modes coming soon — the tiles are already wired to click.</p>
+  </div>
+
+  <section class="app-grid">
+    <!-- Existing pages (wired now) -->
+    <a class="app-tile" href="#" data-target="page-draft">
+      <div class="app-tile-inner">
+        <div class="app-media">
+          <img src="img/team-maker.png" alt="Team Maker" />
+        </div>
       </div>
+    </a>
 
-      <!-- Live teams -->
-      <section class="grid">
-        <div class="card">
-          <div class="team-title">
-            <strong>Team A</strong><span id="sumA" class="pill"></span>
-          </div>
-          <ul id="teamA"></ul>
+    <a class="app-tile" href="#" data-target="page-tournament">
+      <div class="app-tile-inner">
+        <div class="app-media">
+          <img src="img/who-am-i.png" alt="Who Am I?" />
         </div>
-        <div class="card">
-          <div class="team-title">
-            <strong>Opponents</strong><span id="sumB" class="pill"></span>
-          </div>
-          <ul id="teamB"></ul>
-        </div>
-      </section>
+      </div>
+    </a>
 
-      <div id="error" class="err"></div>
-    </section>
+    <a class="app-tile" href="#" data-target="page-players">
+      <div class="app-tile-inner">
+        <div class="app-media">
+          <img src="img/fixture-rebuilder.png" alt="Fixture Rebuilder" />
+        </div>
+      </div>
+    </a>
+
+    <a class="app-tile" href="#" data-target="page-tournament">
+      <div class="app-tile-inner">
+        <div class="app-media">
+          <img src="img/winner-stays-on.png" alt="Winner Stays On" />
+        </div>
+      </div>
+    </a>
+
+    <!-- Placeholders (Coming soon) -->
+    <a class="app-tile" href="#" data-soon="true">
+      <div class="app-tile-inner">
+        <div class="app-media">
+          <img src="img/placeholder-1.png" alt="Coming soon" />
+        </div>
+      </div>
+    </a>
+
+    <a class="app-tile" href="#" data-soon="true">
+      <div class="app-tile-inner">
+        <div class="app-media">
+          <img src="img/placeholder-2.png" alt="Coming soon" />
+        </div>
+      </div>
+    </a>
+
+    <a class="app-tile" href="#" data-soon="true">
+      <div class="app-tile-inner">
+        <div class="app-media">
+          <img src="img/placeholder-3.png" alt="Coming soon" />
+        </div>
+      </div>
+    </a>
+
+    <a class="app-tile" href="#" data-soon="true">
+      <div class="app-tile-inner">
+        <div class="app-media">
+          <img src="img/placeholder-4.png" alt="Coming soon" />
+        </div>
+      </div>
+    </a>
+  </section>
+</section>
+
 
     <!-- PLAYERS PAGE -->
     <section id="page-players" class="page hidden">
