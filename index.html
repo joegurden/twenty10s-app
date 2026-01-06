@@ -10,12 +10,31 @@
   <!-- Top ribbon / header -->
   <header class="topbar">
     <h1>Twenty10s</h1>
-    <div class="nav">
-      <button class="nav-btn primary" data-target="page-home">Home</button>
-      <button class="nav-btn" data-target="page-players">Players</button>
-      <button class="nav-btn" data-target="page-draft">Draft Mode</button>
-      <button class="nav-btn" data-target="page-tournament">Tournament</button>
+<div class="nav">
+  <button class="nav-btn primary" data-target="page-home">Home</button>
+  <button class="nav-btn" data-target="page-players">Players</button>
+  <button class="nav-btn" data-target="page-draft">Draft Mode</button>
+  <button class="nav-btn" data-target="page-tournament">Tournament</button>
+
+  <!-- Minigames dropdown -->
+  <div class="nav-dropdown">
+    <!-- IMPORTANT: don't give this button class="nav-btn" -->
+    <button class="nav-btn nav-drop-btn" id="navMinigames" type="button">
+      Minigames ▾
+    </button>
+
+    <div class="nav-drop-menu hidden" id="navMinigamesMenu">
+      <a class="nav-drop-item" href="#" data-soon="true">Start one bench one sell one</a>
+      <a class="nav-drop-item" href="#" data-soon="true">Missing XI</a>
+      <a class="nav-drop-item" href="#" data-soon="true">Keep 3 Lose 1</a>
+      <a class="nav-drop-item" href="#" data-soon="true">Fixture Rebuilder</a>
+      <a class="nav-drop-item" href="#" data-soon="true">Winner stays on</a>
+      <a class="nav-drop-item" href="#" data-soon="true">Who am I?</a>
+      <a class="nav-drop-item" href="#" data-soon="true">Best XI</a>
+      <a class="nav-drop-item" href="#" data-soon="true">Fantasy Football</a>
     </div>
+  </div>
+</div>
     <span class="pill">Formation features are available in Draft Mode.</span>
   </header>
 

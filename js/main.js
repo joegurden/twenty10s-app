@@ -3039,40 +3039,40 @@ console.log("Tournament ready:", {
 document.addEventListener("DOMContentLoaded", () => {
 
   /* ---------------- Navigation Buttons ---------------- */
-  document.querySelectorAll(".nav-btn")?.forEach(btn => {
-    btn.addEventListener("click", () => showPage(btn.dataset.target));
+document.querySelectorAll(".nav-btn")?.forEach(btn => {
+  btn.addEventListener("click", () => {
+    const target = btn.dataset.target;
+    if (!target) return;
+    showPage(target);
   });
+});
 
-  /* ---------------- Minigames Dropdown ---------------- */
-  const mgBtn = document.getElementById("navMinigames");
-  const mgMenu = document.getElementById("navMinigamesMenu");
+/* ---------------- Minigames Dropdown ---------------- */
+const mgBtn = document.getElementById("navMinigames");
+const mgMenu = document.getElementById("navMinigamesMenu");
 
-  mgBtn?.addEventListener("click", (e) => {
-    e.preventDefault();
-    mgMenu?.classList.toggle("hidden");
-  });
+mgBtn?.addEventListener("click", (e) => {
+  e.preventDefault();
+  mgMenu?.classList.toggle("hidden");
+});
 
-  // Close dropdown when clicking elsewhere
-  document.addEventListener("click", (e) => {
-    if (!mgMenu || !mgBtn) return;
-    const inside = mgMenu.contains(e.target) || mgBtn.contains(e.target);
-    if (!inside) mgMenu.classList.add("hidden");
-  });
+// Close dropdown when clicking anywhere else
+document.addEventListener("click", (e) => {
+  if (!mgMenu || !mgBtn) return;
+  const inside = mgMenu.contains(e.target) || mgBtn.contains(e.target);
+  if (!inside) mgMenu.classList.add("hidden");
+});
 
-  // Handle dropdown item clicks
-  mgMenu?.addEventListener("click", (e) => {
-    const item = e.target.closest(".nav-drop-item");
-    if (!item) return;
-    e.preventDefault();
+// Handle dropdown item clicks (all coming soon)
+mgMenu?.addEventListener("click", (e) => {
+  const item = e.target.closest(".nav-drop-item");
+  if (!item) return;
+  e.preventDefault();
 
-    mgMenu.classList.add("hidden");
+  mgMenu.classList.add("hidden");
+  alert("Coming soon 👀");
+});
 
-    const target = item.dataset.target;
-    const soon = item.dataset.soon === "true";
-
-    if (target) return showPage(target);
-    if (soon) alert("Coming soon 👀");
-  });
 
   showPage("page-home");
 
