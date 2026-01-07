@@ -3063,15 +3063,26 @@ document.addEventListener("click", (e) => {
   if (!inside) mgMenu.classList.add("hidden");
 });
 
-// Handle dropdown item clicks (all coming soon)
+// Handle dropdown item clicks
 mgMenu?.addEventListener("click", (e) => {
   const item = e.target.closest(".nav-drop-item");
   if (!item) return;
   e.preventDefault();
 
   mgMenu.classList.add("hidden");
+
+  const label = item.textContent.trim().toLowerCase();
+
+  // Start One • Bench One • Sell One → real page
+  if (label === "start one bench one sell one") {
+    window.location.href = "start-bench-sell.html";
+    return;
+  }
+
+  // Everything else
   alert("Coming soon 👀");
 });
+
 
   /* ---------------- Start Bench Sell (NEW page link) ---------------- */
   const sbsTile = document.getElementById("game-start-bench-sell");
