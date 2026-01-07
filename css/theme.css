@@ -468,7 +468,7 @@ li:first-child{border-top:0}
 .app-media{
   background: rgba(255,255,255,0.95);
   border-radius: 16px;
-  height: 160px;
+  height: 180px;
   display: grid;
   place-items: center;
   overflow: hidden;
