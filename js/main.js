@@ -3073,6 +3073,14 @@ mgMenu?.addEventListener("click", (e) => {
   alert("Coming soon 👀");
 });
 
+  /* ---------------- Start Bench Sell (NEW page link) ---------------- */
+  const sbsTile = document.getElementById("game-start-bench-sell");
+  if (sbsTile) {
+    sbsTile.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.location.href = "start-bench-sell.html";
+    });
+  }
 
   showPage("page-home");
 
@@ -3080,6 +3088,12 @@ mgMenu?.addEventListener("click", (e) => {
   document.querySelectorAll(".app-tile").forEach(tile => {
     tile.addEventListener("click", (e) => {
       e.preventDefault();
+ 
+     // NEW: SBS tile opens its own page
+      if (tile.id === "game-start-bench-sell") {
+        window.location.href = "start-bench-sell.html";
+        return;
+      }
 
       const target = tile.dataset.target;
       const soon = tile.dataset.soon === "true";
