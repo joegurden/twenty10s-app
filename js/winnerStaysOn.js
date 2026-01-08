@@ -23,6 +23,7 @@ const state = {
   left: null,
   right: null,
   locked: false,
+  seen: new Set(), // NEW: players already shown this game
 };
 
 function normalizePos(p) {
@@ -94,36 +95,44 @@ function render() {
 }
 
 function pickInitialChampion(players) {
-  // rated < 96, any position, must have depth for challengers
-  const eligible = players.filter(p => p.rating < 96);
+  // rated < 96 and not previously seen
+  const eligible = players.filter(p => p.rating < 96 && !isSeen(p));
 
-  // Prefer positions with decent depth so we can always find 2 challengers
+  // Prefer positions with decent depth so we can always find challengers
   const byPos = new Map();
   for (const p of eligible) {
     if (!byPos.has(p.pos)) byPos.set(p.pos, []);
     byPos.get(p.pos).push(p);
   }
-  const viablePositions = [...byPos.entries()].filter(([_, list]) => list.length >= 20).map(([pos]) => pos);
 
-  const pos = viablePositions.length ? sample(viablePositions) : sample([...byPos.keys()]);
+  const viablePositions = [...byPos.entries()]
+    .filter(([_, list]) => list.length >= 20)
+    .map(([pos]) => pos);
+
+  const pos = viablePositions.length
+    ? sample(viablePositions)
+    : sample([...byPos.keys()]);
+
   const pool = byPos.get(pos) || eligible;
 
   return sample(pool);
 }
 
 function findChallengers(players, champ) {
-  // same position, rating within 3 (widen slightly if needed)
-  const samePos = players.filter(p => p.pos === champ.pos && p.id !== champ.id);
+  // same position, not champ, not seen
+  const samePos = players.filter(
+    p => p.pos === champ.pos && p.id !== champ.id && !isSeen(p)
+  );
 
   let widen = 0;
   let candidates = samePos.filter(p => Math.abs(p.rating - champ.rating) <= 3);
 
-  while (candidates.length < 2 && widen < 6) {
+  while (candidates.length < 2 && widen < 8) {
     widen += 1;
     candidates = samePos.filter(p => Math.abs(p.rating - champ.rating) <= (3 + widen));
   }
 
-  // last resort: any same position
+  // last resort: any same position not seen
   if (candidates.length < 2) candidates = samePos;
 
   const picked = shuffle(candidates).slice(0, 2);
@@ -138,10 +147,12 @@ function nextRound() {
   }
   state.round += 1;
 
-  // new challengers around current champ
   const { left, right } = findChallengers(state.allPlayers, state.champ);
   state.left = left;
   state.right = right;
+
+  markSeen(state.left);   // NEW
+  markSeen(state.right);  // NEW
 
   render();
 }
@@ -152,12 +163,12 @@ function chooseChallenger(which) {
   const chosen = which === "left" ? state.left : state.right;
   if (!chosen) return;
 
-  // chosen becomes new champion, refresh challengers next round
   state.champ = chosen;
+  markSeen(state.champ); // NEW (does nothing if already seen)
 
-  // Immediately generate next challengers and advance round
   nextRound();
 }
+
 
 function keepChampion() {
   if (state.locked) return;
@@ -165,18 +176,32 @@ function keepChampion() {
   // Champion stays, challengers refresh and advance round
   nextRound();
 }
+function markSeen(p) {
+  if (p?.id) state.seen.add(p.id);
+}
+
+function isSeen(p) {
+  return !!p?.id && state.seen.has(p.id);
+}
 
 function newGame() {
   state.round = 1;
   state.locked = false;
+  state.seen = new Set(); // NEW: reset per game
 
   state.champ = pickInitialChampion(state.allPlayers);
+  markSeen(state.champ);
+
   const { left, right } = findChallengers(state.allPlayers, state.champ);
   state.left = left;
   state.right = right;
 
+  markSeen(state.left);
+  markSeen(state.right);
+
   render();
 }
+
 
 async function init() {
   try {
