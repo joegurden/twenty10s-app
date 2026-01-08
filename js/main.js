@@ -3079,6 +3079,11 @@ mgMenu?.addEventListener("click", (e) => {
     return;
   }
 
+  if (label === "winner stays on") {
+    window.location.href = "winner-stays-on.html";
+    return;
+  }
+
   // Everything else
   alert("Coming soon 👀");
 });
@@ -3105,6 +3110,12 @@ mgMenu?.addEventListener("click", (e) => {
         window.location.href = "start-bench-sell.html";
         return;
       }
+
+    // Winner Stays On tile
+    if (tile.id === "game-winner-stays-on") {
+      window.location.href = "winner-stays-on.html";
+      return;
+    }
 
       const target = tile.dataset.target;
       const soon = tile.dataset.soon === "true";

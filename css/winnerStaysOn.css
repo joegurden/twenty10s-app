@@ -1,0 +1,89 @@
+.wso-wrap {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.wso-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.wso-board {
+  margin-top: 12px;
+  display: grid;
+  gap: 22px;
+  justify-items: center;
+}
+
+.wso-label {
+  text-align: center;
+  opacity: 0.9;
+  margin-bottom: 10px;
+}
+
+.wso-pill {
+  min-width: 260px;
+  text-align: center;
+  border-radius: 999px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.20);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+  font-size: 18px;
+}
+
+.wso-btn {
+  border-radius: 999px;
+  margin-top: 10px;
+  min-width: 160px;
+}
+
+.wso-champ {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.wso-challs {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 26px;
+  justify-items: center;
+}
+
+.wso-side {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+}
+
+.wso-actions {
+  margin-top: 18px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+}
+
+.wso-result {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.20);
+  text-align: center;
+}
+
+.hidden { display: none; }
+
+@media (max-width: 720px) {
+  .wso-challs { grid-template-columns: 1fr; }
+  .wso-pill { min-width: 280px; }
+}

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Winner Stays On</title>
+
+  <link rel="stylesheet" href="css/theme.css" />
+  <link rel="stylesheet" href="css/winnerStaysOn.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>Twenty10s</h1>
+
+    <div class="nav">
+      <button class="nav-btn primary" onclick="window.location.href='index.html'">Home</button>
+      <button class="nav-btn" onclick="window.location.href='start-bench-sell.html'">SBS</button>
+    </div>
+  </header>
+
+  <main class="wso-wrap">
+    <div class="wso-head">
+      <h2>Winner stays on</h2>
+      <div class="pill" id="wsoMeta">Loading…</div>
+    </div>
+
+    <section class="wso-board">
+      <!-- Champion -->
+      <div class="wso-champ">
+        <div class="wso-label">Champion</div>
+        <div class="wso-pill" id="wsoChampionName">—</div>
+        <button class="nav-btn primary wso-btn" id="btnKeep" type="button">Keep</button>
+      </div>
+
+      <!-- Challengers -->
+      <div class="wso-challs">
+        <div class="wso-side">
+          <div class="wso-label">Challenger A</div>
+          <div class="wso-pill" id="wsoLeftName">—</div>
+          <button class="nav-btn wso-btn" id="btnPickLeft" type="button">Select</button>
+        </div>
+
+        <div class="wso-side">
+          <div class="wso-label">Challenger B</div>
+          <div class="wso-pill" id="wsoRightName">—</div>
+          <button class="nav-btn wso-btn" id="btnPickRight" type="button">Select</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="wso-actions">
+      <div class="pill" id="wsoHint">Pick a challenger or press Keep.</div>
+      <button class="nav-btn wso-btn" id="btnNewGame" type="button">New game</button>
+    </div>
+
+    <div class="wso-result hidden" id="wsoResult"></div>
+  </main>
+
+  <script type="module" src="js/winnerStaysOn.js"></script>
+</body>
+</html>
