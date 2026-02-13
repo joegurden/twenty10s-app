@@ -14,13 +14,15 @@
 }
 *{box-sizing:border-box}
 body{
-  margin:0; padding:24px; min-height:100vh;
-  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--text);
+  margin:0;
+  padding:24px;
+  min-height:100vh;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
 
   background:
-    radial-gradient(900px 520px at 18% -12%, rgba(229,57,53,.22) 0%, transparent 62%),
-    radial-gradient(900px 520px at 88% 112%, rgba(229,57,53,.14) 0%, transparent 60%),
-    linear-gradient(180deg,var(--bg1),var(--bg2));
+    linear-gradient(180deg, #f5f5f5 0%, #ececec 100%);
+  
+  color:#222;
 }
 
 h1{margin:0 0 12px; font-size:22px}
@@ -108,11 +110,11 @@ li:first-child{border-top:0}
 .pick input{margin-right:8px}
 
 /* Top nav ribbon */
-.nav {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 8px;
+.nav{
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 10px 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.08);
 }
 
 .nav-btn {
@@ -120,8 +122,9 @@ li:first-child{border-top:0}
   padding: 6px 10px;
 }
 
-.nav-btn.primary {
-  background: #0f2f7a;
+.nav-btn.primary{
+  background: #d32f2f;
+  color:#fff;
 }
 
 .page {
@@ -494,14 +497,12 @@ li:first-child{border-top:0}
 }
 
 .app-tile{
-  display: block;
-  background: #f2f2f2;
-  border: 1px solid #e3e3e3;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
   border-radius: 22px;
   padding: 18px;
-  text-decoration: none;
-  color: #222;
-  transition: transform 120ms ease, box-shadow 120ms ease;
+  box-shadow: 0 8px 28px rgba(0,0,0,.10);
+  color:#222;
 }
 
 
@@ -580,12 +581,16 @@ li:first-child{border-top:0}
   top: calc(100% + 8px);
   right: 0;
   min-width: 240px;
-  background: rgba(13,31,74,.95);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 8px;
-  z-index: 200;
-  box-shadow: 0 10px 25px rgba(0,0,0,.25);
+
+  background: #ffffff;
+  border: 1px solid #e6e6e6;
+  border-radius: 14px;
+  padding: 10px;
+
+  z-index: 50;
+  box-shadow: 0 12px 28px rgba(0,0,0,.12);
+
+  color: #222;
 }
 
 .nav-drop-item{
@@ -598,5 +603,5 @@ li:first-child{border-top:0}
 }
 
 .nav-drop-item:hover{
-  border: 1px solid var(--accent);
+  background: rgba(211,47,47,.08);
 }
