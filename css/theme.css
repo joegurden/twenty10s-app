@@ -34,8 +34,9 @@ button{
 }
 button:hover{border-color:var(--accent)}
 button.primary{
-  background: linear-gradient(180deg, rgba(229,57,53,.95), rgba(183,28,28,.95));
-  border-color: rgba(229,57,53,.45);
+  background: linear-gradient(180deg, #e53935, #b71c1c);
+  color:#fff;
+  border:none;
 }
 button.primary:hover{
   border-color: rgba(229,57,53,.75);
