@@ -626,3 +626,74 @@ li:first-child{border-top:0}
 .nav-drop-item:hover{
   background: rgba(211,47,47,.08);
 }
+
+/* Header container */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Shield icon */
+.logo-icon {
+  width: 28px;
+  height: auto;
+}
+
+/* Brand text */
+.logo-text {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 28px;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+/* Colour split */
+.kick {
+  color: #111;
+}
+
+.about {
+  color: #d72638; /* football red */
+}
+
+/* Header layout */
+.topbar{
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+
+/* Push nav to the right */
+.topbar .nav{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.logo{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.logo-icon{
+  width:28px;
+  height:auto;
+  display:block;
+}
+
+.logo-text{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-weight:800;
+  font-size:28px;
+  letter-spacing:-0.5px;
+  line-height:1;
+}
+
+.logo-text .kick{ color:#111; }
+.logo-text .about{ color:#d72638; }
+
