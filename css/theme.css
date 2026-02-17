@@ -657,21 +657,38 @@ li:first-child{border-top:0}
   color: #d72638; /* football red */
 }
 
-/* Header layout */
+/* Header: logo top-left, nav under it */
 .topbar{
   display:flex;
-  align-items:flex-start;     /* more natural top-left feel */
-  justify-content:space-between;
-  padding: 10px 18px;
+  flex-direction:column;
+  gap:10px;
+  margin-bottom:8px;
 }
 
-/* Push nav to the right */
-.topbar .nav{
-  margin-left:auto;
+.topbar .bar{
   display:flex;
   align-items:center;
-  gap:10px;
+  justify-content:flex-start;
+  gap:12px;
+  padding: 10px 18px 0;
 }
+
+.topbar .nav{
+  align-self:flex-start;
+  margin-left: 18px;
+  border-radius: 10px;
+}
+
+/* clean logo link */
+.logo{
+  text-decoration:none;
+  color:inherit;
+}
+.logo:visited{ color:inherit; }
+.logo:hover{ text-decoration:none; }
+.logo:active{ color:inherit; }
+.logo:focus,
+.logo:focus-visible{ outline:none; }
 
 .logo{
   display:flex;
