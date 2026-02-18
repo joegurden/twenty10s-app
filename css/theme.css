@@ -518,10 +518,14 @@ li:first-child{border-top:0}
   margin: 10px 0 14px;
 }
 
-.home-title{
+.home-title {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: -0.5px;
   margin: 0 0 6px;
-  font-size: 18px;
 }
+
 
 .app-grid{
   display: grid;
@@ -738,5 +742,14 @@ main {
   margin: 0;
   font-size: 14px;
   color: var(--muted);
+}
+/* =====================================
+   Force brand font for headings
+   ===================================== */
+
+h1, h2, h3 {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.5px;
 }
 
