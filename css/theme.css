@@ -755,3 +755,22 @@ h1, h2, h3 {
   letter-spacing: -0.5px;
 }
 
+/* ================================
+   Account chip (guest placeholder)
+   ================================ */
+.account-chip{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.12);
+  background:rgba(255,255,255,.75);
+  box-shadow:0 10px 20px rgba(0,0,0,.08);
+  cursor:pointer;
+  font-weight:700;
+}
+.account-chip .divider{opacity:.35}
+.account-chip:hover{ background:rgba(255,255,255,.9); }
+

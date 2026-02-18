@@ -26,6 +26,73 @@ const FORMATIONS = {
 const BACKLINE = new Set(["GK","RB","CB","LB","RWB","LWB"]);
 const $ = (id) => document.getElementById(id);
 
+/* ---------------- Guest account + coins (placeholder) ---------------- */
+const STORAGE_KEY = "kickabout_state_v1";
+
+function loadState(){
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || null; }
+  catch { return null; }
+}
+
+function saveState(state){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+let appState = loadState() || {
+  user: { id: "guest", name: "Guest" },
+  coins: 1450,
+};
+
+function renderTopRight(){
+  const coinEl = document.getElementById("coinCount");
+  const nameEl = document.getElementById("accountName");
+  if (coinEl) coinEl.textContent = Number(appState.coins || 0).toLocaleString();
+  if (nameEl) nameEl.textContent = appState.user?.name || "Guest";
+}
+
+function setCoins(newValue){
+  appState.coins = Math.max(0, Math.floor(newValue));
+  saveState(appState);
+  renderTopRight();
+}
+
+function addCoins(amount, reason=""){
+  setCoins((appState.coins || 0) + amount);
+  // later: replace with toast UI
+  if (reason) console.log(`🪙 +${amount}: ${reason}`);
+}
+
+/* ---------------- Popular this week (placeholder ordering) ---------------- */
+const DEFAULT_POPULAR_ORDER = [
+  "game-start-bench-sell",
+  "game-winner-stays-on",
+  // add more ids as you build them:
+  // "game-who-am-i",
+  // "game-fixture-rebuilder",
+  // "game-missing-xi",
+  // "game-best-xi",
+];
+
+// later: replace with Supabase “plays” data
+function applyPopularOrder(){
+  const grid = document.querySelector("#page-home .app-grid");
+  if (!grid) return;
+
+  const tiles = Array.from(grid.querySelectorAll(".app-tile"));
+  const byId = new Map(tiles.map(t => [t.id, t]));
+
+  // append in desired order first
+  DEFAULT_POPULAR_ORDER.forEach(id => {
+    const el = byId.get(id);
+    if (el) grid.appendChild(el);
+  });
+
+  // then append anything else afterwards (keeps “coming soon” tiles)
+  tiles.forEach(t => {
+    if (!DEFAULT_POPULAR_ORDER.includes(t.id)) grid.appendChild(t);
+  });
+}
+
 function normalizeTournamentCandidateWidths() {
   const list = document.getElementById("tournamentSquadList");
   if (!list) return;
@@ -3090,15 +3157,28 @@ mgMenu?.addEventListener("click", (e) => {
 
 
   /* ---------------- Start Bench Sell (NEW page link) ---------------- */
-  const sbsTile = document.getElementById("game-start-bench-sell");
-  if (sbsTile) {
-    sbsTile.addEventListener("click", (e) => {
-      e.preventDefault();
-      window.location.href = "start-bench-sell.html";
-    });
-  }
+const sbsTile = document.getElementById("game-start-bench-sell");
+if (sbsTile) {
+  sbsTile.addEventListener("click", (e) => {
+    e.preventDefault();
 
-  showPage("page-home");
+    trackPlay("start-bench-sell");      // 👈 THIS is where 4) belongs
+    addCoins(5, "Played Start Bench Sell");
+
+    window.location.href = "start-bench-sell.html";
+  });
+}
+
+
+showPage("page-home");
+
+renderTopRight();
+applyPopularOrder();   // <-- THIS IS WHERE IT GOES
+
+document.getElementById("accountBtn")?.addEventListener("click", () => {
+  alert("Accounts coming soon 👀 (Guest mode for now)");
+});
+
 
   /* ---------------- Home Hub Tiles ---------------- */
   document.querySelectorAll(".app-tile").forEach(tile => {
