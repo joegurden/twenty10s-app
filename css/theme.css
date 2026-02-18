@@ -714,3 +714,29 @@ li:first-child{border-top:0}
 .logo-text .kick{ color:#111; }
 .logo-text .about{ color:#d72638; }
 
+/* =====================================
+   Align home section with nav ribbon
+   ===================================== */
+
+main {
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+.home-head {
+  margin-top: 18px;   /* same spacing under ribbon */
+  margin-bottom: 16px;
+}
+
+.home-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+.home-sub {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
