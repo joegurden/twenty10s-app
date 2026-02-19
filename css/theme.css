@@ -1062,8 +1062,9 @@ h1, h2, h3 {
 
 /* Hover lift */
 .feature-card:hover,
-.mini-card:hover,
-.side-card:hover{
-  transform: translateY(-2px);
+.mini-card:hover{
+  transform: translateY(-4px);
+  transition: 0.15s ease;
 }
+
 
