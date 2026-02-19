@@ -890,8 +890,10 @@ box-shadow:
 
 .feature-stats{
   font-size: 14px;
+  margin-top: 4px;      /* 👈 add this */
   margin-bottom: 6px;
 }
+
 
 .feature-rank{
   position: absolute;
