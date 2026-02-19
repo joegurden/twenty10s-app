@@ -73,24 +73,6 @@ const DEFAULT_POPULAR_ORDER = [
   // "game-best-xi",
 ];
 
-// later: replace with Supabase “plays” data
-function applyPopularOrder(){
-  const grid = document.querySelector("#page-home .app-grid");
-  if (!grid) return;
-
-  const tiles = Array.from(grid.querySelectorAll(".app-tile"));
-  const byId = new Map(tiles.map(t => [t.id, t]));
-
-  // append in desired order first
-  DEFAULT_POPULAR_ORDER.forEach(id => {
-    const el = byId.get(id);
-    if (el) grid.appendChild(el);
-  });
-
-  // then append anything else afterwards (keeps “coming soon” tiles)
-  tiles.forEach(t => {
-    if (!DEFAULT_POPULAR_ORDER.includes(t.id)) grid.appendChild(t);
-  });
 }
 
 function normalizeTournamentCandidateWidths() {
@@ -3173,7 +3155,6 @@ if (sbsTile) {
 showPage("page-home");
 
 renderTopRight();
-applyPopularOrder();   // <-- THIS IS WHERE IT GOES
 
 document.getElementById("accountBtn")?.addEventListener("click", () => {
   alert("Accounts coming soon 👀 (Guest mode for now)");
@@ -3181,7 +3162,7 @@ document.getElementById("accountBtn")?.addEventListener("click", () => {
 
 
   /* ---------------- Home Hub Tiles ---------------- */
-  document.querySelectorAll(".app-tile").forEach(tile => {
+  document.querySelectorAll(".feature-card, .mini-card").forEach(tile => {
     tile.addEventListener("click", (e) => {
       e.preventDefault();
  

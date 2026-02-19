@@ -808,3 +808,262 @@ h1, h2, h3 {
 .account-chip .divider{opacity:.35}
 .account-chip:hover{ background:rgba(255,255,255,.9); }
 
+/* =========================
+   HOME HUB (concept layout)
+   ========================= */
+
+.home-hub{
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+/* Left column */
+.hub-main{
+  display: grid;
+  gap: 14px;
+}
+
+/* Right column */
+.hub-side{
+  display: grid;
+  gap: 14px;
+}
+
+/* Featured row */
+.featured-row{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.feature-card{
+  display: grid;
+  grid-template-rows: 180px auto;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.70);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  border: 1px solid rgba(255,255,255,0.55);
+}
+
+.feature-media{
+  position: relative;
+  background: rgba(0,0,0,0.04);
+}
+
+.feature-media img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.feature-meta{
+  padding: 12px 14px 14px;
+}
+
+.feature-title{
+  font-weight: 800;
+  font-size: 16px;
+  margin-bottom: 6px;
+}
+
+.feature-sub{
+  opacity: 0.75;
+  line-height: 1.35;
+}
+
+.feature-sub.muted{
+  opacity: 0.6;
+}
+
+.feature-stats{
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.feature-rank{
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  background: rgba(255,255,255,0.85);
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.feature-badge{
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 12px;
+  background: rgba(205, 40, 40, 0.92);
+  color: #fff;
+}
+
+/* Daily strip */
+.daily-strip{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: linear-gradient(90deg, rgba(197,140,39,0.85), rgba(238,203,122,0.70));
+  border: 1px solid rgba(255,255,255,0.55);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+}
+
+.daily-title{
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.daily-sub{
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+.coin-chip{
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.75);
+  border: 1px solid rgba(0,0,0,0.08);
+  font-weight: 800;
+}
+
+/* Mini row */
+.mini-row{
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+}
+
+.mini-card{
+  text-decoration: none;
+  color: inherit;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(255,255,255,0.70);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  border: 1px solid rgba(255,255,255,0.55);
+  display: grid;
+  grid-template-rows: 120px auto;
+}
+
+.mini-media{
+  background: rgba(0,0,0,0.04);
+}
+
+.mini-media img{
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  padding: 12px;
+}
+
+.mini-meta{
+  padding: 10px 12px 12px;
+}
+
+.mini-title{
+  font-weight: 900;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.mini-sub{
+  opacity: 0.7;
+  font-size: 13px;
+}
+
+/* Sidebar cards */
+.side-card{
+  border-radius: 18px;
+  padding: 14px;
+  background: rgba(255,255,255,0.70);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+  border: 1px solid rgba(255,255,255,0.55);
+}
+
+.side-title{
+  font-weight: 900;
+  font-size: 18px;
+  margin-bottom: 12px;
+}
+
+.side-hero{
+  border-radius: 16px;
+  overflow: hidden;
+  height: 220px;
+  background: rgba(0,0,0,0.05);
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+.side-hero-ph{
+  height: 100%;
+  display: grid;
+  place-items: center;
+  opacity: 0.6;
+  font-weight: 800;
+}
+
+/* Leaderboard */
+.leaderboard{
+  display: grid;
+  gap: 10px;
+}
+
+.lb-row{
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+.lb-rank{
+  font-weight: 900;
+  opacity: 0.8;
+}
+
+.lb-name{
+  font-weight: 800;
+}
+
+.lb-score{
+  font-weight: 800;
+  opacity: 0.85;
+}
+
+.lb-pill{
+  margin-left: 8px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  background: rgba(205, 40, 40, 0.92);
+  color: #fff;
+}
+
+/* Hover lift */
+.feature-card:hover,
+.mini-card:hover,
+.side-card:hover{
+  transform: translateY(-2px);
+}
+
