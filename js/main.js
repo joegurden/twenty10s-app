@@ -1,3 +1,32 @@
+/* ================================
+   GAME REGISTRY (SOURCE OF TRUTH)
+================================ */
+
+const GAMES = {
+  start_bench_sell: {
+    id: "game-start-bench-sell",
+    title: "Start Bench Sell",
+    href: "start-bench-sell.html",
+    image: "img/start-one-bench-one-sell-one.png",
+    plays: 0
+  },
+
+  winner_stays_on: {
+    id: "game-winner-stays-on",
+    title: "Winner Stays On",
+    href: "winner-stays-on.html",
+    image: "img/winner-stays-on.png",
+    plays: 0
+  },
+
+  who_am_i: {
+    title: "Who Am I?",
+    href: "#",
+    image: "img/who-am-i.png",
+    plays: 0
+  }
+};
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js";
 
 /* ---------------- Debug + global error handlers ---------------- */
@@ -72,8 +101,6 @@ const DEFAULT_POPULAR_ORDER = [
   // "game-missing-xi",
   // "game-best-xi",
 ];
-
-}
 
 function normalizeTournamentCandidateWidths() {
   const list = document.getElementById("tournamentSquadList");
@@ -3156,35 +3183,85 @@ showPage("page-home");
 
 renderTopRight();
 
+function wireHomepageGames() {
+  const FALLBACK_IMG = "img/placeholder.png"; // create this file later if you want
+
+  Object.values(GAMES).forEach(game => {
+    if (!game.id) return;
+
+    const el = document.getElementById(game.id);
+    if (!el) return;
+
+    // 1) Link
+    el.setAttribute("href", game.href || "#");
+
+    // 2) Image
+    const img = el.querySelector("img");
+    if (img) img.src = game.image || FALLBACK_IMG;
+
+    // 3) Optional: title text (if you have elements for it)
+    const titleEl = el.querySelector(".game-title");
+    if (titleEl && game.title) titleEl.textContent = game.title;
+  });
+}
+
 document.getElementById("accountBtn")?.addEventListener("click", () => {
   alert("Accounts coming soon 👀 (Guest mode for now)");
 });
 
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
+function applyDefaultOrder() {
+
+  const featuredRow = document.querySelector(".featured-row");
+  if (!featuredRow) return;
+
+  const cards = Array.from(featuredRow.children);
+
+  // Check if all games have 0 plays
+  const noPlaysYet = Object.values(GAMES).every(game => game.plays === 0);
+
+  if (noPlaysYet) {
+    const shuffled = shuffleArray(cards);
+    shuffled.forEach(card => featuredRow.appendChild(card));
+  }
+
+}
+
+/* ================================
+   HOMEPAGE LINK WIRING
+================================ */
+
+wireHomepageGames();
+applyDefaultOrder();
   /* ---------------- Home Hub Tiles ---------------- */
-  document.querySelectorAll(".feature-card, .mini-card").forEach(tile => {
-    tile.addEventListener("click", (e) => {
-      e.preventDefault();
- 
-     // NEW: SBS tile opens its own page
-      if (tile.id === "game-start-bench-sell") {
-        window.location.href = "start-bench-sell.html";
-        return;
-      }
+document.querySelectorAll(".feature-card, .mini-card").forEach(tile => {
+  tile.addEventListener("click", (e) => {
+    e.preventDefault();
 
-    // Winner Stays On tile
+    if (tile.id === "game-start-bench-sell") {
+      window.location.href = "start-bench-sell.html";
+      return;
+    }
+
     if (tile.id === "game-winner-stays-on") {
       window.location.href = "winner-stays-on.html";
       return;
     }
 
-      const target = tile.dataset.target;
-      const soon = tile.dataset.soon === "true";
+    const target = tile.dataset.target;
+    const soon = tile.dataset.soon === "true";
 
-      if (target) return showPage(target);
-      if (soon) alert("Coming soon 👀");
-    });
+    if (target) return showPage(target);
+    if (soon) alert("Coming soon 👀");
   });
+});
 
   /* ---------------- Draft Entry ---------------- */
   $("btn-draft")?.addEventListener("click", () => {
