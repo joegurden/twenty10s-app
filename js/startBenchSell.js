@@ -285,3 +285,11 @@ async function init() {
 }
 
 init();
+
+const playerId = 1; // Luis Suarez
+
+const { data } = supabase.storage
+  .from("player-photos")
+  .getPublicUrl(`headshots/${playerId}.png`);
+
+console.log(data.publicUrl);
