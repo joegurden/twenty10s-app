@@ -50,24 +50,26 @@ function isUsed(playerId) {
 async function loadPlayersFromSupabase() {
   const { data, error } = await supabase
     .from("players")
-    .select("Name,Position,Rating,Club,League") // keep light; rating used internally only
+    .select("ID,Name,Position,Rating,Club,League") // keep light; rating used internally only
     .limit(5000);
 
   if (error) throw new Error(error.message);
 
   // Normalize into a predictable shape
-  const cleaned = (data || [])
-    .map((p, idx) => ({
-      id: `${p.Name}|${p.Club || ""}|${idx}`, // stable enough for a round
-      name: p.Name,
-      pos: normalizePos(p.Position),
-      rating: Number(p.Rating),
-      club: p.Club,
-      league: p.League,
-    }))
-    .filter((p) => p.name && p.pos && Number.isFinite(p.rating));
+const cleaned = (data || [])
+  .map((p) => ({
+    id: p.ID,                 // ✅ real Supabase players.ID (int8)
+    name: p.Name,
+    pos: normalizePos(p.Position),
+    rating: Number(p.Rating),
+    club: p.Club,
+    league: p.League,
+  }))
+  .filter((p) => p.id != null && p.name && p.pos && Number.isFinite(p.rating));
 
-  return cleaned;
+return cleaned;
+
+console.log("First player IDs:", cleaned.slice(0, 5).map(p => p.id));
 }
 
 /* ---------------- Round generation ---------------- */
