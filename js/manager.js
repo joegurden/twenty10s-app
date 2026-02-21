@@ -17,13 +17,22 @@ document.querySelectorAll("[data-diff]").forEach((btn) => {
     const key = btn.dataset.diff;
     const config = DIFFICULTY[key];
 
-    // Store your run settings for later pages
+    // 1️⃣ Remove selection from all cards
+    document.querySelectorAll("[data-diff]").forEach(card =>
+      card.classList.remove("is-selected")
+    );
+
+    // 2️⃣ Add selection to clicked one
+    btn.classList.add("is-selected");
+
+    // 3️⃣ Save difficulty
     localStorage.setItem("managerDifficulty", key);
     localStorage.setItem("managerConfig", JSON.stringify(config));
 
-    // Next step: go to squad builder page
-    // (We’ll create this next)
-    window.location.href = "manager-squad.html";
+    // 4️⃣ Small delay so user sees selection effect
+    setTimeout(() => {
+      window.location.href = "manager-squad.html";
+    }, 150);
   });
 });
 

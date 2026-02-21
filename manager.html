@@ -5,6 +5,7 @@
   <title>KickAbout — Manager Mode</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/manager.css">
 </head>
 
 <body>
@@ -53,64 +54,70 @@
   </header>
 
   <main>
-    <section class="page">
-      <div class="card">
-        <div class="draft-head">
-          <div>
-            <strong>Manager Mode</strong>
-            <span class="pill">Choose your challenge.</span>
-          </div>
-          <div class="row" style="gap:.5rem; margin:0;">
-            <a class="secondary small" href="index.html">← Back</a>
-          </div>
+  <section class="manager-page">
+    <div class="manager-shell card">
+      <div class="manager-head">
+        <div>
+          <h1 class="manager-title">Manager Mode</h1>
+          <p class="manager-sub">Choose your challenge.</p>
         </div>
 
-        <!-- Difficulty cards -->
-        <div class="row" style="gap:1rem; flex-wrap:wrap;">
-          <button class="card" style="min-width:260px; flex:1; text-align:left;" data-diff="easy">
-            <div class="pill">Easy</div>
-            <div style="margin-top:.5rem;">
-              <div><strong>Transfer:</strong> £1,200,000,000</div>
-              <div><strong>Wages:</strong> £3,000,000 / week</div>
-              <div><strong>Options:</strong> 8 per position</div>
-              <div><strong>Squad:</strong> 15 players</div>
-            </div>
-            <div class="row" style="margin-top:.75rem;">
-              <span class="primary" style="padding:.45rem .75rem; border-radius:.6rem;">Start Easy</span>
-            </div>
-          </button>
-
-          <button class="card" style="min-width:260px; flex:1; text-align:left;" data-diff="medium">
-            <div class="pill">Medium</div>
-            <div style="margin-top:.5rem;">
-              <div><strong>Transfer:</strong> £750,000,000</div>
-              <div><strong>Wages:</strong> £1,800,000 / week</div>
-              <div><strong>Options:</strong> 5 per position</div>
-              <div><strong>Squad:</strong> 15 players</div>
-            </div>
-            <div class="row" style="margin-top:.75rem;">
-              <span class="primary" style="padding:.45rem .75rem; border-radius:.6rem;">Start Medium</span>
-            </div>
-          </button>
-
-          <button class="card" style="min-width:260px; flex:1; text-align:left;" data-diff="hard">
-            <div class="pill">Hard</div>
-            <div style="margin-top:.5rem;">
-              <div><strong>Transfer:</strong> £450,000,000</div>
-              <div><strong>Wages:</strong> £1,200,000 / week</div>
-              <div><strong>Options:</strong> 3 per position</div>
-              <div><strong>Rule:</strong> Captain first</div>
-              <div><strong>Squad:</strong> 15 players</div>
-            </div>
-            <div class="row" style="margin-top:.75rem;">
-              <span class="primary" style="padding:.45rem .75rem; border-radius:.6rem;">Start Hard</span>
-            </div>
-          </button>
-        </div>
-
+        <a class="manager-back" href="index.html">← Back</a>
       </div>
-    </section>
-  </main>
+
+      <div class="diff-grid">
+        <button class="diff-card diff-easy" data-diff="easy" type="button">
+          <div class="diff-top">
+            <span class="diff-name">Easy</span>
+            <span class="diff-tag diff-tag-gold">BIG BUDGET</span>
+          </div>
+
+          <div class="diff-stats">
+            <div class="diff-row"><span>Transfer</span><strong>£1,200,000,000</strong></div>
+            <div class="diff-row"><span>Wages</span><strong>£3,000,000 / week</strong></div>
+            <div class="diff-row"><span>Options</span><strong>8 per position</strong></div>
+            <div class="diff-row"><span>Squad</span><strong>15 players</strong></div>
+          </div>
+
+          <div class="diff-cta">Start Easy</div>
+        </button>
+
+        <button class="diff-card diff-medium" data-diff="medium" type="button">
+          <div class="diff-top">
+            <span class="diff-name">Medium</span>
+            <span class="diff-tag diff-tag-silver">BALANCED</span>
+          </div>
+
+          <div class="diff-stats">
+            <div class="diff-row"><span>Transfer</span><strong>£750,000,000</strong></div>
+            <div class="diff-row"><span>Wages</span><strong>£1,800,000 / week</strong></div>
+            <div class="diff-row"><span>Options</span><strong>5 per position</strong></div>
+            <div class="diff-row"><span>Squad</span><strong>15 players</strong></div>
+          </div>
+
+          <div class="diff-cta">Start Medium</div>
+        </button>
+
+        <button class="diff-card diff-hard" data-diff="hard" type="button">
+          <div class="diff-top">
+            <span class="diff-name">Hard</span>
+            <span class="diff-tag diff-tag-red">RUTHLESS</span>
+          </div>
+
+          <div class="diff-stats">
+            <div class="diff-row"><span>Transfer</span><strong>£450,000,000</strong></div>
+            <div class="diff-row"><span>Wages</span><strong>£1,200,000 / week</strong></div>
+            <div class="diff-row"><span>Options</span><strong>3 per position</strong></div>
+            <div class="diff-row"><span>Rule</span><strong>Captain first</strong></div>
+            <div class="diff-row"><span>Squad</span><strong>15 players</strong></div>
+          </div>
+
+          <div class="diff-cta">Start Hard</div>
+        </button>
+      </div>
+    </div>
+  </section>
+</main>
 
   <script type="module" src="js/manager.js"></script>
 </body>
