@@ -38,6 +38,15 @@ function sample(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+function photoUrlFor(playerId) {
+  // Build a PUBLIC URL (no network call)
+  const { data } = supabase.storage
+    .from("player-photos")
+    .getPublicUrl(`headshots/${playerId}.webp`);
+
+  return data?.publicUrl || "";
+}
+
 function isUsed(playerId) {
   const { start, bench, sell } = state.slots;
   return [start, bench, sell].some((p) => p && p.id === playerId);
@@ -58,12 +67,15 @@ async function loadPlayersFromSupabase() {
   // Normalize into a predictable shape
 const cleaned = (data || [])
   .map((p) => ({
-    id: p.ID,                 // ✅ real Supabase players.ID (int8)
+    id: p.ID,                 
     name: p.Name,
     pos: normalizePos(p.Position),
     rating: Number(p.Rating),
     club: p.Club,
     league: p.League,
+
+    // ✅ add this
+    photoUrl: photoUrlFor(p.ID),
   }))
   .filter((p) => p.id != null && p.name && p.pos && Number.isFinite(p.rating));
 
@@ -140,13 +152,29 @@ function renderSlots() {
 
 function renderPool() {
   els.pool.innerHTML = "";
+
   for (const p of state.round.pool) {
     const btn = document.createElement("div");
     btn.className = "sbs-pill";
     btn.dataset.id = p.id;
 
-    // ✅ rating hidden
-    btn.textContent = p.name;
+    // --- image ---
+    const img = document.createElement("img");
+    img.className = "sbs-headshot";
+    img.src = p.photoUrl;
+
+    // fallback if you haven't uploaded that player's photo yet
+    img.onerror = () => {
+      img.src = "../img/who-am-i.png"; // or create a silhouette placeholder
+    };
+
+    // --- name ---
+    const name = document.createElement("div");
+    name.className = "sbs-name";
+    name.textContent = p.name;
+
+    btn.appendChild(img);
+    btn.appendChild(name);
 
     if (isUsed(p.id)) btn.classList.add("used");
     if (!isUsed(p.id) && state.selectedPoolId === p.id) btn.classList.add("selected");
@@ -287,11 +315,5 @@ async function init() {
 }
 
 init();
-
-const playerId = 1; // Luis Suarez
-
-const { data } = supabase.storage
-  .from("player-photos")
-  .getPublicUrl(`headshots/${playerId}.png`);
 
 console.log(data.publicUrl);
