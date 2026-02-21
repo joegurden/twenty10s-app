@@ -3168,13 +3168,10 @@ mgMenu?.addEventListener("click", (e) => {
   /* ---------------- Start Bench Sell (NEW page link) ---------------- */
 const sbsTile = document.getElementById("game-start-bench-sell");
 if (sbsTile) {
-  sbsTile.addEventListener("click", (e) => {
-    e.preventDefault();
-
-    trackPlay("start-bench-sell");      // 👈 THIS is where 4) belongs
+  sbsTile.addEventListener("click", () => {
+    trackPlay("start-bench-sell");
     addCoins(5, "Played Start Bench Sell");
-
-    window.location.href = "start-bench-sell.html";
+    // no preventDefault, no manual redirect
   });
 }
 
@@ -3204,6 +3201,17 @@ function wireHomepageGames() {
     if (titleEl && game.title) titleEl.textContent = game.title;
   });
 }
+
+document.addEventListener("click", (e) => {
+  const a = e.target.closest("a.feature-card, a.mini-card");
+  if (!a) return;
+
+  // If href is #, treat as coming soon
+  if (a.getAttribute("href") === "#") {
+    e.preventDefault();
+    alert("Coming soon 👀");
+  }
+});
 
 document.getElementById("accountBtn")?.addEventListener("click", () => {
   alert("Accounts coming soon 👀 (Guest mode for now)");

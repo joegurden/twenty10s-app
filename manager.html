@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>KickAbout — Manager Mode</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/theme.css">
+</head>
+
+<body>
+
+  <!-- Top ribbon / header (copied from index.html) -->
+  <header class="topbar">
+    <div class="bar">
+      <a href="index.html" class="logo">
+        <img src="img/kickabout-shield.svg" alt="KickAbout logo" class="logo-icon">
+        <div class="logo-text">
+          <span class="kick">Kick</span><span class="about">About</span>
+        </div>
+      </a>
+
+      <button id="accountBtn" class="account-chip" type="button">
+        <span class="coin">🪙</span>
+        <span id="coinCount">1,450</span>
+        <span class="divider">|</span>
+        <span id="accountName">Guest</span>
+        <span class="caret">▾</span>
+      </button>
+    </div>
+
+    <nav class="nav">
+      <a class="nav-btn" href="index.html">Home</a>
+      <a class="nav-btn" href="index.html#players">Players</a>
+      <a class="nav-btn" href="index.html#draft">Draft Mode</a>
+      <a class="nav-btn" href="index.html#tournament">Tournament</a>
+
+      <div class="nav-dropdown">
+        <button class="nav-btn nav-drop-btn" id="navMinigames" type="button">
+          Minigames ▾
+        </button>
+        <div class="nav-drop-menu hidden" id="navMinigamesMenu">
+          <a class="nav-drop-item" href="#" data-soon="true">Start one bench one sell one</a>
+          <a class="nav-drop-item" href="#" data-soon="true">Missing XI</a>
+          <a class="nav-drop-item" href="#" data-soon="true">Keep 3 Lose 1</a>
+          <a class="nav-drop-item" href="#" data-soon="true">Fixture Rebuilder</a>
+          <a class="nav-drop-item" href="#" data-soon="true">Winner stays on</a>
+          <a class="nav-drop-item" href="#" data-soon="true">Who am I?</a>
+          <a class="nav-drop-item" href="#" data-soon="true">Best XI</a>
+          <a class="nav-drop-item" href="#" data-soon="true">Fantasy Football</a>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="page">
+      <div class="card">
+        <div class="draft-head">
+          <div>
+            <strong>Manager Mode</strong>
+            <span class="pill">Choose your challenge.</span>
+          </div>
+          <div class="row" style="gap:.5rem; margin:0;">
+            <a class="secondary small" href="index.html">← Back</a>
+          </div>
+        </div>
+
+        <!-- Difficulty cards -->
+        <div class="row" style="gap:1rem; flex-wrap:wrap;">
+          <button class="card" style="min-width:260px; flex:1; text-align:left;" data-diff="easy">
+            <div class="pill">Easy</div>
+            <div style="margin-top:.5rem;">
+              <div><strong>Transfer:</strong> £1,200,000,000</div>
+              <div><strong>Wages:</strong> £3,000,000 / week</div>
+              <div><strong>Options:</strong> 8 per position</div>
+              <div><strong>Squad:</strong> 15 players</div>
+            </div>
+            <div class="row" style="margin-top:.75rem;">
+              <span class="primary" style="padding:.45rem .75rem; border-radius:.6rem;">Start Easy</span>
+            </div>
+          </button>
+
+          <button class="card" style="min-width:260px; flex:1; text-align:left;" data-diff="medium">
+            <div class="pill">Medium</div>
+            <div style="margin-top:.5rem;">
+              <div><strong>Transfer:</strong> £750,000,000</div>
+              <div><strong>Wages:</strong> £1,800,000 / week</div>
+              <div><strong>Options:</strong> 5 per position</div>
+              <div><strong>Squad:</strong> 15 players</div>
+            </div>
+            <div class="row" style="margin-top:.75rem;">
+              <span class="primary" style="padding:.45rem .75rem; border-radius:.6rem;">Start Medium</span>
+            </div>
+          </button>
+
+          <button class="card" style="min-width:260px; flex:1; text-align:left;" data-diff="hard">
+            <div class="pill">Hard</div>
+            <div style="margin-top:.5rem;">
+              <div><strong>Transfer:</strong> £450,000,000</div>
+              <div><strong>Wages:</strong> £1,200,000 / week</div>
+              <div><strong>Options:</strong> 3 per position</div>
+              <div><strong>Rule:</strong> Captain first</div>
+              <div><strong>Squad:</strong> 15 players</div>
+            </div>
+            <div class="row" style="margin-top:.75rem;">
+              <span class="primary" style="padding:.45rem .75rem; border-radius:.6rem;">Start Hard</span>
+            </div>
+          </button>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="js/manager.js"></script>
+</body>
+</html>
