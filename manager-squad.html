@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>KickAbout — Manager Squad</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/manager-squad.css">
+</head>
+
+<body>
+  <!-- Keep your same header -->
+  <header class="topbar">
+    <div class="bar">
+      <a href="index.html" class="logo">
+        <img src="img/kickabout-shield.svg" alt="KickAbout logo" class="logo-icon">
+        <div class="logo-text">
+          <span class="kick">Kick</span><span class="about">About</span>
+        </div>
+      </a>
+
+      <button id="accountBtn" class="account-chip" type="button">
+        <span class="coin">🪙</span>
+        <span id="coinCount">1,450</span>
+        <span class="divider">|</span>
+        <span id="accountName">Guest</span>
+        <span class="caret">▾</span>
+      </button>
+    </div>
+
+    <nav class="nav">
+      <a class="nav-btn" href="index.html">Home</a>
+      <a class="nav-btn" href="manager.html">Manager Mode</a>
+      <div class="spacer"></div>
+    </nav>
+  </header>
+
+  <main class="ms-wrap">
+
+    <!-- Top HUD -->
+    <section class="ms-hud card">
+      <div class="ms-hud-left">
+        <div class="ms-title">
+          <strong id="msModeTitle">Manager Mode</strong>
+          <span class="pill" id="msManagerNamePill">Manager: —</span>
+          <span class="pill" id="msDifficultyPill">Difficulty: —</span>
+          <span class="pill" id="msFormationPill">Formation: —</span>
+        </div>
+
+        <div class="ms-bars">
+          <div class="ms-barblock">
+            <div class="ms-barhead">
+              <span>Transfer Budget</span>
+              <strong id="msTransferText">—</strong>
+            </div>
+            <div class="ms-bar"><div id="msTransferFill" class="ms-barfill gold"></div></div>
+          </div>
+
+          <div class="ms-barblock">
+            <div class="ms-barhead">
+              <span>Wage Budget</span>
+              <strong id="msWageText">—</strong>
+            </div>
+            <div class="ms-bar"><div id="msWageFill" class="ms-barfill gold"></div></div>
+          </div>
+
+          <div class="ms-barblock">
+            <div class="ms-barhead">
+              <span>Players Selected</span>
+              <strong id="msPlayersText">0 / 15</strong>
+            </div>
+            <div class="ms-bar"><div id="msPlayersFill" class="ms-barfill red"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ms-hud-actions">
+        <button id="btnResetSquad" class="secondary">Reset Squad</button>
+        <button id="btnSubmitSquad" class="primary">Submit Squad</button>
+      </div>
+    </section>
+
+    <!-- Main layout -->
+    <section class="ms-grid">
+      <!-- LEFT: Pitch -->
+      <div class="ms-pitch card">
+        <div class="ms-pitch-head">
+          <strong>Squad Builder</strong>
+
+          <div class="ms-controls">
+            <label class="pill" for="formationSelect">Formation</label>
+            <select id="formationSelect" class="select">
+              <option value="4-3-3">4-3-3</option>
+              <option value="4-2-3-1">4-2-3-1</option>
+              <option value="4-4-2">4-4-2</option>
+              <option value="3-5-2">3-5-2</option>
+              <option value="3-4-3">3-4-3</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="pitchArea" class="pitch-area">
+          <!-- JS renders slots here -->
+        </div>
+
+        <div class="ms-note pill" id="msNote">
+          Pick your <strong>Captain first</strong> to unlock squad building.
+        </div>
+      </div>
+
+      <!-- RIGHT: Available players -->
+      <aside class="ms-list card">
+        <div class="ms-list-head">
+          <strong>Available Players</strong>
+
+          <div class="ms-tabs">
+            <button class="tab active" data-tab="ALL">ALL</button>
+            <button class="tab" data-tab="GK">GK</button>
+            <button class="tab" data-tab="DEF">DEF</button>
+            <button class="tab" data-tab="MID">MID</button>
+            <button class="tab" data-tab="ATT">ATT</button>
+          </div>
+        </div>
+
+        <div class="pill ms-small">
+          Click a slot on the pitch, then press <strong>Add</strong>.
+        </div>
+
+        <div id="playerList" class="player-list"></div>
+      </aside>
+    </section>
+  </main>
+
+  <!-- Modal: Manager name -->
+  <div id="nameModal" class="modal-backdrop hidden">
+    <div class="modal card">
+      <h2 class="modal-title">Name your Manager</h2>
+      <p class="modal-sub">This will be shown on your Manager Mode profile.</p>
+
+      <div class="modal-row">
+        <input id="mgrFirst" class="select" placeholder="First name" />
+        <input id="mgrLast" class="select" placeholder="Last name" />
+      </div>
+
+      <div class="modal-actions">
+        <button id="btnSaveName" class="primary">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Captain picker -->
+  <div id="captainModal" class="modal-backdrop hidden">
+    <div class="modal card">
+      <h2 class="modal-title">Choose your Captain first</h2>
+      <p class="modal-sub" id="captainRuleText">Based on your difficulty.</p>
+
+      <div id="captainList" class="captain-list"></div>
+
+      <div class="modal-actions">
+        <button id="btnCaptainConfirm" class="primary" disabled>Confirm Captain</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/manager-squad.js"></script>
+</body>
+</html>
