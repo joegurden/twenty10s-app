@@ -75,29 +75,29 @@ let PLAYER_POOL = [];
 
 async function loadPlayersFromSupabase() {
   const { data, error } = await supabase
-    .from("players")
-    .select("ID,Name,Position,Rating,Club,League")
-    .limit(5000);
+  .from("players")
+  .select("ID,Name,Position,Rating,Club,League,value,wages")
+  .limit(5000);
 
   if (error) throw new Error(error.message);
 
   // NOTE: fee/wage – see section 4 below
   PLAYER_POOL = (data || [])
-    .map((p) => ({
-      id: p.ID,
-      name: p.Name,
-      pos: slotGroupFromPosition(normalizePos(p.Position)), // "GK/DEF/MID/ATT"
-      role: normalizePos(p.Position),                       // "RB/CB/CM/..."
-      rating: Number(p.Rating),
-      club: p.Club,
-      league: p.League,
-      photo: photoUrlFor(p.ID),
+  .map((p) => ({
+    id: p.ID,
+    name: p.Name,
+    pos: slotGroupFromPosition(normalizePos(p.Position)),
+    role: normalizePos(p.Position),
+    rating: Number(p.Rating),
+    club: p.Club,
+    league: p.League,
+    photo: photoUrlFor(p.ID),
 
-      // TEMP until you add real columns:
-      fee: estimateFee(Number(p.Rating)),
-      wage: estimateWage(Number(p.Rating)),
-    }))
-    .filter((p) => p.id != null && p.name && p.role && Number.isFinite(p.rating));
+    // ✅ REAL finance fields from Supabase
+    fee: Number(p.value) || 0,
+    wage: Number(p.wages) || 0,
+  }))
+  .filter((p) => p.id != null && p.name && p.role && Number.isFinite(p.rating));
 }
 
 function slotGroupFromPosition(role) {
@@ -464,12 +464,3 @@ function submitSquad() {
 
 function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
 function capitalize(s){ return (s||"").slice(0,1).toUpperCase() + (s||"").slice(1); }
-
-function estimateFee(r) {
-  if (!Number.isFinite(r)) return 25_000_000;
-  return Math.round((r ** 3) * 12_000); // quick “feels right” curve
-}
-function estimateWage(r) {
-  if (!Number.isFinite(r)) return 80_000;
-  return Math.round((r ** 2) * 90); // ~80k–800k-ish
-}
