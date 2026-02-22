@@ -4,9 +4,12 @@
 
 .manager-page{
   padding: 18px 18px 40px;
-  min-height: calc(100vh - 140px);
+  flex: 1;
   display: flex;
-  align-items: center;
+}
+
+.manager-shell{
+  width: 100%;
 }
 
 .manager-head{
@@ -152,4 +155,15 @@
 .diff-card.is-selected {
   outline: 3px solid rgba(212,58,58,.35);
   transform: translateY(-3px);
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+  display: flex;
 }
