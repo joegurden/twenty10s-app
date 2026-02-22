@@ -1,5 +1,20 @@
 // js/manager-squad.js
 
+import { supabase } from "./supabaseClient.js";
+
+// same pattern as SBS
+function photoUrlFor(playerId) {
+  const { data } = supabase.storage
+    .from("player-photos")
+    .getPublicUrl(`headshots/${playerId}.webp`);
+
+  return data?.publicUrl || "";
+}
+
+function normalizePos(p) {
+  return String(p || "").toUpperCase().trim();
+}
+
 const money = (n) => "£" + Math.round(n).toLocaleString("en-GB");
 
 const cfg = JSON.parse(localStorage.getItem("managerConfig") || "null");
@@ -56,22 +71,41 @@ const SLOT_COORDS = {
 
 // ---- Placeholder player pool ----
 // Replace this later with your Supabase players list.
-const PLAYER_POOL = [
-  // Captain-eligible examples
-  { id:"p1", name:"Kevin De Bruyne", pos:"MID", role:"CAM", rating: 96, fee: 120_000_000, wage: 450_000 },
-  { id:"p2", name:"Kylian Mbappé",   pos:"ATT", role:"ST",  rating: 97, fee: 180_000_000, wage: 550_000 },
-  { id:"p3", name:"Virgil van Dijk", pos:"DEF", role:"CB",  rating: 94, fee:  90_000_000, wage: 380_000 },
-  { id:"p4", name:"Mohamed Salah",   pos:"ATT", role:"RW",  rating: 92, fee:  85_000_000, wage: 350_000 },
-  { id:"p5", name:"Rodri",           pos:"MID", role:"CDM", rating: 91, fee:  95_000_000, wage: 320_000 },
-  { id:"p6", name:"Rúben Dias",      pos:"DEF", role:"CB",  rating: 89, fee:  70_000_000, wage: 250_000 },
-  // Normal pool examples
-  { id:"p7", name:"Theo Hernández",  pos:"DEF", role:"LB",  rating: 88, fee:  65_000_000, wage: 220_000 },
-  { id:"p8", name:"Kyle Walker",     pos:"DEF", role:"RB",  rating: 86, fee:  40_000_000, wage: 200_000 },
-  { id:"p9", name:"Alisson",         pos:"GK",  role:"GK",  rating: 90, fee:  55_000_000, wage: 250_000 },
-  { id:"p10",name:"Jude Bellingham", pos:"MID", role:"CM",  rating: 93, fee: 130_000_000, wage: 420_000 },
-  { id:"p11",name:"Declan Rice",     pos:"MID", role:"CDM", rating: 88, fee:  75_000_000, wage: 240_000 },
-  { id:"p12",name:"Bukayo Saka",     pos:"ATT", role:"RW",  rating: 87, fee:  70_000_000, wage: 210_000 },
-];
+let PLAYER_POOL = [];
+
+async function loadPlayersFromSupabase() {
+  const { data, error } = await supabase
+    .from("players")
+    .select("ID,Name,Position,Rating,Club,League")
+    .limit(5000);
+
+  if (error) throw new Error(error.message);
+
+  // NOTE: fee/wage – see section 4 below
+  PLAYER_POOL = (data || [])
+    .map((p) => ({
+      id: p.ID,
+      name: p.Name,
+      pos: slotGroupFromPosition(normalizePos(p.Position)), // "GK/DEF/MID/ATT"
+      role: normalizePos(p.Position),                       // "RB/CB/CM/..."
+      rating: Number(p.Rating),
+      club: p.Club,
+      league: p.League,
+      photo: photoUrlFor(p.ID),
+
+      // TEMP until you add real columns:
+      fee: estimateFee(Number(p.Rating)),
+      wage: estimateWage(Number(p.Rating)),
+    }))
+    .filter((p) => p.id != null && p.name && p.role && Number.isFinite(p.rating));
+}
+
+function slotGroupFromPosition(role) {
+  if (role === "GK") return "GK";
+  if (["LB","RB","CB","LWB","RWB"].includes(role)) return "DEF";
+  if (["CDM","CM","LM","RM","CAM","LAM","RAM"].includes(role)) return "MID";
+  return "ATT";
+}
 
 let state = {
   managerName: localStorage.getItem("managerName") || "",
@@ -139,26 +173,18 @@ formationSelect.addEventListener("change", () => {
 });
 
 // --- init ---
-boot();
+async function boot() {
+  await loadPlayersFromSupabase();
 
-function boot() {
   msDifficultyPill.textContent = `Difficulty: ${capitalize(difficulty)}`;
   formationSelect.value = state.formation;
 
-  // 1) Require manager name
-  if (!state.managerName) {
-    openNameModal();
-    return;
-  }
-
-  // 2) Require captain first (your rule)
-  if (!state.captainId) {
-    openCaptainModal();
-    return;
-  }
+  if (!state.managerName) { openNameModal(); return; }
+  if (!state.captainId) { openCaptainModal(); return; }
 
   renderAll();
 }
+boot();
 
 function openNameModal() {
   nameModal.classList.remove("hidden");
@@ -293,19 +319,44 @@ function renderPlayers() {
   }
 
   const slotLabel = FORMATIONS[state.formation][state.selectedSlotIndex];
-  const tab = state.tab;
+const tab = state.tab;
 
-  const filtered = PLAYER_POOL
-    .filter(p => {
-      if (tab === "ALL") return true;
-      if (tab === "GK") return p.pos === "GK";
-      if (tab === "DEF") return p.pos === "DEF";
-      if (tab === "MID") return p.pos === "MID";
-      if (tab === "ATT") return p.pos === "ATT";
-      return true;
-    })
-    .filter(p => !state.picks.some(x => x?.id === p.id)) // not already in squad
-    .slice(0, 18);
+const slotGroup =
+  slotLabel === "GK" ? "GK"
+  : ["LB","RB","CB","LWB","RWB"].includes(slotLabel) ? "DEF"
+  : ["CDM","CM","LM","RM","CAM","LAM","RAM"].includes(slotLabel) ? "MID"
+  : "ATT";
+
+const matchesTab = (p) => {
+  if (tab === "ALL") return true;
+  return p.pos === tab; // p.pos is "GK"/"DEF"/"MID"/"ATT"
+};
+
+const notPicked = (p) => !state.picks.some(x => x?.id === p.id);
+
+const limit = cfg.optionsPerPos;
+
+// 1) exact role list (RB shows RBs etc.)
+let filtered = PLAYER_POOL
+  .filter(matchesTab)
+  .filter(notPicked)
+  .filter(p => p.role === slotLabel)
+  .slice(0, limit);
+
+// 2) fallback to same group if not enough exact-role players
+if (filtered.length < limit) {
+  const remaining = limit - filtered.length;
+
+  const fallback = PLAYER_POOL
+    .filter(matchesTab)
+    .filter(notPicked)
+    .filter(p => p.pos === slotGroup)
+    .filter(p => p.role !== slotLabel)
+    .filter(p => !filtered.some(x => x.id === p.id))
+    .slice(0, remaining);
+
+  filtered = filtered.concat(fallback);
+}
 
   playerList.innerHTML = "";
 
@@ -314,19 +365,27 @@ function renderPlayers() {
     row.className = "player-row";
 
     row.innerHTML = `
-      <div class="player-meta">
-        <strong>${p.name}</strong>
-        <span>${p.pos} · ${p.role} · Rating ${p.rating}</span>
-      </div>
+  <div style="display:flex; gap:10px; align-items:center;">
+    
+    <div class="pimg">
+      <img src="${p.photo || "img/player-placeholder.png"}" alt="${p.name}">
+    </div>
 
-      <div style="display:flex; align-items:center; gap:12px;">
-        <div class="player-prices">
-          <div>${money(p.fee)}</div>
-          <div class="wage">${money(p.wage)}/wk</div>
-        </div>
-        <button class="primary small">Add</button>
-      </div>
-    `;
+    <div class="player-meta">
+      <strong>${p.name}</strong>
+      <span>${p.pos} · ${p.role} · Rating ${p.rating}</span>
+    </div>
+
+  </div>
+
+  <div style="display:flex; align-items:center; gap:12px;">
+    <div class="player-prices">
+      <div>${money(p.fee)}</div>
+      <div class="wage">${money(p.wage)}/wk</div>
+    </div>
+    <button class="primary small">Add</button>
+  </div>
+`;
 
     row.querySelector("button").addEventListener("click", () => addToSelectedSlot(p));
     playerList.appendChild(row);
@@ -405,3 +464,12 @@ function submitSquad() {
 
 function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
 function capitalize(s){ return (s||"").slice(0,1).toUpperCase() + (s||"").slice(1); }
+
+function estimateFee(r) {
+  if (!Number.isFinite(r)) return 25_000_000;
+  return Math.round((r ** 3) * 12_000); // quick “feels right” curve
+}
+function estimateWage(r) {
+  if (!Number.isFinite(r)) return 80_000;
+  return Math.round((r ** 2) * 90); // ~80k–800k-ish
+}
