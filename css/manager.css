@@ -3,11 +3,13 @@
    ================================ */
 
 .manager-page{
-  padding: 18px 18px 28px;
+  padding: 18px 18px 40px;
+  min-height: calc(100vh - 140px);
+  display: flex;
 }
 
 .manager-shell{
-  padding: 18px;
+  width: 100%;
 }
 
 .manager-head{
