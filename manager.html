@@ -56,14 +56,16 @@
   <main>
   <section class="manager-page">
     <div class="manager-shell card">
-      <div class="manager-head">
-        <div>
-          <h1 class="manager-title">Manager Mode</h1>
-          <p class="manager-sub">Choose your challenge.</p>
-        </div>
+      <div class="manager-top-actions">
+  <a class="mbtn" href="manager.html">New Game</a>
+  <a class="mbtn" href="index.html">Back</a>
+  <a class="mbtn mbtn-primary" href="#" onclick="return false;">Continue</a>
+</div>
 
-        <a class="manager-back" href="index.html">← Back</a>
-      </div>
+<div class="manager-hero">
+  <h1 class="manager-hero-title">Manager Mode.</h1>
+  <p class="manager-hero-sub">Choose Your Challenge</p>
+</div>
 
       <div class="diff-grid">
         <button class="diff-card diff-easy" data-diff="easy" type="button">
@@ -72,11 +74,20 @@
           </div>
 
           <div class="diff-stats">
-            <div class="diff-row"><span>Transfer</span><strong>£1,200,000,000</strong></div>
-            <div class="diff-row"><span>Wages</span><strong>£3,000,000 / week</strong></div>
-            <div class="diff-row"><span>Options</span><strong>8 per position</strong></div>
-            <div class="diff-row"><span>Squad</span><strong>15 players</strong></div>
-          </div>
+  <div class="budget-block">
+    <div class="budget-label">Transfer Budget</div>
+    <div class="budget-value gold">£1,200,000,000</div>
+    <div class="budget-bar"><div class="budget-fill gold" style="width:92%"></div></div>
+  </div>
+
+  <div class="budget-block">
+    <div class="budget-label">Wage Budget</div>
+    <div class="budget-value gold">£3,000,000 <span class="per">/ week</span></div>
+  </div>
+
+  <div class="diff-row"><span>Player Options</span><strong>8 per position</strong></div>
+  <div class="diff-row"><span>Squad Size</span><strong>15 Players</strong></div>
+</div>
 
           <div class="diff-cta">Start Easy</div>
         </button>
@@ -87,26 +98,66 @@
           </div>
 
           <div class="diff-stats">
-            <div class="diff-row"><span>Transfer</span><strong>£750,000,000</strong></div>
-            <div class="diff-row"><span>Wages</span><strong>£1,800,000 / week</strong></div>
-            <div class="diff-row"><span>Options</span><strong>5 per position</strong></div>
-            <div class="diff-row"><span>Squad</span><strong>15 players</strong></div>
-          </div>
+  <div class="budget-block">
+    <div class="budget-label">Transfer Budget</div>
+    <div class="budget-value gold">£750,000,000</div>
+    <div class="budget-bar">
+      <div class="budget-fill gold" style="width:70%"></div>
+    </div>
+  </div>
+
+  <div class="budget-block">
+    <div class="budget-label">Wage Budget</div>
+    <div class="budget-value gold">
+      £1,800,000 <span class="per">/ week</span>
+    </div>
+  </div>
+
+  <div class="diff-row">
+    <span>Player Options</span>
+    <strong>5 per position</strong>
+  </div>
+
+  <div class="diff-row">
+    <span>Squad Size</span>
+    <strong>15 Players</strong>
+  </div>
+</div>
 
           <div class="diff-cta">Start Medium</div>
         </button>
 
         <button class="diff-card diff-hard" data-diff="hard" type="button">
           <div class="diff-top">
-            <span class="diff-name">Hard</span>
+            <span class="diff-name diff-hard-title">Hard</span>
           </div>
 
           <div class="diff-stats">
-            <div class="diff-row"><span>Transfer</span><strong>£450,000,000</strong></div>
-            <div class="diff-row"><span>Wages</span><strong>£1,200,000 / week</strong></div>
-            <div class="diff-row"><span>Options</span><strong>3 per position</strong></div>
-            <div class="diff-row"><span>Squad</span><strong>15 players</strong></div>
-          </div>
+  <div class="budget-block">
+    <div class="budget-label">Transfer Budget</div>
+    <div class="budget-value red">£450,000,000</div>
+    <div class="budget-bar">
+      <div class="budget-fill red" style="width:45%"></div>
+    </div>
+  </div>
+
+  <div class="budget-block">
+    <div class="budget-label">Wage Budget</div>
+    <div class="budget-value red">
+      £1,200,000 <span class="per">/ week</span>
+    </div>
+  </div>
+
+  <div class="diff-row">
+    <span>Player Options</span>
+    <strong>3 per position</strong>
+  </div>
+
+  <div class="diff-row">
+    <span>Squad Size</span>
+    <strong>15 Players</strong>
+  </div>
+</div>
 
           <div class="diff-cta">Start Hard</div>
         </button>
