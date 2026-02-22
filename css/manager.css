@@ -86,7 +86,7 @@
 .diff-top{
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  justify-content: flex-start;
   gap: 10px;
   margin-bottom: 10px;
 }
@@ -94,30 +94,6 @@
 .diff-name{
   font-size: 20px;
   font-weight: 900;
-}
-
-.diff-tag{
-  font-size: 11px;
-  font-weight: 900;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(0,0,0,.12);
-  background: rgba(255,255,255,.6);
-  letter-spacing: .2px;
-}
-
-.diff-tag-gold{
-  background: linear-gradient(180deg, rgba(255,215,96,.95), rgba(232,181,44,.92));
-}
-
-.diff-tag-silver{
-  background: linear-gradient(180deg, rgba(220,225,235,.95), rgba(180,190,205,.92));
-}
-
-.diff-tag-red{
-  background: linear-gradient(180deg, rgba(255,120,120,.95), rgba(210,40,40,.92));
-  color: #fff;
-  border-color: rgba(0,0,0,.10);
 }
 
 .diff-stats{
