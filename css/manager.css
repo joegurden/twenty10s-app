@@ -6,10 +6,7 @@
   padding: 18px 18px 40px;
   min-height: calc(100vh - 140px);
   display: flex;
-}
-
-.manager-shell{
-  width: 100%;
+  align-items: center;
 }
 
 .manager-head{
