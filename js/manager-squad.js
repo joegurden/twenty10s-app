@@ -107,6 +107,22 @@ function slotGroupFromPosition(role) {
   return "ATT";
 }
 
+function shuffleArray(arr) {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function getSlotFamily(slotLabel) {
+  if (slotLabel === "GK") return "GK";
+  if (["LB","RB","CB","LWB","RWB"].includes(slotLabel)) return "DEF";
+  if (["CDM","CM","LM","RM","CAM","LAM","RAM"].includes(slotLabel)) return "MID";
+  return "ATT";
+}
+
 let state = {
   managerName: localStorage.getItem("managerName") || "",
   formation: localStorage.getItem("managerFormation") || "4-3-3",
@@ -117,7 +133,7 @@ let state = {
   // budget remaining
   transferRemaining: cfg.transfer,
   wageRemaining: cfg.wages,
-  tab: "ALL",
+  tab: "SELECTED",
 };
 
 const el = (id) => document.getElementById(id);
@@ -333,35 +349,38 @@ function renderPlayers() {
   }
 
   const slotLabel = FORMATIONS[state.formation][state.selectedSlotIndex];
-  const tab = state.tab;
-
-  const slotGroup =
-    slotLabel === "GK" ? "GK"
-    : ["LB","RB","CB","LWB","RWB"].includes(slotLabel) ? "DEF"
-    : ["CDM","CM","LM","RM","CAM","LAM","RAM"].includes(slotLabel) ? "MID"
-    : "ATT";
-
-  const matchesTab = (p) => {
-    if (tab === "ALL") return true;
-    return p.pos === tab;
-  };
-
+  const slotFamily = getSlotFamily(slotLabel);
   const notPicked = (p) => !state.picks.some(x => x?.id === p.id);
 
-  // ✅ NEW: no slot filtering here
-  let visiblePlayers = PLAYER_POOL
-    .filter(matchesTab)
-    .filter(notPicked)
-    .slice(0, cfg.optionsPerPos);
+  let visiblePlayers = [];
+
+  if (state.tab === "SELECTED") {
+    const exact = shuffleArray(
+      PLAYER_POOL.filter(p => p.role === slotLabel).filter(notPicked)
+    );
+
+    const family = shuffleArray(
+      PLAYER_POOL
+        .filter(p => p.pos === slotFamily)
+        .filter(p => p.role !== slotLabel)
+        .filter(notPicked)
+    );
+
+    visiblePlayers = [...exact, ...family].slice(0, cfg.optionsPerPos);
+  } else {
+    visiblePlayers = shuffleArray(
+      PLAYER_POOL
+        .filter(notPicked)
+        .filter((p) => p.pos === state.tab)
+    ).slice(0, cfg.optionsPerPos);
+  }
 
   playerList.innerHTML = "";
 
   visiblePlayers.forEach((p) => {
-
     const isExactMatch = p.role === slotLabel;
-    const isGroupMatch = p.pos === slotGroup;
-
-    const canUse = isExactMatch || isGroupMatch;
+    const isFamilyMatch = p.pos === slotFamily;
+    const canUse = isExactMatch || isFamilyMatch;
 
     const row = document.createElement("div");
     row.className = "player-row";
