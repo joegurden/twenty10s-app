@@ -64,6 +64,7 @@
   justify-content:center;
   text-align:center;
   padding: 10px;
+padding-top: 22px;
   cursor:pointer;
   transition: transform .12s ease, box-shadow .12s ease, outline .12s ease;
 }
@@ -169,7 +170,7 @@
 /* floating player head */
 .slot-photo{
   position:absolute;
-  top:-22px;
+  top:-34px;
   left:50%;
   transform:translateX(-50%) scale(1);
   width:48px;
@@ -207,4 +208,14 @@
   flex-direction:column;
   align-items:center;
   gap:2px;
+}
+
+.slot-photo{
+  width:44px;
+  height:44px;
+  top:-32px;
+}
+
+.slot.active .slot-photo{
+  transform:translateX(-50%) scale(1.2);
 }
