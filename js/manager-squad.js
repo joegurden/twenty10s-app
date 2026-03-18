@@ -270,6 +270,7 @@ function renderPitch() {
     tile.style.top = `calc(${pos.y}% - 42px)`;
 
     const picked = state.picks[idx];
+
     if (!picked) {
       tile.innerHTML = `<div>
         <div class="pos">${label}</div>
@@ -277,28 +278,24 @@ function renderPitch() {
       </div>`;
     } else {
       const isActive = idx === state.selectedSlotIndex;
-tile.innerHTML = `
-  ${picked ? `
-    <div class="slot-photo ${isActive ? "active" : ""}">
-      <img src="${picked.photo || "img/player-placeholder.png"}">
-    </div>
-  ` : ""}
 
-  <div class="${picked ? "picked" : ""}">
-    ${!picked ? `
-      <div class="pos">${label}</div>
-      <div class="hint">+ Select Player</div>
-    ` : `
-      <strong>${picked.name}</strong>
-      <span>${picked.role}</span>
-      ${isActive ? `
-        <div class="slot-finance">
-          ${money(picked.fee)} · ${money(picked.wage)}/wk
+      tile.innerHTML = `
+        <div class="slot-photo ${isActive ? "active" : ""}">
+          <img src="${picked.photo || "img/player-placeholder.png"}">
         </div>
-      ` : ""}
-    `}
-  </div>
-`;
+
+        <div class="picked">
+          <strong>${picked.name}</strong>
+          <span>${picked.role}</span>
+
+          ${isActive ? `
+            <div class="slot-finance">
+              ${money(picked.fee)} · ${money(picked.wage)}/wk
+            </div>
+          ` : ""}
+        </div>
+      `;
+    } // ✅ FIXED
 
     tile.addEventListener("click", () => {
       state.selectedSlotIndex = idx;
