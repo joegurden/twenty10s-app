@@ -276,11 +276,29 @@ function renderPitch() {
         <div class="hint">+ Select Player</div>
       </div>`;
     } else {
-      tile.innerHTML = `<div class="picked">
-        <strong>${picked.name}</strong>
-        <span>${picked.role} · ${money(picked.fee)} · ${money(picked.wage)}/wk</span>
-      </div>`;
-    }
+      const isActive = idx === state.selectedSlotIndex;
+tile.innerHTML = `
+  ${picked ? `
+    <div class="slot-photo ${isActive ? "active" : ""}">
+      <img src="${picked.photo || "img/player-placeholder.png"}">
+    </div>
+  ` : ""}
+
+  <div class="${picked ? "picked" : ""}">
+    ${!picked ? `
+      <div class="pos">${label}</div>
+      <div class="hint">+ Select Player</div>
+    ` : `
+      <strong>${picked.name}</strong>
+      <span>${picked.role}</span>
+      ${isActive ? `
+        <div class="slot-finance">
+          ${money(picked.fee)} · ${money(picked.wage)}/wk
+        </div>
+      ` : ""}
+    `}
+  </div>
+`;
 
     tile.addEventListener("click", () => {
       state.selectedSlotIndex = idx;
@@ -312,82 +330,74 @@ function resolveCoord(label, counter) {
 }
 
 function renderPlayers() {
-  // Must choose captain first
   if (!state.captainId) {
     playerList.innerHTML = `<div class="pill">Pick your Captain first to unlock players.</div>`;
     return;
   }
 
   const slotLabel = FORMATIONS[state.formation][state.selectedSlotIndex];
-const tab = state.tab;
+  const tab = state.tab;
 
-const slotGroup =
-  slotLabel === "GK" ? "GK"
-  : ["LB","RB","CB","LWB","RWB"].includes(slotLabel) ? "DEF"
-  : ["CDM","CM","LM","RM","CAM","LAM","RAM"].includes(slotLabel) ? "MID"
-  : "ATT";
+  const slotGroup =
+    slotLabel === "GK" ? "GK"
+    : ["LB","RB","CB","LWB","RWB"].includes(slotLabel) ? "DEF"
+    : ["CDM","CM","LM","RM","CAM","LAM","RAM"].includes(slotLabel) ? "MID"
+    : "ATT";
 
-const matchesTab = (p) => {
-  if (tab === "ALL") return true;
-  return p.pos === tab; // p.pos is "GK"/"DEF"/"MID"/"ATT"
-};
+  const matchesTab = (p) => {
+    if (tab === "ALL") return true;
+    return p.pos === tab;
+  };
 
-const notPicked = (p) => !state.picks.some(x => x?.id === p.id);
+  const notPicked = (p) => !state.picks.some(x => x?.id === p.id);
 
-const limit = cfg.optionsPerPos;
-
-// 1) exact role list (RB shows RBs etc.)
-let filtered = PLAYER_POOL
-  .filter(matchesTab)
-  .filter(notPicked)
-  .filter(p => p.role === slotLabel)
-  .slice(0, limit);
-
-// 2) fallback to same group if not enough exact-role players
-if (filtered.length < limit) {
-  const remaining = limit - filtered.length;
-
-  const fallback = PLAYER_POOL
+  // ✅ NEW: no slot filtering here
+  let visiblePlayers = PLAYER_POOL
     .filter(matchesTab)
     .filter(notPicked)
-    .filter(p => p.pos === slotGroup)
-    .filter(p => p.role !== slotLabel)
-    .filter(p => !filtered.some(x => x.id === p.id))
-    .slice(0, remaining);
-
-  filtered = filtered.concat(fallback);
-}
+    .slice(0, cfg.optionsPerPos);
 
   playerList.innerHTML = "";
 
-  filtered.forEach((p) => {
+  visiblePlayers.forEach((p) => {
+
+    const isExactMatch = p.role === slotLabel;
+    const isGroupMatch = p.pos === slotGroup;
+
+    const canUse = isExactMatch || isGroupMatch;
+
     const row = document.createElement("div");
     row.className = "player-row";
 
+    if (!canUse) row.style.opacity = "0.45";
+
     row.innerHTML = `
-  <div style="display:flex; gap:10px; align-items:center;">
-    
-    <div class="pimg">
-      <img src="${p.photo || "img/player-placeholder.png"}" alt="${p.name}">
-    </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <div class="pimg">
+          <img src="${p.photo || "img/player-placeholder.png"}" alt="${p.name}">
+        </div>
 
-    <div class="player-meta">
-      <strong>${p.name}</strong>
-      <span>${p.pos} · ${p.role} · Rating ${p.rating}</span>
-    </div>
+        <div class="player-meta">
+          <strong>${p.name}</strong>
+          <span>${p.pos} · ${p.role} · Rating ${p.rating}</span>
+        </div>
+      </div>
 
-  </div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="player-prices">
+          <div>${money(p.fee)}</div>
+          <div class="wage">${money(p.wage)}/wk</div>
+        </div>
+        <button class="primary small" ${!canUse ? "disabled" : ""}>
+          ${canUse ? "Add" : "—"}
+        </button>
+      </div>
+    `;
 
-  <div style="display:flex; align-items:center; gap:12px;">
-    <div class="player-prices">
-      <div>${money(p.fee)}</div>
-      <div class="wage">${money(p.wage)}/wk</div>
-    </div>
-    <button class="primary small">Add</button>
-  </div>
-`;
+    if (canUse) {
+      row.querySelector("button").addEventListener("click", () => addToSelectedSlot(p));
+    }
 
-    row.querySelector("button").addEventListener("click", () => addToSelectedSlot(p));
     playerList.appendChild(row);
   });
 }
