@@ -107,6 +107,62 @@ function slotGroupFromPosition(role) {
   return "ATT";
 }
 
+function uniqueById(arr) {
+  const seen = new Set();
+  return arr.filter((p) => {
+    if (seen.has(p.id)) return false;
+    seen.add(p.id);
+    return true;
+  });
+}
+
+function roleCountsForFormation(formation) {
+  const counts = {};
+  for (const role of FORMATIONS[formation]) {
+    counts[role] = (counts[role] || 0) + 1;
+  }
+  return counts;
+}
+
+function buildDraftPools() {
+  const roleCounts = roleCountsForFormation(state.formation);
+  const pools = {};
+
+  Object.entries(roleCounts).forEach(([role, count]) => {
+    const exactPlayers = shuffleArray(
+      PLAYER_POOL.filter((p) => p.role === role)
+    );
+
+    const choicesNeeded = Math.max(cfg.optionsPerPos, count * 3);
+    pools[role] = exactPlayers.slice(0, choicesNeeded);
+  });
+
+  state.draftPools = pools;
+
+  state.areaPools = {
+    GK: uniqueById(
+      Object.entries(pools)
+        .filter(([role]) => getSlotFamily(role) === "GK")
+        .flatMap(([, players]) => players)
+    ),
+    DEF: uniqueById(
+      Object.entries(pools)
+        .filter(([role]) => getSlotFamily(role) === "DEF")
+        .flatMap(([, players]) => players)
+    ),
+    MID: uniqueById(
+      Object.entries(pools)
+        .filter(([role]) => getSlotFamily(role) === "MID")
+        .flatMap(([, players]) => players)
+    ),
+    ATT: uniqueById(
+      Object.entries(pools)
+        .filter(([role]) => getSlotFamily(role) === "ATT")
+        .flatMap(([, players]) => players)
+    ),
+  };
+}
+
 function shuffleArray(arr) {
   const copy = [...arr];
   for (let i = copy.length - 1; i > 0; i--) {
@@ -134,6 +190,9 @@ let state = {
   transferRemaining: cfg.transfer,
   wageRemaining: cfg.wages,
   tab: "SELECTED",
+draftPools: {},
+areaPools: {},
+formationLocked: false,
 };
 
 const el = (id) => document.getElementById(id);
@@ -180,22 +239,41 @@ document.querySelectorAll(".tab").forEach((b) => {
 
 formationSelect.value = state.formation;
 formationSelect.addEventListener("change", () => {
+  if (state.formationLocked) {
+    formationSelect.value = state.formation;
+    return;
+  }
+
   state.formation = formationSelect.value;
   localStorage.setItem("managerFormation", state.formation);
-  // Rebuild slots (clears picks for v1 to avoid mismatch)
-  state.picks = [];
-  state.selectedSlotIndex = 0;
-  renderAll();
 });
 
 // --- init ---
+function ensureFormationChosenFirst() {
+  if (state.formationLocked) return false;
+
+  const ok = confirm(`Start this save with ${state.formation}? This cannot be changed.`);
+  if (!ok) return true;
+
+  state.formationLocked = true;
+  localStorage.setItem("managerFormation", state.formation);
+  localStorage.setItem("managerFormationLocked", "1");
+
+  buildDraftPools();
+  return false;
+}
+
 async function boot() {
   await loadPlayersFromSupabase();
+state.formationLocked = !!localStorage.getItem("managerFormationLocked");
+if (state.formationLocked) {
+  buildDraftPools();
+}
 
   msDifficultyPill.textContent = `Difficulty: ${capitalize(difficulty)}`;
   formationSelect.value = state.formation;
-
-  if (!state.managerName) { openNameModal(); return; }
+if (ensureFormationChosenFirst()) return;
+if (!state.managerName) { openNameModal(); return; }
   if (!state.captainId) { openCaptainModal(); return; }
 
   renderAll();
@@ -314,9 +392,10 @@ function renderPitch() {
     } // ✅ FIXED
 
     tile.addEventListener("click", () => {
-      state.selectedSlotIndex = idx;
-      renderPitch();
-    });
+  state.selectedSlotIndex = idx;
+  renderPitch();
+  renderPlayers(); // ✅ THIS FIXES YOUR ISSUE
+});
 
     pitchArea.appendChild(tile);
   });
@@ -350,29 +429,29 @@ function renderPlayers() {
 
   const slotLabel = FORMATIONS[state.formation][state.selectedSlotIndex];
   const slotFamily = getSlotFamily(slotLabel);
+  const selectedCount = state.picks.filter(Boolean).length;
+  const buildingStarters = selectedCount < FORMATIONS[state.formation].length;
+
   const notPicked = (p) => !state.picks.some(x => x?.id === p.id);
 
   let visiblePlayers = [];
 
-  if (state.tab === "SELECTED") {
-    const exact = shuffleArray(
-      PLAYER_POOL.filter(p => p.role === slotLabel).filter(notPicked)
-    );
-
-    const family = shuffleArray(
-      PLAYER_POOL
-        .filter(p => p.pos === slotFamily)
-        .filter(p => p.role !== slotLabel)
-        .filter(notPicked)
-    );
-
-    visiblePlayers = [...exact, ...family].slice(0, cfg.optionsPerPos);
+  if (buildingStarters) {
+    if (state.tab === "SELECTED") {
+      visiblePlayers = (state.draftPools[slotLabel] || []).filter(notPicked);
+    } else {
+      visiblePlayers = (state.areaPools[state.tab] || []).filter(notPicked);
+    }
   } else {
-    visiblePlayers = shuffleArray(
-      PLAYER_POOL
-        .filter(notPicked)
+    if (state.tab === "SELECTED") {
+      visiblePlayers = PLAYER_POOL
+        .filter((p) => p.role === slotLabel || p.pos === slotFamily)
+        .filter(notPicked);
+    } else {
+      visiblePlayers = PLAYER_POOL
         .filter((p) => p.pos === state.tab)
-    ).slice(0, cfg.optionsPerPos);
+        .filter(notPicked);
+    }
   }
 
   playerList.innerHTML = "";
@@ -380,7 +459,7 @@ function renderPlayers() {
   visiblePlayers.forEach((p) => {
     const isExactMatch = p.role === slotLabel;
     const isFamilyMatch = p.pos === slotFamily;
-    const canUse = isExactMatch || isFamilyMatch;
+    const canUse = buildingStarters ? isExactMatch : (isExactMatch || isFamilyMatch);
 
     const row = document.createElement("div");
     row.className = "player-row";
@@ -417,7 +496,6 @@ function renderPlayers() {
     playerList.appendChild(row);
   });
 }
-
 function addToSelectedSlot(player) {
   // Must choose captain first
   if (!state.captainId) return;
@@ -476,7 +554,8 @@ function resetSquad() {
   state.selectedSlotIndex = 0;
   state.transferRemaining = cfg.transfer;
   state.wageRemaining = cfg.wages;
-  renderAll();
+  buildDraftPools();
+renderAll();
 }
 
 function submitSquad() {
