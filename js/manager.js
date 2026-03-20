@@ -3,9 +3,9 @@ console.log("Manager Mode Loaded");
 // js/manager.js
 
 const DIFFICULTY = {
-  easy:   { transfer: 1200000000, wages: 3000000, optionsPerPos: 8, squadSize: 15, captainFirst: false },
-  medium: { transfer:  750000000, wages: 1800000, optionsPerPos: 5, squadSize: 15, captainFirst: false },
-  hard:   { transfer:  450000000, wages: 1200000, optionsPerPos: 3, squadSize: 15, captainFirst: true  },
+  easy:   { transfer: 2500000000, wages: 4600000, optionsPerPos: 8, squadSize: 15, captainFirst: false },
+  medium: { transfer: 2000000000, wages: 3900000, optionsPerPos: 5, squadSize: 15, captainFirst: false },
+  hard:   { transfer: 1500000000, wages: 3500000, optionsPerPos: 3, squadSize: 15, captainFirst: true  },
 };
 
 function formatMoney(n) {
