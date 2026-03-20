@@ -19,9 +19,13 @@ const money = (n) => "£" + Math.round(n).toLocaleString("en-GB");
 
 const cfg = JSON.parse(localStorage.getItem("managerConfig") || "null");
 const difficulty = localStorage.getItem("managerDifficulty") || "medium";
+const BUDGET_MULTIPLIER = {
+  easy: 1.5,
+  medium: 1.3,
+  hard: 1.15
+}[difficulty] || 1.3;
 
 if (!cfg) {
-  // Safety: if user lands here directly
   window.location.href = "manager.html";
 }
 
@@ -187,8 +191,8 @@ let state = {
   // squad picks by slot index, plus bench later
   picks: [], // length = 11
   // budget remaining
-  transferRemaining: cfg.transfer,
-  wageRemaining: cfg.wages,
+  transferRemaining: Math.round(cfg.transfer * BUDGET_MULTIPLIER),
+wageRemaining: Math.round(cfg.wages * BUDGET_MULTIPLIER),
   tab: "SELECTED",
 draftPools: {},
 areaPools: {},
@@ -533,14 +537,18 @@ function updateBudgets() {
   // total selected (just XI for now)
   const selectedCount = state.picks.filter(Boolean).length;
 
+  // ✅ use multiplier constant (not hardcoded 1.3)
+  const totalTransfer = Math.round(cfg.transfer * BUDGET_MULTIPLIER);
+  const totalWage = Math.round(cfg.wages * BUDGET_MULTIPLIER);
+
   // HUD text
-  msTransferText.textContent = `${money(state.transferRemaining)} / ${money(cfg.transfer)}`;
-  msWageText.textContent = `${money(state.wageRemaining)} / ${money(cfg.wages)} / week`;
+  msTransferText.textContent = `${money(state.transferRemaining)} / ${money(totalTransfer)}`;
+  msWageText.textContent = `${money(state.wageRemaining)} / ${money(totalWage)} / week`;
   msPlayersText.textContent = `${selectedCount} / ${cfg.squadSize}`;
 
   // Fills
-  const tPct = clamp(100 * (1 - state.transferRemaining / cfg.transfer), 0, 100);
-  const wPct = clamp(100 * (1 - state.wageRemaining / cfg.wages), 0, 100);
+  const tPct = clamp(100 * (1 - state.transferRemaining / totalTransfer), 0, 100);
+  const wPct = clamp(100 * (1 - state.wageRemaining / totalWage), 0, 100);
   const pPct = clamp(100 * (selectedCount / cfg.squadSize), 0, 100);
 
   msTransferFill.style.width = `${tPct}%`;
