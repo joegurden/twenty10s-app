@@ -760,7 +760,8 @@ function addToSelectedSlot(player) {
     return;
   }
 
-  const startersComplete = state.picks.filter(Boolean).length >= FORMATIONS[state.formation].length;
+  const startersTarget = FORMATIONS[state.formation].length;
+  const startersComplete = state.picks.filter(Boolean).length >= startersTarget;
 
   if (!startersComplete) {
     const idx = state.selectedSlotIndex;
@@ -774,6 +775,25 @@ function addToSelectedSlot(player) {
     state.picks[idx] = player;
     state.transferRemaining -= player.fee;
     state.wageRemaining -= player.wage;
+
+    const startersNowSelected = state.picks.filter(Boolean).length;
+    const justCompletedStarters = startersNowSelected === startersTarget;
+
+    if (justCompletedStarters) {
+      state.tab = "SELECTED";
+
+      document.querySelectorAll(".tab").forEach((x) => {
+        x.classList.toggle("active", x.dataset.tab === "SELECTED");
+      });
+
+      renderPitch();
+      renderSubs();
+      renderPlayers();
+      updateBudgets();
+
+      alert("Starting XI complete. Now pick your 4 substitutes.");
+      return;
+    }
 
     renderPitch();
     renderPlayers();
