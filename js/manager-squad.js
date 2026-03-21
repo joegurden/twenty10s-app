@@ -695,7 +695,7 @@ function renderPlayers() {
     }
 
     canUsePlayer = (p) => p.role === slotLabel;
-  } else {
+   } else {
   const benchChoices = buildTieredAffordableBenchChoices(excludedIds);
 
   if (state.tab === "SELECTED") {
@@ -708,11 +708,6 @@ function renderPlayers() {
     p.fee <= state.transferRemaining &&
     p.wage <= state.wageRemaining;
 }
-
-    canUsePlayer = (p) =>
-      p.fee <= state.transferRemaining &&
-      p.wage <= state.wageRemaining;
-  }
 
   playerList.innerHTML = "";
 
