@@ -133,14 +133,14 @@ function roleCountsForFormation(formation) {
 function buildDraftPools() {
   const roleCounts = roleCountsForFormation(state.formation);
   const pools = {};
+  const excludedIds = new Set();
 
   Object.entries(roleCounts).forEach(([role, count]) => {
-    const exactPlayers = shuffleArray(
-      PLAYER_POOL.filter((p) => p.role === role)
-    );
-
     const choicesNeeded = Math.max(cfg.optionsPerPos, count * 3);
-    pools[role] = exactPlayers.slice(0, choicesNeeded);
+    const roleChoices = buildTieredRoleChoices(role, choicesNeeded, excludedIds);
+
+    pools[role] = roleChoices;
+    roleChoices.forEach((p) => excludedIds.add(p.id));
   });
 
   state.draftPools = pools;
@@ -168,7 +168,6 @@ function buildDraftPools() {
     ),
   };
 }
-
 function shuffleArray(arr) {
   const copy = [...arr];
   for (let i = copy.length - 1; i > 0; i--) {
@@ -183,6 +182,164 @@ function getSlotFamily(slotLabel) {
   if (["LB","RB","CB","LWB","RWB"].includes(slotLabel)) return "DEF";
   if (["CDM","CM","LM","RM","CAM","LAM","RAM"].includes(slotLabel)) return "MID";
   return "ATT";
+}
+
+const PRICE_BANDS = {
+  GK:  { cheap: 50000000, value: 70000000, starter: 97500000, star: 122500000 },
+
+  LB:  { cheap: 30000000, value: 52500000, starter: 82500000, star: 112500000 },
+  RB:  { cheap: 37500000, value: 47500000, starter: 72500000, star: 112500000 },
+  CB:  { cheap: 42500000, value: 67500000, starter: 105000000, star: 127500000 },
+  LWB: { cheap: 30000000, value: 52500000, starter: 82500000, star: 112500000 },
+  RWB: { cheap: 37500000, value: 47500000, starter: 72500000, star: 112500000 },
+
+  CDM: { cheap: 45000000, value: 55000000, starter: 105000000, star: 120000000 },
+  CM:  { cheap: 50000000, value: 67500000, starter: 102500000, star: 127500000 },
+  CAM: { cheap: 50000000, value: 67500000, starter: 97500000, star: 125000000 },
+  LM:  { cheap: 47500000, value: 62500000, starter: 100000000, star: 125000000 },
+  RM:  { cheap: 47500000, value: 62500000, starter: 100000000, star: 125000000 },
+  LAM: { cheap: 50000000, value: 67500000, starter: 97500000, star: 125000000 },
+  RAM: { cheap: 50000000, value: 67500000, starter: 97500000, star: 125000000 },
+
+  LW:  { cheap: 45000000, value: 65000000, starter: 107500000, star: 132500000 },
+  RW:  { cheap: 40000000, value: 50000000, starter: 82500000, star: 120000000 },
+  ST:  { cheap: 40000000, value: 60000000, starter: 100000000, star: 120000000 },
+};
+
+const DIFFICULTY_RECIPES = {
+  hard:   ["cheap", "starter", "starOrElite"],
+  medium: ["cheap", "value", "starter", "star", "wildcard"],
+  easy:   ["cheap", "value", "value", "starter", "starter", "star", "star", "starOrElite"],
+};
+
+function pickRandom(arr) {
+  if (!arr.length) return null;
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function removePicked(pool, pickedIds) {
+  return pool.filter((p) => !pickedIds.has(p.id));
+}
+
+function getRoleBands(role) {
+  return PRICE_BANDS[role] || PRICE_BANDS.CM;
+}
+
+function splitByTier(players, role) {
+  const b = getRoleBands(role);
+
+  return {
+    cheap: players.filter((p) => p.fee <= b.cheap),
+    value: players.filter((p) => p.fee > b.cheap && p.fee <= b.value),
+    starter: players.filter((p) => p.fee > b.value && p.fee <= b.starter),
+    star: players.filter((p) => p.fee > b.starter && p.fee <= b.star),
+    elite: players.filter((p) => p.fee > b.star),
+  };
+}
+
+function pickFromTierMap(tiers, token) {
+  if (token === "cheap") return pickRandom(tiers.cheap) || pickRandom(tiers.value) || pickRandom(tiers.starter) || pickRandom(tiers.star) || pickRandom(tiers.elite);
+  if (token === "value") return pickRandom(tiers.value) || pickRandom(tiers.cheap) || pickRandom(tiers.starter) || pickRandom(tiers.star);
+  if (token === "starter") return pickRandom(tiers.starter) || pickRandom(tiers.value) || pickRandom(tiers.star) || pickRandom(tiers.cheap);
+  if (token === "star") return pickRandom(tiers.star) || pickRandom(tiers.starter) || pickRandom(tiers.value);
+  if (token === "starOrElite") {
+    const eliteChance = 0.16; // rare, but not insanely rare
+    if (Math.random() < eliteChance && tiers.elite.length) return pickRandom(tiers.elite);
+    return pickRandom(tiers.star) || pickRandom(tiers.elite) || pickRandom(tiers.starter);
+  }
+  if (token === "wildcard") {
+    const weighted = [
+      ...tiers.cheap,
+      ...tiers.value,
+      ...tiers.value,
+      ...tiers.starter,
+      ...tiers.starter,
+      ...tiers.star,
+      ...tiers.elite,
+    ];
+    return pickRandom(weighted);
+  }
+  return null;
+}
+
+function buildTieredRoleChoices(role, count, excludedIds = new Set()) {
+  const candidates = removePicked(
+    shuffleArray(PLAYER_POOL.filter((p) => p.role === role)),
+    excludedIds
+  );
+
+  const tiers = splitByTier(candidates, role);
+  const recipe = DIFFICULTY_RECIPES[difficulty] || DIFFICULTY_RECIPES.medium;
+
+  const picked = [];
+  const used = new Set();
+
+  recipe.slice(0, count).forEach((token) => {
+    const availableTiers = {
+      cheap: tiers.cheap.filter((p) => !used.has(p.id)),
+      value: tiers.value.filter((p) => !used.has(p.id)),
+      starter: tiers.starter.filter((p) => !used.has(p.id)),
+      star: tiers.star.filter((p) => !used.has(p.id)),
+      elite: tiers.elite.filter((p) => !used.has(p.id)),
+    };
+
+    const chosen = pickFromTierMap(availableTiers, token);
+    if (chosen) {
+      used.add(chosen.id);
+      picked.push(chosen);
+    }
+  });
+
+  if (picked.length < count) {
+    const fallback = candidates.filter((p) => !used.has(p.id)).slice(0, count - picked.length);
+    picked.push(...fallback);
+  }
+
+  return picked;
+}
+
+function buildAffordableBenchChoices(excludedIds = new Set()) {
+  const affordable = PLAYER_POOL.filter((p) =>
+    !excludedIds.has(p.id) &&
+    p.fee <= state.transferRemaining &&
+    p.wage <= state.wageRemaining
+  );
+
+  const def = shuffleArray(affordable.filter((p) => p.pos === "DEF"));
+  const mid = shuffleArray(affordable.filter((p) => p.pos === "MID"));
+  const att = shuffleArray(affordable.filter((p) => p.pos === "ATT"));
+  const gk  = shuffleArray(affordable.filter((p) => p.pos === "GK"));
+
+  const chosen = [];
+  const used = new Set();
+
+  [pickRandom(gk), pickRandom(def), pickRandom(mid), pickRandom(att)].forEach((p) => {
+    if (p && !used.has(p.id)) {
+      used.add(p.id);
+      chosen.push(p);
+    }
+  });
+
+  const remaining = affordable
+    .filter((p) => !used.has(p.id))
+    .sort((a, b) => a.fee - b.fee);
+
+  // 5th card: premium affordable if possible, else best remaining
+  const premiumAffordable = [...remaining].reverse().find((p) => p.fee <= state.transferRemaining && p.wage <= state.wageRemaining);
+  if (premiumAffordable && !used.has(premiumAffordable.id)) {
+    used.add(premiumAffordable.id);
+    chosen.push(premiumAffordable);
+  }
+
+  while (chosen.length < 5 && remaining.length) {
+    const next = remaining.shift();
+    if (next && !used.has(next.id)) {
+      used.add(next.id);
+      chosen.push(next);
+    }
+  }
+
+  return chosen.slice(0, 5);
 }
 
 let state = {
@@ -497,42 +654,53 @@ function renderPlayers() {
   }
 
   const slotLabel = FORMATIONS[state.formation][state.selectedSlotIndex];
-  const slotFamily = getSlotFamily(slotLabel);
-  const selectedCount = state.picks.filter(Boolean).length;
-  const buildingStarters = selectedCount < FORMATIONS[state.formation].length;
+  const selectedStarters = state.picks.filter(Boolean).length;
+  const buildingStarters = selectedStarters < FORMATIONS[state.formation].length;
 
-  const notPicked = (p) => !state.picks.some(x => x?.id === p.id);
+  const excludedIds = new Set([
+    ...state.picks.filter(Boolean).map((p) => p.id),
+    ...state.subs.filter(Boolean).map((p) => p.id),
+  ]);
 
   let visiblePlayers = [];
+  let canUsePlayer = () => true;
 
   if (buildingStarters) {
     if (state.tab === "SELECTED") {
-      visiblePlayers = (state.draftPools[slotLabel] || []).filter(notPicked);
+      visiblePlayers = (state.draftPools[slotLabel] || []).filter((p) => !excludedIds.has(p.id));
     } else {
-      visiblePlayers = (state.areaPools[state.tab] || []).filter(notPicked);
+      visiblePlayers = (state.areaPools[state.tab] || []).filter((p) => !excludedIds.has(p.id));
     }
+
+    canUsePlayer = (p) => p.role === slotLabel;
   } else {
+    // Bench mode: no longer tied to selected pitch slot
     if (state.tab === "SELECTED") {
-      visiblePlayers = PLAYER_POOL
-        .filter((p) => p.role === slotLabel || p.pos === slotFamily)
-        .filter(notPicked);
+      visiblePlayers = buildAffordableBenchChoices(excludedIds);
     } else {
-      visiblePlayers = PLAYER_POOL
-        .filter((p) => p.pos === state.tab)
-        .filter(notPicked);
+      visiblePlayers = buildAffordableBenchChoices(excludedIds).filter((p) => state.tab === "ALL" ? true : p.pos === state.tab);
+      if (!visiblePlayers.length) {
+        visiblePlayers = PLAYER_POOL.filter((p) =>
+          !excludedIds.has(p.id) &&
+          p.pos === state.tab &&
+          p.fee <= state.transferRemaining &&
+          p.wage <= state.wageRemaining
+        ).slice(0, 5);
+      }
     }
+
+    canUsePlayer = (p) =>
+      p.fee <= state.transferRemaining &&
+      p.wage <= state.wageRemaining;
   }
 
   playerList.innerHTML = "";
 
   visiblePlayers.forEach((p) => {
-    const isExactMatch = p.role === slotLabel;
-    const isFamilyMatch = p.pos === slotFamily;
-    const canUse = buildingStarters ? isExactMatch : (isExactMatch || isFamilyMatch);
+    const canUse = canUsePlayer(p);
 
     const row = document.createElement("div");
     row.className = "player-row";
-
     if (!canUse) row.style.opacity = "0.45";
 
     row.innerHTML = `
@@ -565,7 +733,6 @@ function renderPlayers() {
     playerList.appendChild(row);
   });
 }
-
 function addToSelectedSlot(player) {
   if (!state.captainId) return;
 
