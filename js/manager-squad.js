@@ -192,6 +192,7 @@ let state = {
   selectedSlotIndex: 0,
   // squad picks by slot index, plus bench later
   picks: [], // length = 11
+subs: Array(4).fill(null),
   // budget remaining
   transferRemaining: ACTIVE_BUDGET.transfer,
 wageRemaining: ACTIVE_BUDGET.wages,
@@ -217,6 +218,7 @@ const msPlayersFill = el("msPlayersFill");
 const formationSelect = el("formationSelect");
 const pitchArea = el("pitchArea");
 const playerList = el("playerList");
+const subsArea = el("subsArea");
 const msNote = el("msNote");
 
 // Modals
@@ -349,6 +351,7 @@ function renderAll() {
   if (state.picks.length !== slots.length) state.picks = Array(slots.length).fill(null);
 
   renderPitch();
+renderSubs();
   renderPlayers();
   updateBudgets();
 }
@@ -404,6 +407,66 @@ function renderPitch() {
 });
 
     pitchArea.appendChild(tile);
+  });
+}
+
+function renderSubs() {
+  if (!subsArea) return;
+
+  subsArea.innerHTML = "";
+
+  state.subs.forEach((sub, idx) => {
+    const card = document.createElement("div");
+    card.className = "sub-card" + (!sub ? " empty" : "");
+
+    if (!sub) {
+      card.innerHTML = `
+        <div class="sub-meta">
+          <strong>Sub ${idx + 1}</strong>
+          <span>Pick after your starting XI is complete</span>
+        </div>
+      `;
+    } else {
+      card.innerHTML = `
+        <div class="sub-top">
+          <div class="pimg">
+            <img src="${sub.photo || "img/player-placeholder.png"}" alt="${sub.name}">
+          </div>
+          <div class="sub-meta">
+            <strong>${sub.name}</strong>
+            <span>${sub.pos} · ${sub.role} · Rating ${sub.rating}</span>
+          </div>
+        </div>
+
+        <div class="sub-bottom">
+          <div>
+            <div class="sub-price">${money(sub.fee)}</div>
+            <div class="sub-wage">${money(sub.wage)}/wk</div>
+          </div>
+          <div class="sub-actions">
+            <button class="secondary small sub-btn" data-remove-sub="${idx}">Remove</button>
+          </div>
+        </div>
+      `;
+    }
+
+    subsArea.appendChild(card);
+  });
+
+  subsArea.querySelectorAll("[data-remove-sub]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.dataset.removeSub);
+      const prev = state.subs[idx];
+      if (!prev) return;
+
+      state.transferRemaining += prev.fee;
+      state.wageRemaining += prev.wage;
+      state.subs[idx] = null;
+
+      renderSubs();
+      renderPlayers();
+      updateBudgets();
+    });
   });
 }
 
@@ -502,11 +565,10 @@ function renderPlayers() {
     playerList.appendChild(row);
   });
 }
+
 function addToSelectedSlot(player) {
-  // Must choose captain first
   if (!state.captainId) return;
 
-  // Check budgets
   if (player.fee > state.transferRemaining) {
     alert("Not enough transfer budget.");
     return;
@@ -516,27 +578,45 @@ function addToSelectedSlot(player) {
     return;
   }
 
-  const idx = state.selectedSlotIndex;
+  const startersComplete = state.picks.filter(Boolean).length >= FORMATIONS[state.formation].length;
 
-  // Refund old pick if replacing
-  const prev = state.picks[idx];
-  if (prev) {
-    state.transferRemaining += prev.fee;
-    state.wageRemaining += prev.wage;
+  if (!startersComplete) {
+    const idx = state.selectedSlotIndex;
+    const prev = state.picks[idx];
+
+    if (prev) {
+      state.transferRemaining += prev.fee;
+      state.wageRemaining += prev.wage;
+    }
+
+    state.picks[idx] = player;
+    state.transferRemaining -= player.fee;
+    state.wageRemaining -= player.wage;
+
+    renderPitch();
+    renderPlayers();
+    renderSubs();
+    updateBudgets();
+    return;
   }
 
-  // Apply new pick
-  state.picks[idx] = player;
+  const emptySubIndex = state.subs.findIndex((s) => !s);
+  if (emptySubIndex === -1) {
+    alert("All 4 subs are already selected.");
+    return;
+  }
+
+  state.subs[emptySubIndex] = player;
   state.transferRemaining -= player.fee;
   state.wageRemaining -= player.wage;
 
-  renderPitch();
+  renderSubs();
   renderPlayers();
   updateBudgets();
 }
 
 function updateBudgets() {
-  const selectedCount = state.picks.filter(Boolean).length;
+  const selectedCount = state.picks.filter(Boolean).length + state.subs.filter(Boolean).length;
 
   const totalTransfer = ACTIVE_BUDGET.transfer;
   const totalWage = ACTIVE_BUDGET.wages;
@@ -557,6 +637,7 @@ function updateBudgets() {
 function resetSquad() {
   if (!confirm("Reset squad picks?")) return;
   state.picks = [];
+state.subs = Array(4).fill(null);
   state.selectedSlotIndex = 0;
   state.transferRemaining = ACTIVE_BUDGET.transfer;
 state.wageRemaining = ACTIVE_BUDGET.wages;
@@ -566,10 +647,15 @@ renderAll();
 
 function submitSquad() {
   const selectedCount = state.picks.filter(Boolean).length;
-  if (selectedCount < 11) {
-    alert("Pick a full starting XI first.");
-    return;
-  }
+  if (state.picks.filter(Boolean).length < 11) {
+  alert("Pick a full starting XI first.");
+  return;
+}
+
+if (state.subs.filter(Boolean).length < 4) {
+  alert("Pick all 4 substitutes first.");
+  return;
+}
   alert("Submitted! Next we’ll add scoring + saving.");
 }
 
