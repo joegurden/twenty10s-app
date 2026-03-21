@@ -298,45 +298,67 @@ function buildTieredRoleChoices(role, count, excludedIds = new Set()) {
   return picked;
 }
 
-function buildAffordableBenchChoices(excludedIds = new Set()) {
+function buildTieredAffordableBenchChoices(excludedIds = new Set()) {
   const affordable = PLAYER_POOL.filter((p) =>
     !excludedIds.has(p.id) &&
     p.fee <= state.transferRemaining &&
     p.wage <= state.wageRemaining
   );
 
-  const def = shuffleArray(affordable.filter((p) => p.pos === "DEF"));
-  const mid = shuffleArray(affordable.filter((p) => p.pos === "MID"));
-  const att = shuffleArray(affordable.filter((p) => p.pos === "ATT"));
-  const gk  = shuffleArray(affordable.filter((p) => p.pos === "GK"));
+  const byPos = {
+    GK: affordable.filter((p) => p.pos === "GK"),
+    DEF: affordable.filter((p) => p.pos === "DEF"),
+    MID: affordable.filter((p) => p.pos === "MID"),
+    ATT: affordable.filter((p) => p.pos === "ATT"),
+  };
 
   const chosen = [];
   const used = new Set();
 
-  [pickRandom(gk), pickRandom(def), pickRandom(mid), pickRandom(att)].forEach((p) => {
-    if (p && !used.has(p.id)) {
-      used.add(p.id);
-      chosen.push(p);
+  function addTieredFromGroup(groupPlayers, roleHint = null) {
+    if (!groupPlayers.length) return;
+
+    const roleForBands = roleHint || groupPlayers[0]?.role || "CM";
+    const tiers = splitByTier(groupPlayers, roleForBands);
+
+    const tokens = ["cheap", "starter", "starOrElite"];
+    const token = tokens[Math.floor(Math.random() * tokens.length)];
+
+    const candidate = pickFromTierMap({
+      cheap: tiers.cheap.filter((p) => !used.has(p.id)),
+      value: tiers.value.filter((p) => !used.has(p.id)),
+      starter: tiers.starter.filter((p) => !used.has(p.id)),
+      star: tiers.star.filter((p) => !used.has(p.id)),
+      elite: tiers.elite.filter((p) => !used.has(p.id)),
+    }, token);
+
+    if (candidate && !used.has(candidate.id)) {
+      used.add(candidate.id);
+      chosen.push(candidate);
     }
-  });
+  }
 
-  const remaining = affordable
-    .filter((p) => !used.has(p.id))
-    .sort((a, b) => a.fee - b.fee);
+  addTieredFromGroup(shuffleArray(byPos.DEF), "CB");
+  addTieredFromGroup(shuffleArray(byPos.MID), "CM");
+  addTieredFromGroup(shuffleArray(byPos.ATT), "ST");
 
-  // 5th card: premium affordable if possible, else best remaining
-  const premiumAffordable = [...remaining].reverse().find((p) => p.fee <= state.transferRemaining && p.wage <= state.wageRemaining);
-  if (premiumAffordable && !used.has(premiumAffordable.id)) {
+  // 4th = wildcard from all affordable
+  addTieredFromGroup(shuffleArray(affordable));
+
+  // 5th = best premium affordable, fallback to any remaining
+  const remaining = affordable.filter((p) => !used.has(p.id));
+  const premiumAffordable = [...remaining].sort((a, b) => b.fee - a.fee)[0];
+
+  if (premiumAffordable) {
     used.add(premiumAffordable.id);
     chosen.push(premiumAffordable);
   }
 
-  while (chosen.length < 5 && remaining.length) {
-    const next = remaining.shift();
-    if (next && !used.has(next.id)) {
-      used.add(next.id);
-      chosen.push(next);
-    }
+  while (chosen.length < 5) {
+    const fallback = remaining.find((p) => !used.has(p.id));
+    if (!fallback) break;
+    used.add(fallback.id);
+    chosen.push(fallback);
   }
 
   return chosen.slice(0, 5);
@@ -674,20 +696,18 @@ function renderPlayers() {
 
     canUsePlayer = (p) => p.role === slotLabel;
   } else {
-    // Bench mode: no longer tied to selected pitch slot
-    if (state.tab === "SELECTED") {
-      visiblePlayers = buildAffordableBenchChoices(excludedIds);
-    } else {
-      visiblePlayers = buildAffordableBenchChoices(excludedIds).filter((p) => state.tab === "ALL" ? true : p.pos === state.tab);
-      if (!visiblePlayers.length) {
-        visiblePlayers = PLAYER_POOL.filter((p) =>
-          !excludedIds.has(p.id) &&
-          p.pos === state.tab &&
-          p.fee <= state.transferRemaining &&
-          p.wage <= state.wageRemaining
-        ).slice(0, 5);
-      }
-    }
+  const benchChoices = buildTieredAffordableBenchChoices(excludedIds);
+
+  if (state.tab === "SELECTED") {
+    visiblePlayers = benchChoices;
+  } else {
+    visiblePlayers = benchChoices.filter((p) => p.pos === state.tab);
+  }
+
+  canUsePlayer = (p) =>
+    p.fee <= state.transferRemaining &&
+    p.wage <= state.wageRemaining;
+}
 
     canUsePlayer = (p) =>
       p.fee <= state.transferRemaining &&
