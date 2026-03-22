@@ -492,6 +492,7 @@ let state = {
   captainId: localStorage.getItem("managerCaptainId") || "",
   selectedSlotIndex: 0,
 swapSourceIndex: null,
+pendingSubIndex: null,
   // squad picks by slot index, plus bench later
   picks: [], // length = 11
 subs: Array(4).fill(null),
@@ -707,7 +708,14 @@ function openCaptainModal() {
     captainModal.classList.add("hidden");
 const captainPlayer = PLAYER_POOL.find((p) => p.id === chosen);
 if (captainPlayer) {
-  const firstCompatibleIndex = FORMATIONS[state.formation].findIndex((slot) =>
+  const slots = FORMATIONS[state.formation];
+
+  // Make sure picks array is the correct size before inserting captain
+  if (state.picks.length !== slots.length) {
+    state.picks = Array(slots.length).fill(null);
+  }
+
+  const firstCompatibleIndex = slots.findIndex((slot) =>
     canDraftIntoSlot(captainPlayer.role, slot)
   );
 
@@ -1134,7 +1142,7 @@ function resetSquad() {
 state.subs = Array(4).fill(null);
   state.selectedSlotIndex = 0;
 state.swapSourceIndex = null;
-pendingSubIndex: null,
+state.pendingSubIndex = null;
   state.transferRemaining = ACTIVE_BUDGET.transfer;
 state.wageRemaining = ACTIVE_BUDGET.wages;
   buildDraftPools();
