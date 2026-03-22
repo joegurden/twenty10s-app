@@ -673,12 +673,17 @@ function openCaptainModal() {
   captainRuleText.textContent = `${band.label} · Randomised from strong players only`;
 
   // Top 3 tiers only = starter / star / elite
-  const strongPlayers = PLAYER_POOL.filter((p) => {
-    if (!(p.rating >= band.min && p.rating <= band.max)) return false;
+  const formationSlots = FORMATIONS[state.formation];
 
-    const roleBands = getRoleBands(p.role);
-    return p.fee > roleBands.value; // excludes cheap + value, keeps starter/star/elite
-  });
+const strongPlayers = PLAYER_POOL.filter((p) => {
+  if (!(p.rating >= band.min && p.rating <= band.max)) return false;
+
+  const roleBands = getRoleBands(p.role);
+  const isStrongEnough = p.fee > roleBands.value; // starter/star/elite only
+  const fitsFormation = formationSlots.some((slot) => canDraftIntoSlot(p.role, slot));
+
+  return isStrongEnough && fitsFormation;
+});
 
   const eligible = shuffleArray(strongPlayers).slice(0, 8);
 
@@ -889,9 +894,9 @@ function renderSubs() {
   state.subs.forEach((sub, idx) => {
     const card = document.createElement("div");
     card.className =
-  "sub-card" +
-  (!sub ? " empty" : "") +
-  (state.pendingSubIndex === idx ? " active" : "");
+      "sub-card" +
+      (!sub ? " empty" : "") +
+      (state.pendingSubIndex === idx ? " active" : "");
 
     if (!sub) {
       card.innerHTML = `
@@ -902,53 +907,71 @@ function renderSubs() {
       `;
     } else {
       card.innerHTML = `
-  <div class="sub-top">
-    <div class="pimg">
-      <img src="${sub.photo || "img/player-placeholder.png"}" alt="${sub.name}">
-    </div>
-    <div class="sub-meta">
-      <strong>${sub.name}</strong>
-      <span>${sub.pos} · ${sub.role} · Rating ${sub.rating}</span>
-    </div>
-  </div>
+        <div class="sub-top">
+          <div class="pimg">
+            <img src="${sub.photo || "img/player-placeholder.png"}" alt="${sub.name}">
+          </div>
+          <div class="sub-meta">
+            <strong>${sub.name}</strong>
+            <span>${sub.pos} · ${sub.role} · Rating ${sub.rating}</span>
+          </div>
+        </div>
 
-  <div class="sub-bottom">
-    <div>
-      <div class="sub-price">${money(sub.fee)}</div>
-      <div class="sub-wage">${money(sub.wage)}/wk</div>
-    </div>
-    <div class="sub-actions">
-      <button class="secondary small sub-btn" data-remove-sub="${idx}">Remove</button>
-    </div>
-  </div>
-`;
+        <div class="sub-bottom">
+          <div>
+            <div class="sub-price">${money(sub.fee)}</div>
+            <div class="sub-wage">${money(sub.wage)}/wk</div>
+          </div>
+          <div class="sub-actions">
+            <button class="secondary small sub-btn" data-remove-sub="${idx}">Remove</button>
+          </div>
+        </div>
+      `;
     }
-card.className =
-  "sub-card" +
-  (!sub ? " empty" : "") +
-  (state.pendingSubIndex === idx ? " active" : "");
+
+    // ✅ clickable sub cards
+    card.addEventListener("click", (e) => {
+      if (e.target.closest("[data-remove-sub]")) return;
+
+      const currentSub = state.subs[idx];
+      if (!currentSub) return;
+
+      const squadComplete =
+        state.picks.filter(Boolean).length === FORMATIONS[state.formation].length &&
+        state.subs.filter(Boolean).length === 4;
+
+      if (!squadComplete) {
+        alert("Finish selecting all 15 players first.");
+        return;
+      }
+
+      state.pendingSubIndex = idx;
+      renderSubs();
+    });
 
     subsArea.appendChild(card);
   });
 
- 
-subsArea.querySelectorAll("[data-sub-on]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const subIdx = Number(btn.dataset.subOn);
+  // remove buttons
+  subsArea.querySelectorAll("[data-remove-sub]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const idx = Number(btn.dataset.removeSub);
+      const prev = state.subs[idx];
+      if (!prev) return;
 
-    const squadComplete =
-      state.picks.filter(Boolean).length === FORMATIONS[state.formation].length &&
-      state.subs.filter(Boolean).length === 4;
+      state.transferRemaining += prev.fee;
+      state.wageRemaining += prev.wage;
+      state.subs[idx] = null;
 
-    if (!squadComplete) {
-      alert("Finish selecting all 15 players first.");
-      return;
-    }
+      if (state.pendingSubIndex === idx) {
+        state.pendingSubIndex = null;
+      }
 
-    state.pendingSubIndex = subIdx;
-    alert("Now click the starter you want to replace.");
+      renderSubs();
+      renderPlayers();
+      updateBudgets();
+    });
   });
-});
 }
 
 function renderPlayers() {
