@@ -760,7 +760,10 @@ function renderPitch() {
 
   slots.forEach((label, idx) => {
     const tile = document.createElement("div");
-    tile.className = "slot" + (idx === state.selectedSlotIndex ? " active" : "");
+    const isSwapActive = state.swapSourceIndex === idx;
+const isDraftActive = state.swapSourceIndex === null && idx === state.selectedSlotIndex;
+
+tile.className = "slot" + (isSwapActive || isDraftActive ? " active" : "");
     tile.dataset.index = String(idx);
 
     // Positioning
@@ -787,11 +790,16 @@ function renderPitch() {
           <strong>${picked.name}</strong>
           <span>${picked.role}</span>
 
-          ${isActive ? `
-            <div class="slot-finance">
-              ${money(picked.fee)} · ${money(picked.wage)}/wk
-            </div>
-          ` : ""}
+          tile.innerHTML = `
+  <div class="slot-photo ${isActive ? "active" : ""}">
+    <img src="${picked.photo || "img/player-placeholder.png"}">
+  </div>
+
+  <div class="picked">
+    <strong>${picked.name}</strong>
+    <span>${picked.role}</span>
+  </div>
+`;
         </div>
       `;
     } // ✅ FIXED
@@ -816,17 +824,20 @@ if (state.pendingSubIndex !== null) {
   }
 
   if (state.swapSourceIndex === null) {
-    state.swapSourceIndex = idx;
-    state.selectedSlotIndex = idx;
-    renderPitch();
-    return;
-  }
+  state.swapSourceIndex = idx;
+  state.selectedSlotIndex = idx;
+  renderPitch();
+  renderSubs();
+  return;
+}
 
-  if (state.swapSourceIndex === idx) {
-    state.swapSourceIndex = null;
-    renderPitch();
-    return;
-  }
+if (state.swapSourceIndex === idx) {
+  state.swapSourceIndex = null;
+  state.selectedSlotIndex = -1;
+  renderPitch();
+  renderSubs();
+  return;
+}
 
   attemptSwap(state.swapSourceIndex, idx);
 });
@@ -855,6 +866,7 @@ function attemptSwap(fromIdx, toIdx) {
   if (!fromCanPlayTo || !toCanPlayFrom) {
     alert("This player cannot play this position.");
     state.swapSourceIndex = null;
+state.selectedSlotIndex = -1;
     renderPitch();
     return;
   }
@@ -881,6 +893,7 @@ function attemptSubSwap(subIdx, starterIdx) {
   state.subs[subIdx] = starterPlayer;
   state.picks[starterIdx] = subPlayer;
 
+state.selectedSlotIndex = -1;
   renderPitch();
   renderSubs();
   renderPlayers();
@@ -918,14 +931,10 @@ function renderSubs() {
         </div>
 
         <div class="sub-bottom">
-          <div>
-            <div class="sub-price">${money(sub.fee)}</div>
-            <div class="sub-wage">${money(sub.wage)}/wk</div>
-          </div>
-          <div class="sub-actions">
-            <button class="secondary small sub-btn" data-remove-sub="${idx}">Remove</button>
-          </div>
-        </div>
+  <div class="sub-actions">
+    <button class="secondary small sub-btn" data-remove-sub="${idx}">Remove</button>
+  </div>
+</div>
       `;
     }
 
@@ -945,8 +954,17 @@ function renderSubs() {
         return;
       }
 
-      state.pendingSubIndex = idx;
-      renderSubs();
+      if (state.pendingSubIndex === idx) {
+  state.pendingSubIndex = null;
+  renderSubs();
+  renderPitch();
+  return;
+}
+
+state.pendingSubIndex = idx;
+state.swapSourceIndex = null;
+renderSubs();
+renderPitch();
     });
 
     subsArea.appendChild(card);
@@ -995,17 +1013,22 @@ function renderPlayers() {
   if (buildingStarters) {
     if (state.tab === "SELECTED") {
       const slotKey = `${state.formation}-${state.selectedSlotIndex}`;
+const slotAlreadyFilled = !!state.picks[state.selectedSlotIndex];
 
-if (!state.slotShortlists[slotKey]) {
-  let eligible = PLAYER_POOL.filter((p) =>
-    !excludedIds.has(p.id) &&
-    canDraftIntoSlot(p.role, slotLabel)
-  );
+if (slotAlreadyFilled) {
+  visiblePlayers = [];
+} else {
+  if (!state.slotShortlists[slotKey]) {
+    const eligible = PLAYER_POOL.filter((p) =>
+      !excludedIds.has(p.id) &&
+      canDraftIntoSlot(p.role, slotLabel)
+    );
 
-  state.slotShortlists[slotKey] = buildStarterShortlistForSlot(slotLabel, eligible);
+    state.slotShortlists[slotKey] = buildStarterShortlistForSlot(slotLabel, eligible);
+  }
+
+  visiblePlayers = state.slotShortlists[slotKey];
 }
-
-visiblePlayers = state.slotShortlists[slotKey];
     } else {
       visiblePlayers = (state.areaPools[state.tab] || []).filter((p) => !excludedIds.has(p.id));
     }
@@ -1026,6 +1049,11 @@ visiblePlayers = state.slotShortlists[slotKey];
 }
 
   playerList.innerHTML = "";
+
+if (buildingStarters && state.tab === "SELECTED" && !visiblePlayers.length) {
+  playerList.innerHTML = `<div class="pill">This position has already been filled.</div>`;
+  return;
+}
 
   visiblePlayers.forEach((p) => {
     const canUse = canUsePlayer(p);
@@ -1167,6 +1195,7 @@ state.subs = Array(4).fill(null);
   state.selectedSlotIndex = 0;
 state.swapSourceIndex = null;
 state.pendingSubIndex = null;
+state.slotShortlists = {};
   state.transferRemaining = ACTIVE_BUDGET.transfer;
 state.wageRemaining = ACTIVE_BUDGET.wages;
   buildDraftPools();
