@@ -47,7 +47,7 @@ const FORMATIONS = {
   "4-3-3": ["GK","LB","CB","CB","RB","CM","CM","CM","LW","ST","RW"],
   "4-3-3 (Attack)": ["GK","LB","CB","CB","RB","CAM","CM","CM","LW","ST","RW"],
   "4-3-3 (Holding)": ["GK","LB","CB","CB","RB","CDM","CM","CM","LW","ST","RW"],
-  "4-2-3-1": ["GK","LB","CB","CB","RB","CDM","CDM","LAM","CAM","RAM","ST"],
+  "4-2-3-1": ["GK","LB","CB","CB","RB","CDM","CDM","LW","CAM","RW","ST"],
   "4-4-2": ["GK","LB","CB","CB","RB","LM","CM","CM","RM","ST","ST"],
   "3-5-2": ["GK","CB","CB","CB","LWB","CM","CDM","CM","RWB","ST","ST"],
   "3-4-3": ["GK","CB","CB","CB","LM","CM","CM","RM","LW","ST","RW"],
@@ -58,67 +58,73 @@ const FORMATIONS = {
 // Slot coordinates (percentage positioning) for each label type.
 const FORMATION_COORDS = {
   "4-3-3": [
-    { x: 50, y: 86 }, // GK
-    { x: 18, y: 72 }, { x: 38, y: 74 }, { x: 62, y: 74 }, { x: 82, y: 72 },
-    { x: 34, y: 52 }, { x: 50, y: 50 }, { x: 66, y: 52 },
-    { x: 20, y: 26 }, { x: 50, y: 24 }, { x: 80, y: 26 },
+    { x: 50, y: 86 },
+    { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
+    { x: 34, y: 50 }, { x: 50, y: 46 }, { x: 66, y: 50 },
+    { x: 18, y: 24 }, { x: 50, y: 18 }, { x: 82, y: 24 },
   ],
 
   "4-3-3 (Attack)": [
     { x: 50, y: 86 },
-    { x: 18, y: 72 }, { x: 38, y: 74 }, { x: 62, y: 74 }, { x: 82, y: 72 },
-    { x: 50, y: 42 }, { x: 36, y: 54 }, { x: 64, y: 54 },
-    { x: 20, y: 26 }, { x: 50, y: 22 }, { x: 80, y: 26 },
+    { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
+    { x: 50, y: 38 },
+    { x: 36, y: 50 }, { x: 64, y: 50 },
+    { x: 18, y: 24 }, { x: 50, y: 18 }, { x: 82, y: 24 },
   ],
 
   "4-3-3 (Holding)": [
     { x: 50, y: 86 },
-    { x: 18, y: 72 }, { x: 38, y: 74 }, { x: 62, y: 74 }, { x: 82, y: 72 },
-    { x: 50, y: 58 }, { x: 36, y: 48 }, { x: 64, y: 48 },
-    { x: 20, y: 26 }, { x: 50, y: 22 }, { x: 80, y: 26 },
+    { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
+    { x: 50, y: 58 },
+    { x: 36, y: 46 }, { x: 64, y: 46 },
+    { x: 18, y: 24 }, { x: 50, y: 18 }, { x: 82, y: 24 },
   ],
 
   "4-2-3-1": [
     { x: 50, y: 86 },
-    { x: 18, y: 72 }, { x: 38, y: 74 }, { x: 62, y: 74 }, { x: 82, y: 72 },
-    { x: 38, y: 58 }, { x: 62, y: 58 },
-    { x: 34, y: 40 }, { x: 50, y: 38 }, { x: 66, y: 40 },
-    { x: 50, y: 22 },
+    { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
+    { x: 40, y: 58 }, { x: 60, y: 58 },
+    { x: 18, y: 36 }, { x: 50, y: 34 }, { x: 82, y: 36 },
+    { x: 50, y: 18 },
   ],
 
   "4-4-2": [
     { x: 50, y: 86 },
-    { x: 18, y: 72 }, { x: 38, y: 74 }, { x: 62, y: 74 }, { x: 82, y: 72 },
-    { x: 18, y: 52 }, { x: 40, y: 50 }, { x: 60, y: 50 }, { x: 82, y: 52 },
-    { x: 44, y: 24 }, { x: 56, y: 24 },
+    { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
+    { x: 18, y: 50 }, { x: 40, y: 48 }, { x: 60, y: 48 }, { x: 82, y: 50 },
+    { x: 43, y: 20 }, { x: 57, y: 20 },
   ],
 
   "3-5-2": [
     { x: 50, y: 86 },
-    { x: 34, y: 74 }, { x: 50, y: 74 }, { x: 66, y: 74 },
-    { x: 16, y: 62 }, { x: 38, y: 50 }, { x: 50, y: 58 }, { x: 62, y: 50 }, { x: 84, y: 62 },
-    { x: 44, y: 24 }, { x: 56, y: 24 },
+    { x: 34, y: 75 }, { x: 50, y: 77 }, { x: 66, y: 75 },
+    { x: 14, y: 58 }, { x: 38, y: 48 }, { x: 50, y: 58 }, { x: 62, y: 48 }, { x: 86, y: 58 },
+    { x: 43, y: 20 }, { x: 57, y: 20 },
   ],
 
   "3-4-3": [
     { x: 50, y: 86 },
-    { x: 34, y: 74 }, { x: 50, y: 74 }, { x: 66, y: 74 },
-    { x: 18, y: 52 }, { x: 42, y: 50 }, { x: 58, y: 50 }, { x: 82, y: 52 },
-    { x: 20, y: 26 }, { x: 50, y: 22 }, { x: 80, y: 26 },
+    { x: 34, y: 75 }, { x: 50, y: 77 }, { x: 66, y: 75 },
+    { x: 18, y: 50 }, { x: 42, y: 48 }, { x: 58, y: 48 }, { x: 82, y: 50 },
+    { x: 18, y: 24 }, { x: 50, y: 18 }, { x: 82, y: 24 },
   ],
 
   "4-1-2-1-2 Wide": [
     { x: 50, y: 86 },
-    { x: 18, y: 72 }, { x: 38, y: 74 }, { x: 62, y: 74 }, { x: 82, y: 72 },
-    { x: 50, y: 58 }, { x: 20, y: 50 }, { x: 80, y: 50 }, { x: 50, y: 40 },
-    { x: 44, y: 24 }, { x: 56, y: 24 },
+    { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
+    { x: 50, y: 60 },
+    { x: 18, y: 48 }, { x: 82, y: 48 },
+    { x: 50, y: 36 },
+    { x: 43, y: 20 }, { x: 57, y: 20 },
   ],
 
   "4-1-2-1-2 (Diamond)": [
     { x: 50, y: 86 },
-    { x: 18, y: 72 }, { x: 38, y: 74 }, { x: 62, y: 74 }, { x: 82, y: 72 },
-    { x: 50, y: 58 }, { x: 40, y: 48 }, { x: 60, y: 48 }, { x: 50, y: 38 },
-    { x: 44, y: 24 }, { x: 56, y: 24 },
+    { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
+    { x: 50, y: 60 },
+    { x: 38, y: 48 }, { x: 62, y: 48 },
+    { x: 50, y: 36 },
+    { x: 43, y: 20 }, { x: 57, y: 20 },
   ],
 };
 
@@ -156,7 +162,7 @@ async function loadPlayersFromSupabase() {
 function slotGroupFromPosition(role) {
   if (role === "GK") return "GK";
   if (["LB","RB","CB","LWB","RWB"].includes(role)) return "DEF";
-  if (["CDM","CM","LM","RM","CAM","LAM","RAM"].includes(role)) return "MID";
+  if (["CDM","CM","LM","RM","CAM"].includes(role)) return "MID";
   return "ATT";
 }
 
@@ -227,7 +233,7 @@ function shuffleArray(arr) {
 function getSlotFamily(slotLabel) {
   if (slotLabel === "GK") return "GK";
   if (["LB","RB","CB","LWB","RWB"].includes(slotLabel)) return "DEF";
-  if (["CDM","CM","LM","RM","CAM","LAM","RAM"].includes(slotLabel)) return "MID";
+  if (["CDM","CM","LM","RM","CAM"].includes(slotLabel)) return "MID";
   return "ATT";
 }
 
@@ -242,14 +248,12 @@ const POSITION_ADAPTABILITY = {
 
   CDM: ["CDM","CM","CB"],
   CM: ["CM","CDM","CAM","LM","RM"],
-  CAM: ["CAM","CM","LAM","RAM","ST"],
+  CAM: ["CAM","CM","ST","LM","RM"],
   LM: ["LM","LW","LWB","CM"],
   RM: ["RM","RW","RWB","CM"],
-  LAM: ["LAM","CAM","LW","ST"],
-  RAM: ["RAM","CAM","RW","ST"],
 
-  LW: ["LW","LM","LAM","ST"],
-  RW: ["RW","RM","RAM","ST"],
+  LW: ["LW","LM","ST","CAM"],
+  RW: ["RW","RM","ST","CAM"],
   ST: ["ST","CAM","LW","RW"],
 };
 
@@ -272,8 +276,6 @@ const PRICE_BANDS = {
   CAM: { cheap: 50000000, value: 67500000, starter: 97500000, star: 125000000 },
   LM:  { cheap: 47500000, value: 62500000, starter: 100000000, star: 125000000 },
   RM:  { cheap: 47500000, value: 62500000, starter: 100000000, star: 125000000 },
-  LAM: { cheap: 50000000, value: 67500000, starter: 97500000, star: 125000000 },
-  RAM: { cheap: 50000000, value: 67500000, starter: 97500000, star: 125000000 },
 
   LW:  { cheap: 45000000, value: 65000000, starter: 107500000, star: 132500000 },
   RW:  { cheap: 40000000, value: 50000000, starter: 82500000, star: 120000000 },
@@ -532,31 +534,55 @@ formationSelect.addEventListener("change", () => {
 
 async function boot() {
   await loadPlayersFromSupabase();
-state.formationLocked = !!localStorage.getItem("managerFormationLocked");
-if (state.formationLocked) {
-  buildDraftPools();
-}
 
   msDifficultyPill.textContent = `Difficulty: ${capitalize(difficulty)}`;
-formationSelect.value = state.formation;
 
-if (!state.managerName) {
-  openNameModal();
-  return;
-}
+  // Force fresh setup every time user enters from a new game selection
+  const forceFreshSetup = sessionStorage.getItem("managerForceFreshSetup") === "1";
 
-if (!state.captainId) {
-  if (!state.formationLocked) {
-    openFormationModal();
+  if (forceFreshSetup) {
+    sessionStorage.removeItem("managerForceFreshSetup");
+
+    localStorage.removeItem("managerName");
+    localStorage.removeItem("managerFormation");
+    localStorage.removeItem("managerFormationLocked");
+    localStorage.removeItem("managerCaptainId");
+
+    state.managerName = "";
+    state.formation = "4-3-3";
+    state.formationLocked = false;
+    state.captainId = "";
+    state.picks = [];
+    state.subs = Array(4).fill(null);
+    state.selectedSlotIndex = 0;
+    state.swapSourceIndex = null;
+    state.transferRemaining = ACTIVE_BUDGET.transfer;
+    state.wageRemaining = ACTIVE_BUDGET.wages;
   } else {
-    openCaptainModal();
+    state.formationLocked = !!localStorage.getItem("managerFormationLocked");
+    if (state.formationLocked) {
+      buildDraftPools();
+    }
   }
-  return;
-}
 
-renderAll();
-}
-boot();
+  formationSelect.value = state.formation;
+
+  if (!state.managerName) {
+    openNameModal();
+    return;
+  }
+
+  if (!state.captainId) {
+    if (!state.formationLocked) {
+      openFormationModal();
+    } else {
+      openCaptainModal();
+    }
+    return;
+  }
+
+  renderAll();
+}boot();
 
 function openNameModal() {
   nameModal.classList.remove("hidden");
@@ -808,26 +834,6 @@ function renderSubs() {
       updateBudgets();
     });
   });
-}
-
-function resolveCoord(label, counter) {
-  const entry = SLOT_COORDS[label];
-
-  if (Array.isArray(entry)) {
-    const i = counter[label] || 0;
-    counter[label] = i + 1;
-    return entry[Math.min(i, entry.length - 1)];
-  }
-
-  // For “CB”/etc arrays stored under key
-  if (label === "CB" || label === "ST" || label === "CM" || label === "CDM") {
-    const arr = SLOT_COORDS[label];
-    const i = counter[label] || 0;
-    counter[label] = i + 1;
-    return arr[Math.min(i, arr.length - 1)];
-  }
-
-  return entry || { x: 50, y: 50 };
 }
 
 function renderPlayers() {

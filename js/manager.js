@@ -29,10 +29,13 @@ document.querySelectorAll("[data-diff]").forEach((btn) => {
     localStorage.setItem("managerDifficulty", key);
     localStorage.setItem("managerConfig", JSON.stringify(config));
 
-    // 4️⃣ Small delay so user sees selection effect
-    setTimeout(() => {
-      window.location.href = "manager-squad.html";
-    }, 150);
+    // 4️⃣ Mark this as a fresh run
+sessionStorage.setItem("managerForceFreshSetup", "1");
+
+// 5️⃣ Small delay so user sees selection effect
+setTimeout(() => {
+  window.location.href = "manager-squad.html";
+}, 150);
   });
 });
 
