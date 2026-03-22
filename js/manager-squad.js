@@ -282,6 +282,16 @@ const PRICE_BANDS = {
   ST:  { cheap: 40000000, value: 60000000, starter: 100000000, star: 120000000 },
 };
 
+function canDraftIntoSlot(playerRole, slotRole) {
+  if (playerRole === slotRole) return true;
+
+  // wide role sharing
+  if ((slotRole === "LW" || slotRole === "LM") && (playerRole === "LW" || playerRole === "LM")) return true;
+  if ((slotRole === "RW" || slotRole === "RM") && (playerRole === "RW" || playerRole === "RM")) return true;
+
+  return false;
+}
+
 const DIFFICULTY_RECIPES = {
   hard:   ["cheap", "starter", "starOrElite"],
   medium: ["cheap", "value", "starter", "star", "wildcard"],
@@ -368,6 +378,42 @@ function buildTieredRoleChoices(role, count, excludedIds = new Set()) {
 
   if (picked.length < count) {
     const fallback = candidates.filter((p) => !used.has(p.id)).slice(0, count - picked.length);
+    picked.push(...fallback);
+  }
+
+  return picked;
+}
+
+function buildStarterShortlistForSlot(slotLabel, eligiblePlayers) {
+  const pseudoRole =
+    slotLabel === "LW" || slotLabel === "LM" ? "LW" :
+    slotLabel === "RW" || slotLabel === "RM" ? "RW" :
+    slotLabel;
+
+  const tiers = splitByTier(shuffleArray(eligiblePlayers), pseudoRole);
+  const recipe = DIFFICULTY_RECIPES[difficulty] || DIFFICULTY_RECIPES.medium;
+
+  const picked = [];
+  const used = new Set();
+
+  recipe.slice(0, cfg.optionsPerPos).forEach((token) => {
+    const availableTiers = {
+      cheap: tiers.cheap.filter((p) => !used.has(p.id)),
+      value: tiers.value.filter((p) => !used.has(p.id)),
+      starter: tiers.starter.filter((p) => !used.has(p.id)),
+      star: tiers.star.filter((p) => !used.has(p.id)),
+      elite: tiers.elite.filter((p) => !used.has(p.id)),
+    };
+
+    const chosen = pickFromTierMap(availableTiers, token);
+    if (chosen) {
+      used.add(chosen.id);
+      picked.push(chosen);
+    }
+  });
+
+  if (picked.length < cfg.optionsPerPos) {
+    const fallback = shuffleArray(eligiblePlayers).filter((p) => !used.has(p.id)).slice(0, cfg.optionsPerPos - picked.length);
     picked.push(...fallback);
   }
 
@@ -622,11 +668,17 @@ function openCaptainModal() {
   captainModal.classList.remove("hidden");
 
   const band = CAPTAIN_RATING_BANDS[difficulty] || CAPTAIN_RATING_BANDS.medium;
-  captainRuleText.textContent = band.label;
+  captainRuleText.textContent = `${band.label} · Randomised from strong players only`;
 
-  const eligible = PLAYER_POOL
-    .filter(p => p.rating >= band.min && p.rating <= band.max)
-    .slice(0, 8);
+  // Top 3 tiers only = starter / star / elite
+  const strongPlayers = PLAYER_POOL.filter((p) => {
+    if (!(p.rating >= band.min && p.rating <= band.max)) return false;
+
+    const roleBands = getRoleBands(p.role);
+    return p.fee > roleBands.value; // excludes cheap + value, keeps starter/star/elite
+  });
+
+  const eligible = shuffleArray(strongPlayers).slice(0, 8);
 
   let chosen = null;
   btnCaptainConfirm.disabled = true;
@@ -648,12 +700,27 @@ function openCaptainModal() {
     captainList.appendChild(card);
   });
 
-  btnCaptainConfirm.addEventListener("click", () => {
+  btnCaptainConfirm.onclick = () => {
+    if (!chosen) return;
     state.captainId = chosen;
     localStorage.setItem("managerCaptainId", chosen);
     captainModal.classList.add("hidden");
+const captainPlayer = PLAYER_POOL.find((p) => p.id === chosen);
+if (captainPlayer) {
+  const firstCompatibleIndex = FORMATIONS[state.formation].findIndex((slot) =>
+    canDraftIntoSlot(captainPlayer.role, slot)
+  );
+
+  if (firstCompatibleIndex !== -1 && !state.picks[firstCompatibleIndex]) {
+    state.picks[firstCompatibleIndex] = captainPlayer;
+    state.transferRemaining -= captainPlayer.fee;
+    state.wageRemaining -= captainPlayer.wage;
+    state.selectedSlotIndex = firstCompatibleIndex;
+  }
+}
+
     renderAll();
-  }, { once: true });
+  };
 }
 
 function renderAll() {
@@ -720,6 +787,12 @@ function renderPitch() {
     state.picks.filter(Boolean).length === FORMATIONS[state.formation].length &&
     state.subs.filter(Boolean).length === 4;
 
+if (state.pendingSubIndex !== null) {
+  attemptSubSwap(state.pendingSubIndex, idx);
+  state.pendingSubIndex = null;
+  return;
+}
+
   if (!squadComplete) {
     state.selectedSlotIndex = idx;
     renderPitch();
@@ -776,6 +849,28 @@ function attemptSwap(fromIdx, toIdx) {
   renderPitch();
 }
 
+function attemptSubSwap(subIdx, starterIdx) {
+  const slots = FORMATIONS[state.formation];
+  const starterPlayer = state.picks[starterIdx];
+  const subPlayer = state.subs[subIdx];
+
+  if (!starterPlayer || !subPlayer) return;
+
+  const starterSlot = slots[starterIdx];
+
+  if (!canPlayPosition(subPlayer.role, starterSlot)) {
+    alert("This player cannot play this position.");
+    return;
+  }
+
+  state.subs[subIdx] = starterPlayer;
+  state.picks[starterIdx] = subPlayer;
+
+  renderPitch();
+  renderSubs();
+  renderPlayers();
+}
+
 function renderSubs() {
   if (!subsArea) return;
 
@@ -794,26 +889,27 @@ function renderSubs() {
       `;
     } else {
       card.innerHTML = `
-        <div class="sub-top">
-          <div class="pimg">
-            <img src="${sub.photo || "img/player-placeholder.png"}" alt="${sub.name}">
-          </div>
-          <div class="sub-meta">
-            <strong>${sub.name}</strong>
-            <span>${sub.pos} · ${sub.role} · Rating ${sub.rating}</span>
-          </div>
-        </div>
+  <div class="sub-top">
+    <div class="pimg">
+      <img src="${sub.photo || "img/player-placeholder.png"}" alt="${sub.name}">
+    </div>
+    <div class="sub-meta">
+      <strong>${sub.name}</strong>
+      <span>${sub.pos} · ${sub.role} · Rating ${sub.rating}</span>
+    </div>
+  </div>
 
-        <div class="sub-bottom">
-          <div>
-            <div class="sub-price">${money(sub.fee)}</div>
-            <div class="sub-wage">${money(sub.wage)}/wk</div>
-          </div>
-          <div class="sub-actions">
-            <button class="secondary small sub-btn" data-remove-sub="${idx}">Remove</button>
-          </div>
-        </div>
-      `;
+  <div class="sub-bottom">
+    <div>
+      <div class="sub-price">${money(sub.fee)}</div>
+      <div class="sub-wage">${money(sub.wage)}/wk</div>
+    </div>
+    <div class="sub-actions">
+      <button class="secondary small sub-btn" data-sub-on="${idx}">Sub On</button>
+      <button class="secondary small sub-btn" data-remove-sub="${idx}">Remove</button>
+    </div>
+  </div>
+`;
     }
 
     subsArea.appendChild(card);
@@ -834,6 +930,23 @@ function renderSubs() {
       updateBudgets();
     });
   });
+subsArea.querySelectorAll("[data-sub-on]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const subIdx = Number(btn.dataset.subOn);
+
+    const squadComplete =
+      state.picks.filter(Boolean).length === FORMATIONS[state.formation].length &&
+      state.subs.filter(Boolean).length === 4;
+
+    if (!squadComplete) {
+      alert("Finish selecting all 15 players first.");
+      return;
+    }
+
+    state.pendingSubIndex = subIdx;
+    alert("Now click the starter you want to replace.");
+  });
+});
 }
 
 function renderPlayers() {
@@ -856,12 +969,16 @@ function renderPlayers() {
 
   if (buildingStarters) {
     if (state.tab === "SELECTED") {
-      visiblePlayers = (state.draftPools[slotLabel] || []).filter((p) => !excludedIds.has(p.id));
+      visiblePlayers = PLAYER_POOL.filter((p) =>
+  !excludedIds.has(p.id) &&
+  canDraftIntoSlot(p.role, slotLabel)
+);
+visiblePlayers = buildStarterShortlistForSlot(slotLabel, visiblePlayers);
     } else {
       visiblePlayers = (state.areaPools[state.tab] || []).filter((p) => !excludedIds.has(p.id));
     }
 
-    canUsePlayer = (p) => p.role === slotLabel;
+    canUsePlayer = (p) => canDraftIntoSlot(p.role, slotLabel);
    } else {
   const benchChoices = buildTieredAffordableBenchChoices(excludedIds);
 
@@ -1017,6 +1134,7 @@ function resetSquad() {
 state.subs = Array(4).fill(null);
   state.selectedSlotIndex = 0;
 state.swapSourceIndex = null;
+pendingSubIndex: null,
   state.transferRemaining = ACTIVE_BUDGET.transfer;
 state.wageRemaining = ACTIVE_BUDGET.wages;
   buildDraftPools();
