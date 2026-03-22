@@ -504,29 +504,31 @@ document.querySelectorAll(".tab").forEach((b) => {
 
 formationSelect.value = state.formation;
 formationSelect.addEventListener("change", () => {
-  if (state.formationLocked) {
+  const squadComplete =
+    state.picks.filter(Boolean).length === FORMATIONS[state.formation].length &&
+    state.subs.filter(Boolean).length === 4;
+
+  // before squad is complete, only the modal should decide formation
+  if (!squadComplete) {
     formationSelect.value = state.formation;
     return;
   }
 
   state.formation = formationSelect.value;
   localStorage.setItem("managerFormation", state.formation);
+
+  // rebuild the picks array to the new shape while preserving existing players by index where possible
+  const newSlots = FORMATIONS[state.formation];
+  const oldPicks = [...state.picks];
+
+  state.picks = Array(newSlots.length).fill(null);
+  for (let i = 0; i < Math.min(oldPicks.length, state.picks.length); i++) {
+    state.picks[i] = oldPicks[i];
+  }
+
+  state.selectedSlotIndex = 0;
+  renderAll();
 });
-
-// --- init ---
-function ensureFormationChosenFirst() {
-  if (state.formationLocked) return false;
-
-  const ok = confirm(`Start this save with ${state.formation}? This cannot be changed.`);
-  if (!ok) return true;
-
-  state.formationLocked = true;
-  localStorage.setItem("managerFormation", state.formation);
-  localStorage.setItem("managerFormationLocked", "1");
-
-  buildDraftPools();
-  return false;
-}
 
 async function boot() {
   await loadPlayersFromSupabase();
@@ -536,12 +538,23 @@ if (state.formationLocked) {
 }
 
   msDifficultyPill.textContent = `Difficulty: ${capitalize(difficulty)}`;
-  formationSelect.value = state.formation;
-if (ensureFormationChosenFirst()) return;
-if (!state.managerName) { openNameModal(); return; }
-  if (!state.captainId) { openCaptainModal(); return; }
+formationSelect.value = state.formation;
 
-  renderAll();
+if (!state.managerName) {
+  openNameModal();
+  return;
+}
+
+if (!state.captainId) {
+  if (!state.formationLocked) {
+    openFormationModal();
+  } else {
+    openCaptainModal();
+  }
+  return;
+}
+
+renderAll();
 }
 boot();
 
