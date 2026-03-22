@@ -774,11 +774,11 @@ tile.className = "slot" + (isSwapActive || isDraftActive ? " active" : "");
     const picked = state.picks[idx];
 
     if (!picked) {
-      tile.innerHTML = `<div>
-        <div class="pos">${label}</div>
-        <div class="hint">+ Select Player</div>
-      </div>`;
-    } } else {
+  tile.innerHTML = `<div>
+    <div class="pos">${label}</div>
+    <div class="hint">+ Select Player</div>
+  </div>`;
+} else {
   const isActive = idx === state.selectedSlotIndex;
 
   tile.innerHTML = `
@@ -792,9 +792,6 @@ tile.className = "slot" + (isSwapActive || isDraftActive ? " active" : "");
     </div>
   `;
 }
-        </div>
-      `;
-    } // ✅ FIXED
 
     tile.addEventListener("click", () => {
   const squadComplete =
