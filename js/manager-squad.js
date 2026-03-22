@@ -493,6 +493,7 @@ let state = {
   selectedSlotIndex: 0,
 swapSourceIndex: null,
 pendingSubIndex: null,
+slotShortlists: {},
   // squad picks by slot index, plus bench later
   picks: [], // length = 11
 subs: Array(4).fill(null),
@@ -798,6 +799,7 @@ function renderPitch() {
 if (state.pendingSubIndex !== null) {
   attemptSubSwap(state.pendingSubIndex, idx);
   state.pendingSubIndex = null;
+  renderSubs(); // ✅ ADD THIS LINE
   return;
 }
 
@@ -886,7 +888,10 @@ function renderSubs() {
 
   state.subs.forEach((sub, idx) => {
     const card = document.createElement("div");
-    card.className = "sub-card" + (!sub ? " empty" : "");
+    card.className =
+  "sub-card" +
+  (!sub ? " empty" : "") +
+  (state.pendingSubIndex === idx ? " active" : "");
 
     if (!sub) {
       card.innerHTML = `
@@ -913,31 +918,20 @@ function renderSubs() {
       <div class="sub-wage">${money(sub.wage)}/wk</div>
     </div>
     <div class="sub-actions">
-      <button class="secondary small sub-btn" data-sub-on="${idx}">Sub On</button>
       <button class="secondary small sub-btn" data-remove-sub="${idx}">Remove</button>
     </div>
   </div>
 `;
     }
+card.className =
+  "sub-card" +
+  (!sub ? " empty" : "") +
+  (state.pendingSubIndex === idx ? " active" : "");
 
     subsArea.appendChild(card);
   });
 
-  subsArea.querySelectorAll("[data-remove-sub]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const idx = Number(btn.dataset.removeSub);
-      const prev = state.subs[idx];
-      if (!prev) return;
-
-      state.transferRemaining += prev.fee;
-      state.wageRemaining += prev.wage;
-      state.subs[idx] = null;
-
-      renderSubs();
-      renderPlayers();
-      updateBudgets();
-    });
-  });
+ 
 subsArea.querySelectorAll("[data-sub-on]").forEach((btn) => {
   btn.addEventListener("click", () => {
     const subIdx = Number(btn.dataset.subOn);
@@ -977,11 +971,18 @@ function renderPlayers() {
 
   if (buildingStarters) {
     if (state.tab === "SELECTED") {
-      visiblePlayers = PLAYER_POOL.filter((p) =>
-  !excludedIds.has(p.id) &&
-  canDraftIntoSlot(p.role, slotLabel)
-);
-visiblePlayers = buildStarterShortlistForSlot(slotLabel, visiblePlayers);
+      const slotKey = `${state.formation}-${state.selectedSlotIndex}`;
+
+if (!state.slotShortlists[slotKey]) {
+  let eligible = PLAYER_POOL.filter((p) =>
+    !excludedIds.has(p.id) &&
+    canDraftIntoSlot(p.role, slotLabel)
+  );
+
+  state.slotShortlists[slotKey] = buildStarterShortlistForSlot(slotLabel, eligible);
+}
+
+visiblePlayers = state.slotShortlists[slotKey];
     } else {
       visiblePlayers = (state.areaPools[state.tab] || []).filter((p) => !excludedIds.has(p.id));
     }
