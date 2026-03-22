@@ -44,35 +44,82 @@ const CAPTAIN_RATING_BANDS = {
 // ---- Formations (v1) ----
 // Each formation defines 11 “slots” with a label + category for filtering.
 const FORMATIONS = {
-  "4-3-3":   ["GK","LB","CB","CB","RB","CM","CM","CM","LW","ST","RW"],
+  "4-3-3": ["GK","LB","CB","CB","RB","CM","CM","CM","LW","ST","RW"],
+  "4-3-3 (Attack)": ["GK","LB","CB","CB","RB","CAM","CM","CM","LW","ST","RW"],
+  "4-3-3 (Holding)": ["GK","LB","CB","CB","RB","CDM","CM","CM","LW","ST","RW"],
   "4-2-3-1": ["GK","LB","CB","CB","RB","CDM","CDM","LAM","CAM","RAM","ST"],
-  "4-4-2":   ["GK","LB","CB","CB","RB","LM","CM","CM","RM","ST","ST"],
-  "3-5-2":   ["GK","CB","CB","CB","LWB","CM","CDM","CM","RWB","ST","ST"],
-  "3-4-3":   ["GK","CB","CB","CB","LM","CM","CM","RM","LW","ST","RW"],
+  "4-4-2": ["GK","LB","CB","CB","RB","LM","CM","CM","RM","ST","ST"],
+  "3-5-2": ["GK","CB","CB","CB","LWB","CM","CDM","CM","RWB","ST","ST"],
+  "3-4-3": ["GK","CB","CB","CB","LM","CM","CM","RM","LW","ST","RW"],
+  "4-1-2-1-2 Wide": ["GK","LB","CB","CB","RB","CDM","LM","RM","CAM","ST","ST"],
+  "4-1-2-1-2 (Diamond)": ["GK","LB","CB","CB","RB","CDM","CM","CM","CAM","ST","ST"],
 };
 
 // Slot coordinates (percentage positioning) for each label type.
-// Quick v1 mapping: we’ll place by row.
-const SLOT_COORDS = {
-  "GK":  { x: 50, y: 86 },
-  // Back line
-  "LB":  { x: 18, y: 72 },
-  "LWB": { x: 16, y: 66 },
-  "CB":  [{ x: 38, y: 74 }, { x: 62, y: 74 }, { x: 50, y: 74 }],
-  "RB":  { x: 82, y: 72 },
-  "RWB": { x: 84, y: 66 },
-  // Mid
-  "CDM": [{ x: 36, y: 56 }, { x: 64, y: 56 }, { x: 50, y: 58 }],
-  "CM":  [{ x: 34, y: 52 }, { x: 50, y: 50 }, { x: 66, y: 52 }],
-  "LM":  { x: 18, y: 52 },
-  "RM":  { x: 82, y: 52 },
-  "LAM": { x: 34, y: 40 },
-  "CAM": { x: 50, y: 40 },
-  "RAM": { x: 66, y: 40 },
-  // Front
-  "LW":  { x: 20, y: 26 },
-  "ST":  [{ x: 50, y: 24 }, { x: 44, y: 26 }, { x: 56, y: 26 }],
-  "RW":  { x: 80, y: 26 },
+const FORMATION_COORDS = {
+  "4-3-3": [
+    { x: 50, y: 86 }, // GK
+    { x: 18, y: 72 }, { x: 38, y: 74 }, { x: 62, y: 74 }, { x: 82, y: 72 },
+    { x: 34, y: 52 }, { x: 50, y: 50 }, { x: 66, y: 52 },
+    { x: 20, y: 26 }, { x: 50, y: 24 }, { x: 80, y: 26 },
+  ],
+
+  "4-3-3 (Attack)": [
+    { x: 50, y: 86 },
+    { x: 18, y: 72 }, { x: 38, y: 74 }, { x: 62, y: 74 }, { x: 82, y: 72 },
+    { x: 50, y: 42 }, { x: 36, y: 54 }, { x: 64, y: 54 },
+    { x: 20, y: 26 }, { x: 50, y: 22 }, { x: 80, y: 26 },
+  ],
+
+  "4-3-3 (Holding)": [
+    { x: 50, y: 86 },
+    { x: 18, y: 72 }, { x: 38, y: 74 }, { x: 62, y: 74 }, { x: 82, y: 72 },
+    { x: 50, y: 58 }, { x: 36, y: 48 }, { x: 64, y: 48 },
+    { x: 20, y: 26 }, { x: 50, y: 22 }, { x: 80, y: 26 },
+  ],
+
+  "4-2-3-1": [
+    { x: 50, y: 86 },
+    { x: 18, y: 72 }, { x: 38, y: 74 }, { x: 62, y: 74 }, { x: 82, y: 72 },
+    { x: 38, y: 58 }, { x: 62, y: 58 },
+    { x: 34, y: 40 }, { x: 50, y: 38 }, { x: 66, y: 40 },
+    { x: 50, y: 22 },
+  ],
+
+  "4-4-2": [
+    { x: 50, y: 86 },
+    { x: 18, y: 72 }, { x: 38, y: 74 }, { x: 62, y: 74 }, { x: 82, y: 72 },
+    { x: 18, y: 52 }, { x: 40, y: 50 }, { x: 60, y: 50 }, { x: 82, y: 52 },
+    { x: 44, y: 24 }, { x: 56, y: 24 },
+  ],
+
+  "3-5-2": [
+    { x: 50, y: 86 },
+    { x: 34, y: 74 }, { x: 50, y: 74 }, { x: 66, y: 74 },
+    { x: 16, y: 62 }, { x: 38, y: 50 }, { x: 50, y: 58 }, { x: 62, y: 50 }, { x: 84, y: 62 },
+    { x: 44, y: 24 }, { x: 56, y: 24 },
+  ],
+
+  "3-4-3": [
+    { x: 50, y: 86 },
+    { x: 34, y: 74 }, { x: 50, y: 74 }, { x: 66, y: 74 },
+    { x: 18, y: 52 }, { x: 42, y: 50 }, { x: 58, y: 50 }, { x: 82, y: 52 },
+    { x: 20, y: 26 }, { x: 50, y: 22 }, { x: 80, y: 26 },
+  ],
+
+  "4-1-2-1-2 Wide": [
+    { x: 50, y: 86 },
+    { x: 18, y: 72 }, { x: 38, y: 74 }, { x: 62, y: 74 }, { x: 82, y: 72 },
+    { x: 50, y: 58 }, { x: 20, y: 50 }, { x: 80, y: 50 }, { x: 50, y: 40 },
+    { x: 44, y: 24 }, { x: 56, y: 24 },
+  ],
+
+  "4-1-2-1-2 (Diamond)": [
+    { x: 50, y: 86 },
+    { x: 18, y: 72 }, { x: 38, y: 74 }, { x: 62, y: 74 }, { x: 82, y: 72 },
+    { x: 50, y: 58 }, { x: 40, y: 48 }, { x: 60, y: 48 }, { x: 50, y: 38 },
+    { x: 44, y: 24 }, { x: 56, y: 24 },
+  ],
 };
 
 // ---- Placeholder player pool ----
@@ -182,6 +229,33 @@ function getSlotFamily(slotLabel) {
   if (["LB","RB","CB","LWB","RWB"].includes(slotLabel)) return "DEF";
   if (["CDM","CM","LM","RM","CAM","LAM","RAM"].includes(slotLabel)) return "MID";
   return "ATT";
+}
+
+const POSITION_ADAPTABILITY = {
+  GK: ["GK"],
+
+  LB: ["LB","LWB"],
+  LWB: ["LWB","LB","LM"],
+  CB: ["CB","LB","RB","CDM"],
+  RB: ["RB","RWB"],
+  RWB: ["RWB","RB","RM"],
+
+  CDM: ["CDM","CM","CB"],
+  CM: ["CM","CDM","CAM","LM","RM"],
+  CAM: ["CAM","CM","LAM","RAM","ST"],
+  LM: ["LM","LW","LWB","CM"],
+  RM: ["RM","RW","RWB","CM"],
+  LAM: ["LAM","CAM","LW","ST"],
+  RAM: ["RAM","CAM","RW","ST"],
+
+  LW: ["LW","LM","LAM","ST"],
+  RW: ["RW","RM","RAM","ST"],
+  ST: ["ST","CAM","LW","RW"],
+};
+
+function canPlayPosition(playerRole, slotRole) {
+  const allowed = POSITION_ADAPTABILITY[playerRole] || [];
+  return allowed.includes(slotRole);
 }
 
 const PRICE_BANDS = {
@@ -369,6 +443,7 @@ let state = {
   formation: localStorage.getItem("managerFormation") || "4-3-3",
   captainId: localStorage.getItem("managerCaptainId") || "",
   selectedSlotIndex: 0,
+swapSourceIndex: null,
   // squad picks by slot index, plus bench later
   picks: [], // length = 11
 subs: Array(4).fill(null),
@@ -386,6 +461,9 @@ const el = (id) => document.getElementById(id);
 // HUD refs
 const msDifficultyPill = el("msDifficultyPill");
 const msManagerNamePill = el("msManagerNamePill");
+const formationModal = el("formationModal");
+const formationModalSelect = el("formationModalSelect");
+const btnFormationConfirm = el("btnFormationConfirm");
 const msFormationPill = el("msFormationPill");
 const msTransferText = el("msTransferText");
 const msWageText = el("msWageText");
@@ -478,8 +556,27 @@ function openNameModal() {
     localStorage.setItem("managerName", state.managerName);
 
     nameModal.classList.add("hidden");
-    openCaptainModal();
+openFormationModal();
   }, { once: true });
+}
+
+function openFormationModal() {
+  formationModal.classList.remove("hidden");
+  formationModalSelect.value = state.formation;
+
+  btnFormationConfirm.onclick = () => {
+    state.formation = formationModalSelect.value;
+    state.formationLocked = true;
+
+    localStorage.setItem("managerFormation", state.formation);
+    localStorage.setItem("managerFormationLocked", "1");
+
+    formationSelect.value = state.formation;
+    buildDraftPools();
+
+    formationModal.classList.add("hidden");
+    openCaptainModal();
+  };
 }
 
 function openCaptainModal() {
@@ -539,7 +636,7 @@ function renderPitch() {
   pitchArea.innerHTML = "";
 
   const slots = FORMATIONS[state.formation];
-  const cbCounter = { CB: 0, ST: 0, CM: 0, CDM: 0 };
+  const coords = FORMATION_COORDS[state.formation] || FORMATION_COORDS["4-3-3"];
 
   slots.forEach((label, idx) => {
     const tile = document.createElement("div");
@@ -547,7 +644,7 @@ function renderPitch() {
     tile.dataset.index = String(idx);
 
     // Positioning
-    const pos = resolveCoord(label, cbCounter);
+    const pos = coords[idx] || { x: 50, y: 50 };
     tile.style.left = `calc(${pos.x}% - 75px)`;
     tile.style.top = `calc(${pos.y}% - 42px)`;
 
@@ -580,13 +677,64 @@ function renderPitch() {
     } // ✅ FIXED
 
     tile.addEventListener("click", () => {
-  state.selectedSlotIndex = idx;
-  renderPitch();
-  renderPlayers(); // ✅ THIS FIXES YOUR ISSUE
+  const squadComplete =
+    state.picks.filter(Boolean).length === FORMATIONS[state.formation].length &&
+    state.subs.filter(Boolean).length === 4;
+
+  if (!squadComplete) {
+    state.selectedSlotIndex = idx;
+    renderPitch();
+    renderPlayers();
+    return;
+  }
+
+  if (state.swapSourceIndex === null) {
+    state.swapSourceIndex = idx;
+    state.selectedSlotIndex = idx;
+    renderPitch();
+    return;
+  }
+
+  if (state.swapSourceIndex === idx) {
+    state.swapSourceIndex = null;
+    renderPitch();
+    return;
+  }
+
+  attemptSwap(state.swapSourceIndex, idx);
 });
 
     pitchArea.appendChild(tile);
   });
+}
+
+function attemptSwap(fromIdx, toIdx) {
+  const slots = FORMATIONS[state.formation];
+  const fromPlayer = state.picks[fromIdx];
+  const toPlayer = state.picks[toIdx];
+
+  if (!fromPlayer || !toPlayer) {
+    state.swapSourceIndex = null;
+    renderPitch();
+    return;
+  }
+
+  const fromSlot = slots[fromIdx];
+  const toSlot = slots[toIdx];
+
+  const fromCanPlayTo = canPlayPosition(fromPlayer.role, toSlot);
+  const toCanPlayFrom = canPlayPosition(toPlayer.role, fromSlot);
+
+  if (!fromCanPlayTo || !toCanPlayFrom) {
+    alert("This player cannot play this position.");
+    state.swapSourceIndex = null;
+    renderPitch();
+    return;
+  }
+
+  [state.picks[fromIdx], state.picks[toIdx]] = [state.picks[toIdx], state.picks[fromIdx]];
+  state.swapSourceIndex = null;
+  renderPitch();
 }
 
 function renderSubs() {
@@ -812,9 +960,17 @@ function addToSelectedSlot(player) {
   state.transferRemaining -= player.fee;
   state.wageRemaining -= player.wage;
 
+const squadComplete =
+  state.picks.filter(Boolean).length === FORMATIONS[state.formation].length &&
+  state.subs.filter(Boolean).length === 4;
+
   renderSubs();
   renderPlayers();
   updateBudgets();
+if (squadComplete) {
+  alert("Squad complete. You can now click two starters to swap their positions.");
+}
+
 }
 
 function updateBudgets() {
@@ -841,6 +997,7 @@ function resetSquad() {
   state.picks = [];
 state.subs = Array(4).fill(null);
   state.selectedSlotIndex = 0;
+state.swapSourceIndex = null;
   state.transferRemaining = ACTIVE_BUDGET.transfer;
 state.wageRemaining = ACTIVE_BUDGET.wages;
   buildDraftPools();
