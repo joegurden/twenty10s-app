@@ -262,6 +262,24 @@ function canPlayPosition(playerRole, slotRole) {
   return allowed.includes(slotRole);
 }
 
+function canMoveToStarterSlot(player, starterIdx) {
+  const slotRole = FORMATIONS[state.formation][starterIdx];
+  return canPlayPosition(player.role, slotRole);
+}
+
+function getValidStarterTargets(player) {
+  const targets = [];
+  const slots = FORMATIONS[state.formation];
+
+  slots.forEach((slotRole, idx) => {
+    if (canPlayPosition(player.role, slotRole)) {
+      targets.push(idx);
+    }
+  });
+
+  return targets;
+}
+
 const PRICE_BANDS = {
   GK:  { cheap: 50000000, value: 70000000, starter: 97500000, star: 122500000 },
 
@@ -469,12 +487,20 @@ function buildTieredAffordableBenchChoices(excludedIds = new Set()) {
 
   // 5th = best premium affordable, fallback to any remaining
   const remaining = affordable.filter((p) => !used.has(p.id));
-  const premiumAffordable = [...remaining].sort((a, b) => b.fee - a.fee)[0];
+  const topAffordable = [...remaining].sort((a, b) => b.fee - a.fee);
+const premiumAffordable = topAffordable[0] || null;
 
-  if (premiumAffordable) {
+// make true elites rarer on the bench as well
+if (premiumAffordable) {
+  const roleBands = getRoleBands(premiumAffordable.role);
+  const isElite = premiumAffordable.fee > roleBands.star;
+  const allowEliteBench = !isElite || Math.random() < 0.08;
+
+  if (allowEliteBench) {
     used.add(premiumAffordable.id);
     chosen.push(premiumAffordable);
   }
+}
 
   while (chosen.length < 5) {
     const fallback = remaining.find((p) => !used.has(p.id));
@@ -494,6 +520,8 @@ let state = {
 swapSourceIndex: null,
 pendingSubIndex: null,
 slotShortlists: {},
+reserveSlots: Array(3).fill(null),
+pendingReserveIndex: null,
   // squad picks by slot index, plus bench later
   picks: [], // length = 11
 subs: Array(4).fill(null),
@@ -758,15 +786,37 @@ function renderPitch() {
   const slots = FORMATIONS[state.formation];
   const coords = FORMATION_COORDS[state.formation] || FORMATION_COORDS["4-3-3"];
 
+  let validTargets = [];
+
+  if (state.swapSourceIndex !== null && state.picks[state.swapSourceIndex]) {
+    validTargets = getValidStarterTargets(state.picks[state.swapSourceIndex]);
+  }
+
+  if (state.pendingSubIndex !== null && state.subs[state.pendingSubIndex]) {
+    validTargets = getValidStarterTargets(state.subs[state.pendingSubIndex]);
+  }
+
+  if (state.pendingReserveIndex !== null && state.reserveSlots[state.pendingReserveIndex]) {
+    validTargets = getValidStarterTargets(state.reserveSlots[state.pendingReserveIndex]);
+  }
+
   slots.forEach((label, idx) => {
     const tile = document.createElement("div");
-    const isSwapActive = state.swapSourceIndex === idx;
-const isDraftActive = state.swapSourceIndex === null && idx === state.selectedSlotIndex;
 
-tile.className = "slot" + (isSwapActive || isDraftActive ? " active" : "");
+    const isSwapActive = state.swapSourceIndex === idx;
+    const isDraftActive = state.swapSourceIndex === null && state.pendingSubIndex === null && state.pendingReserveIndex === null && idx === state.selectedSlotIndex;
+    const isGreenTarget =
+      (state.swapSourceIndex !== null || state.pendingSubIndex !== null || state.pendingReserveIndex !== null) &&
+      validTargets.includes(idx) &&
+      !isSwapActive;
+
+    tile.className =
+      "slot" +
+      (isSwapActive || isDraftActive ? " active" : "") +
+      (isGreenTarget ? " valid-target" : "");
+
     tile.dataset.index = String(idx);
 
-    // Positioning
     const pos = coords[idx] || { x: 50, y: 50 };
     tile.style.left = `calc(${pos.x}% - 75px)`;
     tile.style.top = `calc(${pos.y}% - 42px)`;
@@ -774,67 +824,79 @@ tile.className = "slot" + (isSwapActive || isDraftActive ? " active" : "");
     const picked = state.picks[idx];
 
     if (!picked) {
-  tile.innerHTML = `<div>
-    <div class="pos">${label}</div>
-    <div class="hint">+ Select Player</div>
-  </div>`;
-} else {
-  const isActive = idx === state.selectedSlotIndex;
+      tile.innerHTML = `
+        <div>
+          <div class="pos">${label}</div>
+          <div class="hint">+ Select Player</div>
+        </div>
+      `;
+    } else {
+      const isActive = idx === state.selectedSlotIndex;
 
-  tile.innerHTML = `
-    <div class="slot-photo ${isActive ? "active" : ""}">
-      <img src="${picked.photo || "img/player-placeholder.png"}">
-    </div>
+      tile.innerHTML = `
+        <div class="slot-photo ${isActive ? "active" : ""}">
+          <img src="${picked.photo || "img/player-placeholder.png"}">
+        </div>
 
-    <div class="picked">
-      <strong>${picked.name}</strong>
-      <span>${picked.role}</span>
-    </div>
-  `;
-}
+        <div class="picked">
+          <strong>${picked.name}</strong>
+          <span>${picked.role}</span>
+        </div>
+      `;
+    }
 
     tile.addEventListener("click", () => {
-  const squadComplete =
-    state.picks.filter(Boolean).length === FORMATIONS[state.formation].length &&
-    state.subs.filter(Boolean).length === 4;
+      const squadComplete =
+        state.picks.filter(Boolean).length === FORMATIONS[state.formation].length &&
+        state.subs.filter(Boolean).length === 4;
 
-if (state.pendingSubIndex !== null) {
-  attemptSubSwap(state.pendingSubIndex, idx);
-  state.pendingSubIndex = null;
-  renderSubs(); // ✅ ADD THIS LINE
-  return;
-}
+      if (state.pendingSubIndex !== null) {
+        attemptSubSwap(state.pendingSubIndex, idx);
+        state.pendingSubIndex = null;
+        renderSubs();
+        renderPitch();
+        return;
+      }
 
-  if (!squadComplete) {
-    state.selectedSlotIndex = idx;
-    renderPitch();
-    renderPlayers();
-    return;
-  }
+      if (state.pendingReserveIndex !== null) {
+        attemptReserveToStarterSwap(state.pendingReserveIndex, idx);
+        state.pendingReserveIndex = null;
+        renderReserves();
+        renderPitch();
+        return;
+      }
 
-  if (state.swapSourceIndex === null) {
-  state.swapSourceIndex = idx;
-  state.selectedSlotIndex = idx;
-  renderPitch();
-  renderSubs();
-  return;
-}
+      if (!squadComplete) {
+        state.selectedSlotIndex = idx;
+        renderPitch();
+        renderPlayers();
+        return;
+      }
 
-if (state.swapSourceIndex === idx) {
-  state.swapSourceIndex = null;
-  state.selectedSlotIndex = -1;
-  renderPitch();
-  renderSubs();
-  return;
-}
+      if (state.swapSourceIndex === null) {
+        state.swapSourceIndex = idx;
+        state.selectedSlotIndex = idx;
+        renderPitch();
+        renderSubs();
+        renderReserves();
+        return;
+      }
 
-  attemptSwap(state.swapSourceIndex, idx);
-});
+      if (state.swapSourceIndex === idx) {
+        state.swapSourceIndex = null;
+        state.selectedSlotIndex = -1;
+        renderPitch();
+        renderSubs();
+        renderReserves();
+        return;
+      }
+
+      attemptSwap(state.swapSourceIndex, idx);
+    });
 
     pitchArea.appendChild(tile);
   });
 }
-
 function attemptSwap(fromIdx, toIdx) {
   const slots = FORMATIONS[state.formation];
   const fromPlayer = state.picks[fromIdx];
@@ -861,8 +923,11 @@ state.selectedSlotIndex = -1;
   }
 
   [state.picks[fromIdx], state.picks[toIdx]] = [state.picks[toIdx], state.picks[fromIdx]];
-  state.swapSourceIndex = null;
-  renderPitch();
+state.swapSourceIndex = null;
+state.selectedSlotIndex = -1;
+renderPitch();
+renderSubs();
+renderReserves();
 }
 
 function attemptSubSwap(subIdx, starterIdx) {
@@ -883,8 +948,50 @@ function attemptSubSwap(subIdx, starterIdx) {
   state.picks[starterIdx] = subPlayer;
 
 state.selectedSlotIndex = -1;
+renderPitch();
+renderSubs();
+renderReserves();
+renderPlayers();
+}
+
+function attemptStarterToReserveSwap(starterIdx, reserveIdx) {
+  const starterPlayer = state.picks[starterIdx];
+  if (!starterPlayer) return;
+
+  const reservePlayer = state.reserveSlots[reserveIdx] || null;
+
+  state.reserveSlots[reserveIdx] = starterPlayer;
+  state.picks[starterIdx] = reservePlayer;
+
+  state.swapSourceIndex = null;
+  state.selectedSlotIndex = -1;
+
   renderPitch();
   renderSubs();
+  renderReserves();
+  renderPlayers();
+}
+
+function attemptReserveToStarterSwap(reserveIdx, starterIdx) {
+  const reservePlayer = state.reserveSlots[reserveIdx];
+  if (!reservePlayer) return;
+
+  const starterSlot = FORMATIONS[state.formation][starterIdx];
+  if (!canPlayPosition(reservePlayer.role, starterSlot)) {
+    alert("This player cannot play this position.");
+    return;
+  }
+
+  const starterPlayer = state.picks[starterIdx] || null;
+
+  state.picks[starterIdx] = reservePlayer;
+  state.reserveSlots[reserveIdx] = starterPlayer;
+
+  state.selectedSlotIndex = -1;
+
+  renderPitch();
+  renderSubs();
+  renderReserves();
   renderPlayers();
 }
 
@@ -892,6 +999,9 @@ function renderSubs() {
   if (!subsArea) return;
 
   subsArea.innerHTML = "";
+
+const benchSubsMirror = document.getElementById("benchSubsMirror");
+if (benchSubsMirror) benchSubsMirror.innerHTML = "";
 
   state.subs.forEach((sub, idx) => {
     const card = document.createElement("div");
@@ -957,6 +1067,42 @@ renderPitch();
     });
 
     subsArea.appendChild(card);
+
+if (benchSubsMirror) {
+  const mirror = card.cloneNode(true);
+  mirror.addEventListener("click", (e) => {
+    if (e.target.closest("[data-remove-sub]")) return;
+
+    const currentSub = state.subs[idx];
+    if (!currentSub) return;
+
+    const squadComplete =
+      state.picks.filter(Boolean).length === FORMATIONS[state.formation].length &&
+      state.subs.filter(Boolean).length === 4;
+
+    if (!squadComplete) {
+      alert("Finish selecting all 15 players first.");
+      return;
+    }
+
+    if (state.pendingSubIndex === idx) {
+      state.pendingSubIndex = null;
+      renderSubs();
+      renderPitch();
+      renderReserves();
+      return;
+    }
+
+    state.pendingSubIndex = idx;
+    state.swapSourceIndex = null;
+    state.pendingReserveIndex = null;
+    renderSubs();
+    renderPitch();
+    renderReserves();
+  });
+
+  benchSubsMirror.appendChild(mirror);
+}
   });
 
   // remove buttons
@@ -981,6 +1127,76 @@ renderPitch();
   });
 }
 
+function renderReserves() {
+  const reservesArea = document.getElementById("reservesArea");
+  if (!reservesArea) return;
+
+  reservesArea.innerHTML = "";
+
+  state.reserveSlots.forEach((player, idx) => {
+    const card = document.createElement("div");
+    card.className =
+      "sub-card reserve-card" +
+      (!player ? " empty" : "") +
+      (state.pendingReserveIndex === idx ? " active" : "");
+
+    if (!player) {
+      card.innerHTML = `
+        <div class="sub-meta">
+          <strong>Reserve ${idx + 1}</strong>
+          <span>Temporary holding slot</span>
+        </div>
+      `;
+    } else {
+      card.innerHTML = `
+        <div class="sub-top">
+          <div class="pimg">
+            <img src="${player.photo || "img/player-placeholder.png"}" alt="${player.name}">
+          </div>
+          <div class="sub-meta">
+            <strong>${player.name}</strong>
+            <span>${player.pos} · ${player.role} · Rating ${player.rating}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    card.addEventListener("click", () => {
+      const squadComplete =
+        state.picks.filter(Boolean).length === FORMATIONS[state.formation].length &&
+        state.subs.filter(Boolean).length === 4;
+
+      if (!squadComplete) {
+        alert("Finish selecting all 15 players first.");
+        return;
+      }
+
+      if (state.swapSourceIndex !== null) {
+        attemptStarterToReserveSwap(state.swapSourceIndex, idx);
+        return;
+      }
+
+      if (!player) return;
+
+      if (state.pendingReserveIndex === idx) {
+        state.pendingReserveIndex = null;
+        renderReserves();
+        renderPitch();
+        return;
+      }
+
+      state.pendingReserveIndex = idx;
+      state.pendingSubIndex = null;
+      state.swapSourceIndex = null;
+      renderReserves();
+      renderSubs();
+      renderPitch();
+    });
+
+    reservesArea.appendChild(card);
+  });
+}
+
 function renderPlayers() {
   if (!state.captainId) {
     playerList.innerHTML = `<div class="pill">Pick your Captain first to unlock players.</div>`;
@@ -990,6 +1206,17 @@ function renderPlayers() {
   const slotLabel = FORMATIONS[state.formation][state.selectedSlotIndex];
   const selectedStarters = state.picks.filter(Boolean).length;
   const buildingStarters = selectedStarters < FORMATIONS[state.formation].length;
+const squadComplete =
+  state.picks.filter(Boolean).length === FORMATIONS[state.formation].length &&
+  state.subs.filter(Boolean).length === 4;
+
+const draftPanel = document.querySelector(".ms-list");
+const benchPanel = document.getElementById("benchManagementPanel");
+
+if (draftPanel && benchPanel) {
+  draftPanel.style.display = squadComplete ? "none" : "";
+  benchPanel.style.display = squadComplete ? "" : "none";
+}
 
   const excludedIds = new Set([
     ...state.picks.filter(Boolean).map((p) => p.id),
@@ -1120,9 +1347,10 @@ function addToSelectedSlot(player) {
       });
 
       renderPitch();
-      renderSubs();
-      renderPlayers();
-      updateBudgets();
+renderSubs();
+renderReserves();
+renderPlayers();
+updateBudgets();
 
       alert("Starting XI complete. Now pick your 4 substitutes.");
       return;
@@ -1184,7 +1412,10 @@ state.subs = Array(4).fill(null);
   state.selectedSlotIndex = 0;
 state.swapSourceIndex = null;
 state.pendingSubIndex = null;
+state.reserveSlots = Array(3).fill(null);
+state.pendingReserveIndex = null;
 state.slotShortlists = {};
+
   state.transferRemaining = ACTIVE_BUDGET.transfer;
 state.wageRemaining = ACTIVE_BUDGET.wages;
   buildDraftPools();
