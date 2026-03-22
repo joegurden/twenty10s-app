@@ -778,28 +778,20 @@ tile.className = "slot" + (isSwapActive || isDraftActive ? " active" : "");
         <div class="pos">${label}</div>
         <div class="hint">+ Select Player</div>
       </div>`;
-    } else {
-      const isActive = idx === state.selectedSlotIndex;
+    } } else {
+  const isActive = idx === state.selectedSlotIndex;
 
-      tile.innerHTML = `
-        <div class="slot-photo ${isActive ? "active" : ""}">
-          <img src="${picked.photo || "img/player-placeholder.png"}">
-        </div>
+  tile.innerHTML = `
+    <div class="slot-photo ${isActive ? "active" : ""}">
+      <img src="${picked.photo || "img/player-placeholder.png"}">
+    </div>
 
-        <div class="picked">
-          <strong>${picked.name}</strong>
-          <span>${picked.role}</span>
-
-          tile.innerHTML = `
-  <div class="slot-photo ${isActive ? "active" : ""}">
-    <img src="${picked.photo || "img/player-placeholder.png"}">
-  </div>
-
-  <div class="picked">
-    <strong>${picked.name}</strong>
-    <span>${picked.role}</span>
-  </div>
-`;
+    <div class="picked">
+      <strong>${picked.name}</strong>
+      <span>${picked.role}</span>
+    </div>
+  `;
+}
         </div>
       `;
     } // ✅ FIXED
