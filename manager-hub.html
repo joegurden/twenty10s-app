@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>KickAbout — Manager Hub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/manager-squad.css">
+  <link rel="stylesheet" href="css/manager-hub.css">
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="bar">
+      <a href="index.html" class="logo">
+        <img src="img/kickabout-shield.svg" alt="KickAbout logo" class="logo-icon">
+        <div class="logo-text">
+          <span class="kick">Kick</span><span class="about">About</span>
+        </div>
+      </a>
+
+      <button id="accountBtn" class="account-chip" type="button">
+        <span class="coin">🪙</span>
+        <span id="coinCount">1,450</span>
+        <span class="divider">|</span>
+        <span id="accountName">Guest</span>
+        <span class="caret">▾</span>
+      </button>
+    </div>
+
+    <nav class="nav">
+      <a class="nav-btn" href="index.html">Home</a>
+      <a class="nav-btn" href="manager.html">Manager Mode</a>
+      <div class="spacer"></div>
+    </nav>
+  </header>
+
+  <main class="ms-wrap hub-wrap">
+    <section class="ms-hud card">
+      <div class="ms-hud-left">
+        <div class="ms-title">
+          <strong id="msModeTitle">Manager Hub</strong>
+          <span class="pill" id="msManagerNamePill">Manager: —</span>
+          <span class="pill" id="msDifficultyPill">Difficulty: —</span>
+          <span class="pill" id="msFormationPill">Formation: —</span>
+        </div>
+
+        <div class="ms-bars">
+          <div class="ms-barblock">
+            <div class="ms-barhead">
+              <span>Transfer Budget</span>
+              <strong id="msTransferText">—</strong>
+            </div>
+            <div class="ms-bar"><div id="msTransferFill" class="ms-barfill gold"></div></div>
+          </div>
+
+          <div class="ms-barblock">
+            <div class="ms-barhead">
+              <span>Wage Budget</span>
+              <strong id="msWageText">—</strong>
+            </div>
+            <div class="ms-bar"><div id="msWageFill" class="ms-barfill gold"></div></div>
+          </div>
+
+          <div class="ms-barblock">
+            <div class="ms-barhead">
+              <span>Players Selected</span>
+              <strong id="msPlayersText">0 / 15</strong>
+            </div>
+            <div class="ms-bar"><div id="msPlayersFill" class="ms-barfill red"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ms-hud-actions">
+        <button id="btnBackToDraft" class="secondary">Back to Squad</button>
+        <button id="btnStartSeason" class="primary">Start Season</button>
+      </div>
+    </section>
+
+    <section class="hub-grid">
+      <div class="hub-left">
+        <section class="ms-pitch card">
+          <div class="ms-pitch-head">
+            <strong>Squad Management</strong>
+
+            <div class="ms-controls">
+              <label class="pill" for="formationSelect">Formation</label>
+              <select id="formationSelect" class="select">
+                <option value="4-3-3">4-3-3</option>
+                <option value="4-3-3 (Attack)">4-3-3 (Attack)</option>
+                <option value="4-3-3 (Holding)">4-3-3 (Holding)</option>
+                <option value="4-2-3-1">4-2-3-1</option>
+                <option value="4-4-2">4-4-2</option>
+                <option value="3-5-2">3-5-2</option>
+                <option value="3-4-3">3-4-3</option>
+                <option value="4-1-2-1-2 Wide">4-1-2-1-2 Wide</option>
+                <option value="4-1-2-1-2 (Diamond)">4-1-2-1-2 (Diamond)</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="pitchArea" class="pitch-area"></div>
+
+          <div class="subs-wrap">
+            <div class="subs-head">
+              <strong>Substitutes</strong>
+              <span class="pill">4 / 4</span>
+            </div>
+            <div id="subsArea" class="subs-area"></div>
+          </div>
+
+          <div class="subs-wrap">
+            <div class="subs-head">
+              <strong>Reserves</strong>
+              <span class="pill">3 Slots</span>
+            </div>
+            <div id="reservesArea" class="subs-area reserves-area"></div>
+          </div>
+
+          <div class="ms-note pill" id="msNote">
+            Select a starter, substitute, or reserve. Green slots show valid moves.
+          </div>
+        </section>
+
+        <section class="hub-stats card">
+          <div class="hub-card-head">
+            <strong>Player Stats</strong>
+          </div>
+
+          <div class="stats-tabs">
+            <div class="stat-chip">
+              <span>Goals</span>
+              <strong>—</strong>
+            </div>
+            <div class="stat-chip">
+              <span>Assists</span>
+              <strong>—</strong>
+            </div>
+            <div class="stat-chip">
+              <span>Average Rating</span>
+              <strong>—</strong>
+            </div>
+            <div class="stat-chip">
+              <span>Clean Sheets</span>
+              <strong>—</strong>
+            </div>
+          </div>
+
+          <div id="playerStatsRow" class="player-stats-row"></div>
+        </section>
+      </div>
+
+      <aside class="hub-right">
+        <section class="hub-panel card">
+          <div class="hub-card-head">
+            <strong>League Table</strong>
+          </div>
+
+          <div class="table-wrap">
+            <table class="league-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th class="team-col">Team</th>
+                  <th>P</th>
+                  <th>W</th>
+                  <th>D</th>
+                  <th>L</th>
+                  <th>GF</th>
+                  <th>GA</th>
+                  <th>GD</th>
+                  <th>PTS</th>
+                </tr>
+              </thead>
+              <tbody id="leagueTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="hub-panel card">
+          <div class="hub-card-head">
+            <strong>Bookies Odds</strong>
+          </div>
+
+          <div class="odds-tabs">
+            <span class="odds-pill active">Outrights</span>
+            <span class="odds-pill">Top Scorers</span>
+            <span class="odds-pill">Most Assists</span>
+          </div>
+
+          <div id="bookiesList" class="bookies-list"></div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <script type="module" src="js/manager-hub.js"></script>
+</body>
+</html>

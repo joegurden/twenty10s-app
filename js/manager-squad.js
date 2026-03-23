@@ -532,6 +532,7 @@ wageRemaining: ACTIVE_BUDGET.wages,
 draftPools: {},
 areaPools: {},
 formationLocked: false,
+managementMode: false,
 };
 
 const el = (id) => document.getElementById(id);
@@ -632,6 +633,7 @@ async function boot() {
     state.subs = Array(4).fill(null);
     state.selectedSlotIndex = 0;
     state.swapSourceIndex = null;
+state.managementMode = false;
     state.transferRemaining = ACTIVE_BUDGET.transfer;
     state.wageRemaining = ACTIVE_BUDGET.wages;
   } else {
@@ -776,8 +778,9 @@ function renderAll() {
 
   renderPitch();
 renderSubs();
-  renderPlayers();
-  updateBudgets();
+renderReserves();
+renderPlayers();
+updateBudgets();
 }
 
 function renderPitch() {
@@ -1206,18 +1209,13 @@ function renderPlayers() {
   const slotLabel = FORMATIONS[state.formation][state.selectedSlotIndex];
   const selectedStarters = state.picks.filter(Boolean).length;
   const buildingStarters = selectedStarters < FORMATIONS[state.formation].length;
-const squadComplete =
-  state.picks.filter(Boolean).length === FORMATIONS[state.formation].length &&
-  state.subs.filter(Boolean).length === 4;
-
 const draftPanel = document.querySelector(".ms-list");
 const benchPanel = document.getElementById("benchManagementPanel");
 
 if (draftPanel && benchPanel) {
-  draftPanel.style.display = squadComplete ? "none" : "";
-  benchPanel.style.display = squadComplete ? "" : "none";
+  draftPanel.style.display = state.managementMode ? "none" : "";
+  benchPanel.style.display = state.managementMode ? "" : "none";
 }
-
   const excludedIds = new Set([
     ...state.picks.filter(Boolean).map((p) => p.id),
     ...state.subs.filter(Boolean).map((p) => p.id),
@@ -1377,11 +1375,17 @@ const squadComplete =
   state.picks.filter(Boolean).length === FORMATIONS[state.formation].length &&
   state.subs.filter(Boolean).length === 4;
 
-  renderSubs();
-  renderPlayers();
-  updateBudgets();
 if (squadComplete) {
-  alert("Squad complete. You can now click two starters to swap their positions.");
+  state.managementMode = true;
+}
+
+renderSubs();
+renderReserves();
+renderPlayers();
+updateBudgets();
+
+if (squadComplete) {
+  alert("Squad complete. You can now reorganise your squad using starters, subs, and reserves.");
 }
 
 }
@@ -1415,6 +1419,7 @@ state.pendingSubIndex = null;
 state.reserveSlots = Array(3).fill(null);
 state.pendingReserveIndex = null;
 state.slotShortlists = {};
+state.managementMode = false;
 
   state.transferRemaining = ACTIVE_BUDGET.transfer;
 state.wageRemaining = ACTIVE_BUDGET.wages;
@@ -1423,17 +1428,30 @@ renderAll();
 }
 
 function submitSquad() {
-  const selectedCount = state.picks.filter(Boolean).length;
   if (state.picks.filter(Boolean).length < 11) {
-  alert("Pick a full starting XI first.");
-  return;
-}
+    alert("Pick a full starting XI first.");
+    return;
+  }
 
-if (state.subs.filter(Boolean).length < 4) {
-  alert("Pick all 4 substitutes first.");
-  return;
-}
-  alert("Submitted! Next we’ll add scoring + saving.");
+  if (state.subs.filter(Boolean).length < 4) {
+    alert("Pick all 4 substitutes first.");
+    return;
+  }
+
+  const payload = {
+    managerName: state.managerName,
+    formation: state.formation,
+    picks: state.picks,
+    subs: state.subs,
+    reserves: state.reserveSlots,
+    transferRemaining: state.transferRemaining,
+    wageRemaining: state.wageRemaining,
+  };
+
+  localStorage.setItem("managerHubSquad", JSON.stringify(payload));
+  localStorage.setItem("managerSquad", JSON.stringify(payload));
+
+  window.location.href = "manager-hub.html";
 }
 
 function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
