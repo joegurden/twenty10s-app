@@ -168,6 +168,25 @@
     </section>
   </main>
 
+<div id="scoutModal" class="modal-backdrop hidden">
+  <div class="modal card scout-modal">
+    <div class="hub-card-head">
+      <strong id="scoutModalTitle">Scout Report</strong>
+      <button id="btnCloseScoutModal" class="secondary small" type="button">Close</button>
+    </div>
+
+    <p id="scoutModalSub" class="modal-sub">Expected lineup</p>
+
+    <div id="scoutLockedMessage" class="pill hidden">
+      Title contender — unable to get scout report.
+    </div>
+
+    <div id="scoutPitchWrap" class="scout-pitch-wrap">
+      <div id="scoutPitchArea" class="pitch-area scout-pitch"></div>
+    </div>
+  </div>
+</div>
+
   <script type="module" src="js/manager-hub.js"></script>
 </body>
 </html>

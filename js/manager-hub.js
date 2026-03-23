@@ -215,9 +215,24 @@ const msNote = el("msNote");
 const leagueTableBody = el("leagueTableBody");
 const bookiesList = el("bookiesList");
 const playerStatsRow = el("playerStatsRow");
+const scoutModal = el("scoutModal");
+const scoutModalTitle = el("scoutModalTitle");
+const scoutModalSub = el("scoutModalSub");
+const scoutLockedMessage = el("scoutLockedMessage");
+const scoutPitchWrap = el("scoutPitchWrap");
+const scoutPitchArea = el("scoutPitchArea");
+const btnCloseScoutModal = el("btnCloseScoutModal");
 
 el("btnStartSeason")?.addEventListener("click", () => {
   alert("Season flow comes next — this hub is ready to plug into match sim.");
+});
+
+btnCloseScoutModal?.addEventListener("click", closeScoutModal);
+
+scoutModal?.addEventListener("click", (e) => {
+  if (e.target === scoutModal) {
+    closeScoutModal();
+  }
 });
 
 formationSelect?.addEventListener("change", () => {
@@ -809,6 +824,91 @@ function generateLeagueData(force = false) {
   );
 }
 
+function getAITeamsByStrength() {
+  return [...state.aiTeams].sort((a, b) => (b.avgRating || 0) - (a.avgRating || 0));
+}
+
+function getBottom10ScoutableNames() {
+  const sorted = getAITeamsByStrength();
+  return new Set(sorted.slice(-10).map((team) => team.name));
+}
+
+function getTop5LockedNames() {
+  const sorted = getAITeamsByStrength();
+  return new Set(sorted.slice(0, 5).map((team) => team.name));
+}
+
+function closeScoutModal() {
+  scoutModal?.classList.add("hidden");
+}
+
+function openScoutModalForTeam(teamName) {
+  if (teamName === "Your Team") return;
+
+  const team = state.aiTeams.find((t) => t.name === teamName);
+  if (!team) return;
+
+  const bottom10 = getBottom10ScoutableNames();
+  const top5 = getTop5LockedNames();
+
+  scoutModalTitle.textContent = team.name;
+  scoutModalSub.textContent = `Formation: ${team.formation} · Expected lineup`;
+
+  if (top5.has(team.name)) {
+    scoutLockedMessage.classList.remove("hidden");
+    scoutPitchWrap.classList.add("hidden");
+    scoutModal.classList.remove("hidden");
+    return;
+  }
+
+  if (bottom10.has(team.name)) {
+    scoutLockedMessage.classList.add("hidden");
+    scoutPitchWrap.classList.remove("hidden");
+    renderScoutPitch(team);
+    scoutModal.classList.remove("hidden");
+  }
+}
+
+function renderScoutPitch(team) {
+  if (!scoutPitchArea) return;
+
+  scoutPitchArea.innerHTML = "";
+
+  const slots = FORMATIONS[team.formation] || FORMATIONS["4-3-3"];
+  const coords = FORMATION_COORDS[team.formation] || FORMATION_COORDS["4-3-3"];
+
+  slots.forEach((label, idx) => {
+    const player = team.starters[idx];
+    const pos = coords[idx] || { x: 50, y: 50 };
+
+    const tile = document.createElement("div");
+    tile.className = "scout-slot";
+    tile.style.left = `calc(${pos.x}% - 75px)`;
+    tile.style.top = `calc(${pos.y}% - 42px)`;
+
+    if (!player) {
+      tile.innerHTML = `
+        <div>
+          <div class="pos">${label}</div>
+          <div class="hint">Unknown</div>
+        </div>
+      `;
+    } else {
+      tile.innerHTML = `
+        <div class="slot-photo">
+          <img src="${player.photo || photoUrlFor(player.id) || "img/player-placeholder.png"}" alt="${player.name}">
+        </div>
+        <div class="picked">
+          <strong>${player.name}</strong>
+          <span>${player.role}</span>
+        </div>
+      `;
+    }
+
+    scoutPitchArea.appendChild(tile);
+  });
+}
+
 function renderLeagueTable() {
   const userTeam = {
     name: "Your Team",
@@ -836,9 +936,14 @@ function renderLeagueTable() {
     const tr = document.createElement("tr");
     if (team.name === "Your Team") tr.classList.add("your-team");
 
+    const teamCell =
+      team.name === "Your Team"
+        ? `<td class="team-col">${team.name}</td>`
+        : `<td class="team-col"><button class="scout-team-btn" type="button" data-team-name="${team.name}">${team.name}</button></td>`;
+
     tr.innerHTML = `
       <td>${idx + 1}</td>
-      <td class="team-col">${team.name}</td>
+      ${teamCell}
       <td>${team.P}</td>
       <td>${team.W}</td>
       <td>${team.D}</td>
@@ -850,6 +955,12 @@ function renderLeagueTable() {
     `;
 
     leagueTableBody.appendChild(tr);
+  });
+
+  leagueTableBody.querySelectorAll("[data-team-name]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      openScoutModalForTeam(btn.dataset.teamName);
+    });
   });
 }
 
