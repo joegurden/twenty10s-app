@@ -47,13 +47,22 @@ function el(id) {
   return document.getElementById(id);
 }
 
+function clearManagementSelections() {
+  state.selectedSlotIndex = -1;
+  state.swapSourceIndex = null;
+  state.pendingSubIndex = null;
+  state.pendingReserveIndex = null;
+}
+
 const difficulty = localStorage.getItem("managerDifficulty") || "medium";
 const cfg = JSON.parse(localStorage.getItem("managerConfig") || "null");
+
 const ACTIVE_BUDGETS = {
   hard: { transfer: 1_500_000_000, wages: 3_500_000 },
   medium: { transfer: 2_000_000_000, wages: 3_900_000 },
   easy: { transfer: 2_500_000_000, wages: 4_600_000 },
 };
+
 const ACTIVE_BUDGET = ACTIVE_BUDGETS[difficulty] || ACTIVE_BUDGETS.medium;
 
 const FORMATIONS = {
@@ -75,6 +84,7 @@ const FORMATION_COORDS = {
     { x: 34, y: 50 }, { x: 50, y: 46 }, { x: 66, y: 50 },
     { x: 18, y: 24 }, { x: 50, y: 18 }, { x: 82, y: 24 },
   ],
+
   "4-3-3 (Attack)": [
     { x: 50, y: 86 },
     { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
@@ -82,6 +92,7 @@ const FORMATION_COORDS = {
     { x: 36, y: 50 }, { x: 64, y: 50 },
     { x: 18, y: 24 }, { x: 50, y: 18 }, { x: 82, y: 24 },
   ],
+
   "4-3-3 (Holding)": [
     { x: 50, y: 86 },
     { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
@@ -89,6 +100,7 @@ const FORMATION_COORDS = {
     { x: 36, y: 46 }, { x: 64, y: 46 },
     { x: 18, y: 24 }, { x: 50, y: 18 }, { x: 82, y: 24 },
   ],
+
   "4-2-3-1": [
     { x: 50, y: 86 },
     { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
@@ -96,24 +108,28 @@ const FORMATION_COORDS = {
     { x: 18, y: 36 }, { x: 50, y: 34 }, { x: 82, y: 36 },
     { x: 50, y: 18 },
   ],
+
   "4-4-2": [
     { x: 50, y: 86 },
     { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
     { x: 18, y: 50 }, { x: 40, y: 48 }, { x: 60, y: 48 }, { x: 82, y: 50 },
     { x: 43, y: 20 }, { x: 57, y: 20 },
   ],
+
   "3-5-2": [
     { x: 50, y: 86 },
     { x: 34, y: 75 }, { x: 50, y: 77 }, { x: 66, y: 75 },
     { x: 14, y: 58 }, { x: 38, y: 48 }, { x: 50, y: 58 }, { x: 62, y: 48 }, { x: 86, y: 58 },
     { x: 43, y: 20 }, { x: 57, y: 20 },
   ],
+
   "3-4-3": [
     { x: 50, y: 86 },
     { x: 34, y: 75 }, { x: 50, y: 77 }, { x: 66, y: 75 },
     { x: 18, y: 50 }, { x: 42, y: 48 }, { x: 58, y: 48 }, { x: 82, y: 50 },
     { x: 18, y: 24 }, { x: 50, y: 18 }, { x: 82, y: 24 },
   ],
+
   "4-1-2-1-2 Wide": [
     { x: 50, y: 86 },
     { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
@@ -122,6 +138,7 @@ const FORMATION_COORDS = {
     { x: 50, y: 36 },
     { x: 43, y: 20 }, { x: 57, y: 20 },
   ],
+
   "4-1-2-1-2 (Diamond)": [
     { x: 50, y: 86 },
     { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
@@ -134,22 +151,25 @@ const FORMATION_COORDS = {
 
 const POSITION_ADAPTABILITY = {
   GK: ["GK"],
+
   LB: ["LB","LWB"],
   LWB: ["LWB","LB","LM"],
   CB: ["CB","LB","RB","CDM"],
   RB: ["RB","RWB"],
   RWB: ["RWB","RB","RM"],
+
   CDM: ["CDM","CM","CB"],
   CM: ["CM","CDM","CAM","LM","RM"],
   CAM: ["CAM","CM","ST","LM","RM"],
   LM: ["LM","LW","LWB","CM"],
   RM: ["RM","RW","RWB","CM"],
+
   LW: ["LW","LM","ST","CAM"],
   RW: ["RW","RM","ST","CAM"],
   ST: ["ST","CAM","LW","RW"],
 };
 
-const TEAM_NAMES = [
+const AI_TEAM_NAMES = [
   "Average Joes FC",
   "Bayern Ballerz",
   "Ctrl Alt De Ligt",
@@ -164,7 +184,6 @@ const TEAM_NAMES = [
   "Real Social Dads",
   "Tea & Tiki Taka",
   "Who Ate All Depay",
-  "Your Team",
   "Zero Pts Given",
 ];
 
@@ -188,10 +207,8 @@ let state = {
 const msDifficultyPill = el("msDifficultyPill");
 const msManagerNamePill = el("msManagerNamePill");
 const msFormationPill = el("msFormationPill");
-const msTransferText = el("msTransferText");
 const msWageText = el("msWageText");
 const msPlayersText = el("msPlayersText");
-const msTransferFill = el("msTransferFill");
 const msWageFill = el("msWageFill");
 const msPlayersFill = el("msPlayersFill");
 const formationSelect = el("formationSelect");
@@ -203,30 +220,28 @@ const leagueTableBody = el("leagueTableBody");
 const bookiesList = el("bookiesList");
 const playerStatsRow = el("playerStatsRow");
 
-el("btnBackToDraft").addEventListener("click", () => {
+el("btnBackToDraft")?.addEventListener("click", () => {
   window.location.href = "manager-squad.html";
 });
 
-el("btnStartSeason").addEventListener("click", () => {
+el("btnStartSeason")?.addEventListener("click", () => {
   alert("Season flow comes next — this hub is ready to plug into match sim.");
 });
 
-formationSelect.addEventListener("change", () => {
+formationSelect?.addEventListener("change", () => {
   state.formation = formationSelect.value;
   localStorage.setItem("managerFormation", state.formation);
 
   const newSlots = FORMATIONS[state.formation];
   const oldPicks = [...state.picks];
+
   state.picks = Array(newSlots.length).fill(null);
 
   for (let i = 0; i < Math.min(oldPicks.length, state.picks.length); i++) {
     state.picks[i] = oldPicks[i];
   }
 
-  state.swapSourceIndex = null;
-  state.pendingSubIndex = null;
-  state.pendingReserveIndex = null;
-
+  clearManagementSelections();
   generateLeagueData(true);
   renderAll();
 });
@@ -290,6 +305,7 @@ function loadHubSquad() {
     return;
   }
 
+  state.managerName = saved.managerName || state.managerName;
   state.formation = saved.formation || state.formation;
   state.picks = Array.isArray(saved.picks) ? saved.picks : [];
   state.subs = Array.isArray(saved.subs) ? saved.subs : Array(4).fill(null);
@@ -304,7 +320,9 @@ function renderAll() {
   msFormationPill.textContent = `Formation: ${state.formation}`;
   msNote.style.display = "block";
 
-  formationSelect.value = state.formation;
+  if (formationSelect) {
+    formationSelect.value = state.formation;
+  }
 
   renderPitch();
   renderSubs();
@@ -317,18 +335,15 @@ function renderAll() {
 
 function renderHud() {
   const selectedCount = state.picks.filter(Boolean).length + state.subs.filter(Boolean).length;
-  const totalTransfer = ACTIVE_BUDGET.transfer;
   const totalWage = ACTIVE_BUDGET.wages;
+  const squadSize = cfg?.squadSize || 15;
 
-  msTransferText.textContent = `${money(state.transferRemaining)} / ${money(totalTransfer)}`;
   msWageText.textContent = `${money(state.wageRemaining)} / ${money(totalWage)} / week`;
-  msPlayersText.textContent = `${selectedCount} / ${(cfg?.squadSize || 15)}`;
+  msPlayersText.textContent = `${selectedCount} / ${squadSize}`;
 
-  const tPct = clamp(100 * (1 - state.transferRemaining / totalTransfer), 0, 100);
   const wPct = clamp(100 * (1 - state.wageRemaining / totalWage), 0, 100);
-  const pPct = clamp(100 * (selectedCount / (cfg?.squadSize || 15)), 0, 100);
+  const pPct = clamp(100 * (selectedCount / squadSize), 0, 100);
 
-  msTransferFill.style.width = `${tPct}%`;
   msWageFill.style.width = `${wPct}%`;
   msPlayersFill.style.width = `${pPct}%`;
 }
@@ -340,12 +355,15 @@ function renderPitch() {
   const coords = FORMATION_COORDS[state.formation] || FORMATION_COORDS["4-3-3"];
 
   let validTargets = [];
+
   if (state.swapSourceIndex !== null && state.picks[state.swapSourceIndex]) {
     validTargets = getValidStarterTargets(state.picks[state.swapSourceIndex]);
   }
+
   if (state.pendingSubIndex !== null && state.subs[state.pendingSubIndex]) {
     validTargets = getValidStarterTargets(state.subs[state.pendingSubIndex]);
   }
+
   if (state.pendingReserveIndex !== null && state.reserveSlots[state.pendingReserveIndex]) {
     validTargets = getValidStarterTargets(state.reserveSlots[state.pendingReserveIndex]);
   }
@@ -399,14 +417,14 @@ function renderPitch() {
     tile.addEventListener("click", () => {
       if (state.pendingSubIndex !== null) {
         attemptSubSwap(state.pendingSubIndex, idx);
-        state.pendingSubIndex = null;
+        clearManagementSelections();
         renderAll();
         return;
       }
 
       if (state.pendingReserveIndex !== null) {
         attemptReserveToStarterSwap(state.pendingReserveIndex, idx);
-        state.pendingReserveIndex = null;
+        clearManagementSelections();
         renderAll();
         return;
       }
@@ -416,18 +434,20 @@ function renderPitch() {
       if (state.swapSourceIndex === null) {
         state.swapSourceIndex = idx;
         state.selectedSlotIndex = idx;
+        state.pendingSubIndex = null;
+        state.pendingReserveIndex = null;
         renderAll();
         return;
       }
 
       if (state.swapSourceIndex === idx) {
-        state.swapSourceIndex = null;
-        state.selectedSlotIndex = -1;
+        clearManagementSelections();
         renderAll();
         return;
       }
 
       attemptSwap(state.swapSourceIndex, idx);
+      clearManagementSelections();
       renderAll();
     });
 
@@ -478,6 +498,7 @@ function renderSubs() {
       state.pendingSubIndex = idx;
       state.pendingReserveIndex = null;
       state.swapSourceIndex = null;
+      state.selectedSlotIndex = -1;
       renderAll();
     });
 
@@ -519,6 +540,21 @@ function renderReserves() {
     card.addEventListener("click", () => {
       if (state.swapSourceIndex !== null) {
         attemptStarterToReserveSwap(state.swapSourceIndex, idx);
+        clearManagementSelections();
+        renderAll();
+        return;
+      }
+
+      if (state.pendingSubIndex !== null) {
+        const subPlayer = state.subs[state.pendingSubIndex];
+        const reservePlayer = state.reserveSlots[idx] || null;
+
+        if (!subPlayer) return;
+
+        state.reserveSlots[idx] = subPlayer;
+        state.subs[state.pendingSubIndex] = reservePlayer;
+
+        clearManagementSelections();
         renderAll();
         return;
       }
@@ -534,6 +570,7 @@ function renderReserves() {
       state.pendingReserveIndex = idx;
       state.pendingSubIndex = null;
       state.swapSourceIndex = null;
+      state.selectedSlotIndex = -1;
       renderAll();
     });
 
@@ -591,6 +628,7 @@ function attemptStarterToReserveSwap(starterIdx, reserveIdx) {
   if (!starterPlayer) return;
 
   const reservePlayer = state.reserveSlots[reserveIdx] || null;
+
   state.reserveSlots[reserveIdx] = starterPlayer;
   state.picks[starterIdx] = reservePlayer;
 
@@ -609,101 +647,157 @@ function attemptReserveToStarterSwap(reserveIdx, starterIdx) {
   }
 
   const starterPlayer = state.picks[starterIdx] || null;
+
   state.picks[starterIdx] = reservePlayer;
   state.reserveSlots[reserveIdx] = starterPlayer;
   state.selectedSlotIndex = -1;
 }
 
-function buildCandidatePoolForSlot(slotRole, usedIds = new Set()) {
+function getAllUsedUserIds() {
+  return new Set([
+    ...state.picks.filter(Boolean).map((p) => p.id),
+    ...state.subs.filter(Boolean).map((p) => p.id),
+    ...state.reserveSlots.filter(Boolean).map((p) => p.id),
+  ]);
+}
+
+function getRandomFormation() {
+  const keys = Object.keys(FORMATIONS);
+  return keys[Math.floor(Math.random() * keys.length)];
+}
+
+function getCandidatesForSlot(slotRole, globalUsedIds, localUsedIds) {
   return PLAYER_POOL.filter((p) =>
-    !usedIds.has(p.id) &&
+    !globalUsedIds.has(p.id) &&
+    !localUsedIds.has(p.id) &&
     canPlayPosition(p.role, slotRole) &&
     p.rating >= 84 &&
-    p.rating <= 94
+    p.rating <= 95
   );
 }
 
-function buildBenchPool(usedIds = new Set()) {
-  return PLAYER_POOL.filter((p) =>
-    !usedIds.has(p.id) &&
-    p.rating >= 84 &&
-    p.rating <= 94
-  );
+function pickClosestToTarget(candidates, targetRating) {
+  if (!candidates.length) return null;
+
+  const sorted = [...candidates].sort((a, b) => {
+    const da = Math.abs(a.rating - targetRating);
+    const db = Math.abs(b.rating - targetRating);
+    if (da !== db) return da - db;
+    return b.rating - a.rating;
+  });
+
+  const topSlice = sorted.slice(0, Math.min(6, sorted.length));
+  return pickRandom(topSlice);
 }
 
-function generateAITeam(teamName, formation) {
-  let bestTeam = null;
-  let bestDistance = Infinity;
+function buildBenchForAITeam(globalUsedIds, localUsedIds) {
+  const available = shuffleArray(
+    PLAYER_POOL.filter((p) =>
+      !globalUsedIds.has(p.id) &&
+      !localUsedIds.has(p.id) &&
+      p.rating >= 84 &&
+      p.rating <= 95
+    )
+  );
 
-  for (let attempt = 0; attempt < 35; attempt++) {
+  const bench = [];
+
+  const gk = available.find((p) => p.role === "GK");
+  if (gk) {
+    bench.push(gk);
+    localUsedIds.add(gk.id);
+  }
+
+  const def = available.find((p) => !localUsedIds.has(p.id) && p.pos === "DEF");
+  if (def) {
+    bench.push(def);
+    localUsedIds.add(def.id);
+  }
+
+  const mid = available.find((p) => !localUsedIds.has(p.id) && p.pos === "MID");
+  if (mid) {
+    bench.push(mid);
+    localUsedIds.add(mid.id);
+  }
+
+  const att = available.find((p) => !localUsedIds.has(p.id) && p.pos === "ATT");
+  if (att) {
+    bench.push(att);
+    localUsedIds.add(att.id);
+  }
+
+  return bench.slice(0, 4);
+}
+
+function generateAITeam(teamName, globalUsedIds) {
+  let best = null;
+
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const formation = getRandomFormation();
     const slots = FORMATIONS[formation];
-    const usedIds = new Set();
+    const localUsedIds = new Set();
     const starters = [];
+    const targetAvg = 87 + Math.random() * 5;
     let failed = false;
 
-    for (const slot of slots) {
-      const pool = shuffleArray(buildCandidatePoolForSlot(slot, usedIds))
-        .filter((p) => p.rating >= 85 && p.rating <= 93);
+    for (let i = 0; i < slots.length; i++) {
+      const slot = slots[i];
+      const remaining = slots.length - i;
+      const currentTotal = starters.reduce((sum, p) => sum + p.rating, 0);
+      const desiredPlayerRating = ((targetAvg * slots.length) - currentTotal) / remaining;
 
-      const chosen = pickRandom(pool);
+      const candidates = getCandidatesForSlot(slot, globalUsedIds, localUsedIds);
+      const chosen = pickClosestToTarget(candidates, desiredPlayerRating);
+
       if (!chosen) {
         failed = true;
         break;
       }
 
-      usedIds.add(chosen.id);
       starters.push(chosen);
+      localUsedIds.add(chosen.id);
     }
 
     if (failed || starters.length !== 11) continue;
 
-    const benchPool = shuffleArray(buildBenchPool(usedIds));
-    const gk = benchPool.find((p) => p.role === "GK");
-    const def = benchPool.find((p) => !usedIds.has(p.id) && p.pos === "DEF");
-    const mid = benchPool.find((p) => !usedIds.has(p.id) && p.pos === "MID");
-    const att = benchPool.find((p) => !usedIds.has(p.id) && p.pos === "ATT");
-
-    const subs = [];
-    [gk, def, mid, att].forEach((p) => {
-      if (p && !subs.some((x) => x.id === p.id)) subs.push(p);
-    });
-
-    for (const p of benchPool) {
-      if (subs.length >= 4) break;
-      if (!subs.some((x) => x.id === p.id)) subs.push(p);
-    }
+    const subs = buildBenchForAITeam(globalUsedIds, localUsedIds);
+    if (subs.length !== 4) continue;
 
     const avg = averageRating(starters);
-    const distance = Math.abs(89.5 - avg);
 
-    if (avg >= 87 && avg <= 92 && subs.length === 4) {
-      return {
-        name: teamName,
-        formation,
-        starters,
-        subs,
-        avgRating: Number(avg.toFixed(1)),
-      };
+    const squad = {
+      name: teamName,
+      formation,
+      starters,
+      subs,
+      avgRating: Number(avg.toFixed(1)),
+    };
+
+    if (avg >= 87 && avg <= 92) {
+      [...localUsedIds].forEach((id) => globalUsedIds.add(id));
+      return squad;
     }
 
-    if (distance < bestDistance && subs.length === 4) {
-      bestDistance = distance;
-      bestTeam = {
-        name: teamName,
-        formation,
-        starters,
-        subs,
-        avgRating: Number(avg.toFixed(1)),
-      };
+    if (!best || Math.abs(avg - 89.5) < Math.abs(best.avgRating - 89.5)) {
+      best = squad;
     }
   }
 
-  return bestTeam || {
+  if (best) {
+    const used = [
+      ...best.starters.map((p) => p.id),
+      ...best.subs.map((p) => p.id),
+    ];
+    used.forEach((id) => globalUsedIds.add(id));
+    return best;
+  }
+
+  return {
     name: teamName,
-    formation,
+    formation: "4-3-3",
     starters: [],
     subs: [],
-    avgRating: 88.0,
+    avgRating: 87.0,
   };
 }
 
@@ -712,18 +806,24 @@ function generateLeagueData(force = false) {
     ? JSON.parse(localStorage.getItem("managerHubLeague") || "null")
     : null;
 
-  if (saved && saved.formation === state.formation) {
-    state.aiTeams = saved.aiTeams || [];
+  if (saved && Array.isArray(saved.aiTeams) && saved.aiTeams.length === 15) {
+    state.aiTeams = saved.aiTeams;
     return;
   }
 
-  const aiNames = TEAM_NAMES.filter((name) => name !== "Your Team");
-  state.aiTeams = aiNames.map((name) => generateAITeam(name, state.formation));
+  const globalUsedIds = getAllUsedUserIds();
+  const aiTeams = [];
+
+  AI_TEAM_NAMES.forEach((name) => {
+    const squad = generateAITeam(name, globalUsedIds);
+    aiTeams.push(squad);
+  });
+
+  state.aiTeams = aiTeams;
 
   localStorage.setItem(
     "managerHubLeague",
     JSON.stringify({
-      formation: state.formation,
       aiTeams: state.aiTeams,
     })
   );
@@ -768,6 +868,7 @@ function renderLeagueTable() {
       <td>${team.GD}</td>
       <td>${team.PTS}</td>
     `;
+
     leagueTableBody.appendChild(tr);
   });
 }
@@ -789,21 +890,20 @@ function renderBookiesOdds() {
     avgRating: Number(averageRating(state.picks).toFixed(1)) || 0,
   };
 
-  const outrightTeams = [userTeam, ...state.aiTeams]
+  const champions = [userTeam, ...state.aiTeams]
+    .filter((team) => Number.isFinite(team.avgRating))
     .sort((a, b) => (b.avgRating || 0) - (a.avgRating || 0))
     .slice(0, 5);
 
   bookiesList.innerHTML = "";
 
-  outrightTeams.forEach((team, idx) => {
+  champions.forEach((team, idx) => {
     const row = document.createElement("div");
     row.className = "odds-row";
     row.innerHTML = `
       <div class="odds-row-left">
         <span class="badge-dot"></span>
-        <div>
-          <div class="odds-name">${team.name}</div>
-        </div>
+        <div class="odds-name">${team.name}</div>
       </div>
       <div class="odds-price">${decimalToFractionalOdds(team.avgRating || 0, idx)}</div>
     `;
