@@ -289,6 +289,10 @@ function canPlayPosition(playerRole, slotRole) {
   return allowed.includes(slotRole);
 }
 
+function isNaturalPosition(playerRole, slotRole) {
+  return playerRole === slotRole;
+}
+
 function getValidStarterTargets(player) {
   const targets = [];
   const slots = FORMATIONS[state.formation];
@@ -656,16 +660,72 @@ function getAllUsedUserIds() {
   ]);
 }
 
-function getRandomFormation() {
-  const keys = Object.keys(FORMATIONS);
-  return keys[Math.floor(Math.random() * keys.length)];
+function countNaturalCandidatesForFormation(formation, globalUsedIds) {
+  const needed = {};
+  const slots = FORMATIONS[formation] || [];
+
+  slots.forEach((slot) => {
+    needed[slot] = (needed[slot] || 0) + 1;
+  });
+
+  let totalCoverage = 0;
+  let fullyCovered = true;
+
+  Object.entries(needed).forEach(([role, count]) => {
+    const availableCount = PLAYER_POOL.filter((p) =>
+      !globalUsedIds.has(p.id) &&
+      p.rating >= 84 &&
+      p.rating <= 95 &&
+      isNaturalPosition(p.role, role)
+    ).length;
+
+    totalCoverage += Math.min(availableCount, count);
+
+    if (availableCount < count) {
+      fullyCovered = false;
+    }
+  });
+
+  return {
+    formation,
+    fullyCovered,
+    totalCoverage,
+  };
+}
+
+function pickFormationForAITeam(globalUsedIds) {
+  const preferredOrder = [
+    "4-2-3-1",
+    "4-4-2",
+    "4-3-3 (Holding)",
+    "4-3-3 (Attack)",
+    "3-5-2",
+    "3-4-3",
+    "4-1-2-1-2 Wide",
+    "4-1-2-1-2 (Diamond)",
+    "4-3-3",
+  ];
+
+  const scored = preferredOrder
+    .map((formation) => countNaturalCandidatesForFormation(formation, globalUsedIds))
+    .sort((a, b) => {
+      if (a.fullyCovered !== b.fullyCovered) {
+        return a.fullyCovered ? -1 : 1;
+      }
+      if (a.totalCoverage !== b.totalCoverage) {
+        return b.totalCoverage - a.totalCoverage;
+      }
+      return preferredOrder.indexOf(a.formation) - preferredOrder.indexOf(b.formation);
+    });
+
+  return scored[0]?.formation || "4-3-3";
 }
 
 function getCandidatesForSlot(slotRole, globalUsedIds, localUsedIds) {
   return PLAYER_POOL.filter((p) =>
     !globalUsedIds.has(p.id) &&
     !localUsedIds.has(p.id) &&
-    canPlayPosition(p.role, slotRole) &&
+    isNaturalPosition(p.role, slotRole) &&
     p.rating >= 84 &&
     p.rating <= 95
   );
@@ -728,7 +788,7 @@ function generateAITeam(teamName, globalUsedIds) {
   let best = null;
 
   for (let attempt = 0; attempt < 60; attempt++) {
-    const formation = getRandomFormation();
+    const formation = pickFormationForAITeam(globalUsedIds);
     const slots = FORMATIONS[formation];
     const localUsedIds = new Set();
     const starters = [];
