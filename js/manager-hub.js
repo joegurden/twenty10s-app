@@ -207,10 +207,6 @@ let state = {
 const msDifficultyPill = el("msDifficultyPill");
 const msManagerNamePill = el("msManagerNamePill");
 const msFormationPill = el("msFormationPill");
-const msWageText = el("msWageText");
-const msPlayersText = el("msPlayersText");
-const msWageFill = el("msWageFill");
-const msPlayersFill = el("msPlayersFill");
 const formationSelect = el("formationSelect");
 const pitchArea = el("pitchArea");
 const subsArea = el("subsArea");
@@ -219,10 +215,6 @@ const msNote = el("msNote");
 const leagueTableBody = el("leagueTableBody");
 const bookiesList = el("bookiesList");
 const playerStatsRow = el("playerStatsRow");
-
-el("btnBackToDraft")?.addEventListener("click", () => {
-  window.location.href = "manager-squad.html";
-});
 
 el("btnStartSeason")?.addEventListener("click", () => {
   alert("Season flow comes next — this hub is ready to plug into match sim.");
@@ -315,37 +307,25 @@ function loadHubSquad() {
 }
 
 function renderAll() {
-  msManagerNamePill.textContent = `Manager: ${state.managerName || "—"}`;
-  msDifficultyPill.textContent = `Difficulty: ${capitalize(difficulty)}`;
-  msFormationPill.textContent = `Formation: ${state.formation}`;
-  msNote.style.display = "block";
+msNote.style.display = "block";
 
-  if (formationSelect) {
-    formationSelect.value = state.formation;
-  }
+if (formationSelect) {
+  formationSelect.value = state.formation;
+}
 
-  renderPitch();
-  renderSubs();
-  renderReserves();
-  renderHud();
-  renderLeagueTable();
-  renderBookiesOdds();
-  renderPlayerStats();
+renderHud();
+renderPitch();
+renderSubs();
+renderReserves();
+renderLeagueTable();
+renderBookiesOdds();
+renderPlayerStats();
 }
 
 function renderHud() {
-  const selectedCount = state.picks.filter(Boolean).length + state.subs.filter(Boolean).length;
-  const totalWage = ACTIVE_BUDGET.wages;
-  const squadSize = cfg?.squadSize || 15;
-
-  msWageText.textContent = `${money(state.wageRemaining)} / ${money(totalWage)} / week`;
-  msPlayersText.textContent = `${selectedCount} / ${squadSize}`;
-
-  const wPct = clamp(100 * (1 - state.wageRemaining / totalWage), 0, 100);
-  const pPct = clamp(100 * (selectedCount / squadSize), 0, 100);
-
-  msWageFill.style.width = `${wPct}%`;
-  msPlayersFill.style.width = `${pPct}%`;
+  msManagerNamePill.textContent = `Manager: ${state.managerName || "—"}`;
+  msDifficultyPill.textContent = `Difficulty: ${capitalize(difficulty)}`;
+  msFormationPill.textContent = `Formation: ${state.formation}`;
 }
 
 function renderPitch() {

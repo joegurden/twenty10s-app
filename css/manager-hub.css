@@ -253,3 +253,19 @@
     grid-template-columns: 1fr;
   }
 }
+.ms-hud{
+  padding: 12px 14px;
+  align-items: center;
+}
+
+.ms-title{
+  margin: 0;
+}
+
+.ms-hud-actions{
+  margin-left: auto;
+}
+
+.hub-grid{
+  margin-top: 10px;
+}
