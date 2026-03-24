@@ -1438,6 +1438,10 @@ function submitSquad() {
     return;
   }
 
+localStorage.removeItem("managerSeason");
+localStorage.removeItem("managerHubLeague");
+localStorage.removeItem("managerGameState");
+
   const payload = {
     managerName: state.managerName,
     formation: state.formation,
