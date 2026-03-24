@@ -103,6 +103,7 @@ const mgHomePitch = el("mgHomePitch");
 const mgAwayPitch = el("mgAwayPitch");
 const mgHomeSubs = el("mgHomeSubs");
 const mgAwaySubs = el("mgAwaySubs");
+const mgFixtureTitle = el("mgFixtureTitle");
 
 el("btnBackToHub")?.addEventListener("click", () => {
   window.location.href = "manager-hub.html";
@@ -219,6 +220,7 @@ function renderMatch() {
   if (!fixture) {
     mgMatchday.textContent = "Season Complete";
     mgStatus.textContent = "No remaining fixtures";
+    mgFixtureTitle.textContent = "Season Complete";
     mgHomeName.textContent = "—";
     mgAwayName.textContent = "—";
     return;
@@ -230,6 +232,8 @@ function renderMatch() {
 
   mgMatchday.textContent = `Matchday ${fixture.matchday}`;
   mgStatus.textContent = "Pre-Match";
+  mgFixtureTitle.textContent = `${fixture.homeTeam} v ${fixture.awayTeam}`;
+
   mgHomeName.textContent = fixture.homeTeam;
   mgAwayName.textContent = fixture.awayTeam;
   mgHomeScore.textContent = "0";
@@ -237,6 +241,7 @@ function renderMatch() {
 
   mgHomeLineupTitle.textContent = `${fixture.homeTeam} Lineup`;
   mgAwayLineupTitle.textContent = `${fixture.awayTeam} Lineup`;
+
   mgHomeFormation.textContent = state.homeTeam?.formation || "4-3-3";
   mgAwayFormation.textContent = state.awayTeam?.formation || "4-3-3";
 

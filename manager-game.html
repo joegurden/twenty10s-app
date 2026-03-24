@@ -34,66 +34,85 @@
   </header>
 
   <main class="mg-wrap">
-    <section class="mg-score card">
-      <div class="mg-topline">
-        <span id="mgMatchday" class="pill">Matchday 1</span>
-        <span id="mgStatus" class="pill">Pre-Match</span>
+    <section class="mg-header card">
+      <div class="mg-header-top">
+        <div class="mg-header-meta">
+          <span id="mgMatchday" class="pill">Matchday 1</span>
+          <span id="mgStatus" class="pill">Pre-Match</span>
+        </div>
+
+        <button id="btnPlayMatch" class="primary" type="button">Play Match</button>
       </div>
 
-      <div class="mg-scoreline">
-        <div class="mg-team mg-home">
+      <h1 id="mgFixtureTitle" class="mg-fixture-title">Home v Away</h1>
+
+      <div class="mg-scoreboard">
+        <div class="mg-score-team mg-score-home">
           <div class="mg-badge">H</div>
-          <div class="mg-team-name" id="mgHomeName">Home</div>
+          <div class="mg-score-text">
+            <div class="mg-score-name" id="mgHomeName">Home</div>
+            <div class="mg-score-sub">Home Team</div>
+          </div>
         </div>
 
         <div class="mg-score-center">
-          <div class="mg-score-number" id="mgHomeScore">0</div>
-          <div class="mg-score-divider">-</div>
-          <div class="mg-score-number" id="mgAwayScore">0</div>
+          <span id="mgHomeScore" class="mg-score-number">0</span>
+          <span class="mg-score-divider">-</span>
+          <span id="mgAwayScore" class="mg-score-number">0</span>
         </div>
 
-        <div class="mg-team mg-away">
-          <div class="mg-team-name" id="mgAwayName">Away</div>
+        <div class="mg-score-team mg-score-away">
+          <div class="mg-score-text mg-score-text-right">
+            <div class="mg-score-name" id="mgAwayName">Away</div>
+            <div class="mg-score-sub">Away Team</div>
+          </div>
           <div class="mg-badge">A</div>
         </div>
       </div>
     </section>
 
-    <section class="mg-actions">
-      <button id="btnBackToHub" class="secondary" type="button">Back to Hub</button>
-      <button id="btnPlayMatch" class="primary" type="button">Play Match</button>
+    <section class="mg-grid">
+      <section class="mg-side">
+        <section class="ms-pitch card mg-team-card">
+          <div class="ms-pitch-head">
+            <strong id="mgHomeLineupTitle">Home Lineup</strong>
+            <span id="mgHomeFormation" class="pill">4-3-3</span>
+          </div>
+
+          <div id="mgHomePitch" class="pitch-area mg-pitch"></div>
+
+          <div class="subs-wrap">
+            <div class="subs-head">
+              <strong>Substitutes</strong>
+              <span class="pill">4 / 4</span>
+            </div>
+            <div id="mgHomeSubs" class="subs-area"></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="mg-side">
+        <section class="ms-pitch card mg-team-card">
+          <div class="ms-pitch-head">
+            <strong id="mgAwayLineupTitle">Away Lineup</strong>
+            <span id="mgAwayFormation" class="pill">4-3-3</span>
+          </div>
+
+          <div id="mgAwayPitch" class="pitch-area mg-pitch"></div>
+
+          <div class="subs-wrap">
+            <div class="subs-head">
+              <strong>Substitutes</strong>
+              <span class="pill">4 / 4</span>
+            </div>
+            <div id="mgAwaySubs" class="subs-area"></div>
+          </div>
+        </section>
+      </section>
     </section>
 
-    <section class="mg-grid">
-      <section class="mg-lineup card">
-        <div class="mg-lineup-head">
-          <strong id="mgHomeLineupTitle">Home XI</strong>
-          <span id="mgHomeFormation" class="pill">4-3-3</span>
-        </div>
-        <div id="mgHomePitch" class="pitch-area mg-pitch"></div>
-
-        <div class="subs-wrap">
-          <div class="subs-head">
-            <strong>Bench</strong>
-          </div>
-          <div id="mgHomeSubs" class="subs-area"></div>
-        </div>
-      </section>
-
-      <section class="mg-lineup card">
-        <div class="mg-lineup-head">
-          <strong id="mgAwayLineupTitle">Away XI</strong>
-          <span id="mgAwayFormation" class="pill">4-3-3</span>
-        </div>
-        <div id="mgAwayPitch" class="pitch-area mg-pitch"></div>
-
-        <div class="subs-wrap">
-          <div class="subs-head">
-            <strong>Bench</strong>
-          </div>
-          <div id="mgAwaySubs" class="subs-area"></div>
-        </div>
-      </section>
+    <section class="mg-bottom-actions">
+      <button id="btnBackToHub" class="secondary" type="button">Back to Hub</button>
     </section>
   </main>
 
