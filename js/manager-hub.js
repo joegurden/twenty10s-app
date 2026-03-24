@@ -11,14 +11,6 @@ function normalizePos(p) {
   return String(p || "").toUpperCase().trim();
 }
 
-function money(n) {
-  return "£" + Math.round(Number(n) || 0).toLocaleString("en-GB");
-}
-
-function clamp(n, a, b) {
-  return Math.max(a, Math.min(b, n));
-}
-
 function capitalize(s) {
   return (s || "").slice(0, 1).toUpperCase() + (s || "").slice(1);
 }
@@ -84,7 +76,6 @@ const FORMATION_COORDS = {
     { x: 34, y: 50 }, { x: 50, y: 46 }, { x: 66, y: 50 },
     { x: 18, y: 24 }, { x: 50, y: 18 }, { x: 82, y: 24 },
   ],
-
   "4-3-3 (Attack)": [
     { x: 50, y: 86 },
     { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
@@ -92,7 +83,6 @@ const FORMATION_COORDS = {
     { x: 36, y: 50 }, { x: 64, y: 50 },
     { x: 18, y: 24 }, { x: 50, y: 18 }, { x: 82, y: 24 },
   ],
-
   "4-3-3 (Holding)": [
     { x: 50, y: 86 },
     { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
@@ -100,7 +90,6 @@ const FORMATION_COORDS = {
     { x: 36, y: 46 }, { x: 64, y: 46 },
     { x: 18, y: 24 }, { x: 50, y: 18 }, { x: 82, y: 24 },
   ],
-
   "4-2-3-1": [
     { x: 50, y: 86 },
     { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
@@ -108,28 +97,24 @@ const FORMATION_COORDS = {
     { x: 18, y: 36 }, { x: 50, y: 34 }, { x: 82, y: 36 },
     { x: 50, y: 18 },
   ],
-
   "4-4-2": [
     { x: 50, y: 86 },
     { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
     { x: 18, y: 50 }, { x: 40, y: 48 }, { x: 60, y: 48 }, { x: 82, y: 50 },
     { x: 43, y: 20 }, { x: 57, y: 20 },
   ],
-
   "3-5-2": [
     { x: 50, y: 86 },
     { x: 34, y: 75 }, { x: 50, y: 77 }, { x: 66, y: 75 },
     { x: 14, y: 58 }, { x: 38, y: 48 }, { x: 50, y: 58 }, { x: 62, y: 48 }, { x: 86, y: 58 },
     { x: 43, y: 20 }, { x: 57, y: 20 },
   ],
-
   "3-4-3": [
     { x: 50, y: 86 },
     { x: 34, y: 75 }, { x: 50, y: 77 }, { x: 66, y: 75 },
     { x: 18, y: 50 }, { x: 42, y: 48 }, { x: 58, y: 48 }, { x: 82, y: 50 },
     { x: 18, y: 24 }, { x: 50, y: 18 }, { x: 82, y: 24 },
   ],
-
   "4-1-2-1-2 Wide": [
     { x: 50, y: 86 },
     { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
@@ -138,7 +123,6 @@ const FORMATION_COORDS = {
     { x: 50, y: 36 },
     { x: 43, y: 20 }, { x: 57, y: 20 },
   ],
-
   "4-1-2-1-2 (Diamond)": [
     { x: 50, y: 86 },
     { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
@@ -151,19 +135,16 @@ const FORMATION_COORDS = {
 
 const POSITION_ADAPTABILITY = {
   GK: ["GK"],
-
   LB: ["LB","LWB"],
   LWB: ["LWB","LB","LM"],
   CB: ["CB","LB","RB","CDM"],
   RB: ["RB","RWB"],
   RWB: ["RWB","RB","RM"],
-
   CDM: ["CDM","CM","CB"],
   CM: ["CM","CDM","CAM","LM","RM"],
   CAM: ["CAM","CM","ST","LM","RM"],
   LM: ["LM","LW","LWB","CM"],
   RM: ["RM","RW","RWB","CM"],
-
   LW: ["LW","LM","ST","CAM"],
   RW: ["RW","RM","ST","CAM"],
   ST: ["ST","CAM","LW","RW"],
@@ -202,6 +183,7 @@ let state = {
   transferRemaining: ACTIVE_BUDGET.transfer,
   wageRemaining: ACTIVE_BUDGET.wages,
   aiTeams: [],
+  season: null,
 };
 
 const msDifficultyPill = el("msDifficultyPill");
@@ -222,9 +204,29 @@ const scoutLockedMessage = el("scoutLockedMessage");
 const scoutPitchWrap = el("scoutPitchWrap");
 const scoutPitchArea = el("scoutPitchArea");
 const btnCloseScoutModal = el("btnCloseScoutModal");
+const btnStartSeason = el("btnStartSeason");
+const btnFixtureList = el("btnFixtureList");
+const fixtureModal = el("fixtureModal");
+const btnCloseFixtureModal = el("btnCloseFixtureModal");
+const fixtureListBody = el("fixtureListBody");
 
-el("btnStartSeason")?.addEventListener("click", () => {
-  alert("Season flow comes next — this hub is ready to plug into match sim.");
+btnStartSeason?.addEventListener("click", () => {
+  handleSeasonButton();
+});
+
+btnFixtureList?.addEventListener("click", () => {
+  renderFixtureListModal();
+  fixtureModal?.classList.remove("hidden");
+});
+
+btnCloseFixtureModal?.addEventListener("click", () => {
+  fixtureModal?.classList.add("hidden");
+});
+
+fixtureModal?.addEventListener("click", (e) => {
+  if (e.target === fixtureModal) {
+    fixtureModal.classList.add("hidden");
+  }
 });
 
 btnCloseScoutModal?.addEventListener("click", closeScoutModal);
@@ -325,20 +327,45 @@ function loadHubSquad() {
   state.wageRemaining = Number(saved.wageRemaining ?? ACTIVE_BUDGET.wages);
 }
 
-function renderAll() {
-msNote.style.display = "block";
-
-if (formationSelect) {
-  formationSelect.value = state.formation;
+function loadSeasonState() {
+  state.season = JSON.parse(localStorage.getItem("managerSeason") || "null");
 }
 
-renderHud();
-renderPitch();
-renderSubs();
-renderReserves();
-renderLeagueTable();
-renderBookiesOdds();
-renderPlayerStats();
+function saveSeasonState() {
+  localStorage.setItem("managerSeason", JSON.stringify(state.season));
+}
+
+function getUserTeamData() {
+  return {
+    name: "Your Team",
+    formation: state.formation,
+    starters: state.picks.filter(Boolean),
+    subs: state.subs.filter(Boolean),
+    reserves: state.reserveSlots.filter(Boolean),
+    avgRating: Number(averageRating(state.picks).toFixed(1)) || 0,
+    isUser: true,
+  };
+}
+
+function buildLeagueTeams() {
+  return [getUserTeamData(), ...state.aiTeams.map((team) => ({ ...team, isUser: false }))];
+}
+
+function renderAll() {
+  msNote.style.display = "block";
+
+  if (formationSelect) {
+    formationSelect.value = state.formation;
+  }
+
+  renderHud();
+  renderPitch();
+  renderSubs();
+  renderReserves();
+  renderLeagueTable();
+  renderBookiesOdds();
+  renderPlayerStats();
+  updateSeasonButtons();
 }
 
 function renderHud() {
@@ -627,7 +654,6 @@ function attemptStarterToReserveSwap(starterIdx, reserveIdx) {
   if (!starterPlayer) return;
 
   const reservePlayer = state.reserveSlots[reserveIdx] || null;
-
   state.reserveSlots[reserveIdx] = starterPlayer;
   state.picks[starterIdx] = reservePlayer;
 
@@ -646,7 +672,6 @@ function attemptReserveToStarterSwap(reserveIdx, starterIdx) {
   }
 
   const starterPlayer = state.picks[starterIdx] || null;
-
   state.picks[starterIdx] = reservePlayer;
   state.reserveSlots[reserveIdx] = starterPlayer;
   state.selectedSlotIndex = -1;
@@ -686,11 +711,7 @@ function countNaturalCandidatesForFormation(formation, globalUsedIds) {
     }
   });
 
-  return {
-    formation,
-    fullyCovered,
-    totalCoverage,
-  };
+  return { formation, fullyCovered, totalCoverage };
 }
 
 function pickFormationForAITeam(globalUsedIds) {
@@ -707,12 +728,8 @@ function pickFormationForAITeam(globalUsedIds) {
   const scored = preferredOrder
     .map((formation) => countNaturalCandidatesForFormation(formation, globalUsedIds))
     .sort((a, b) => {
-      if (a.fullyCovered !== b.fullyCovered) {
-        return a.fullyCovered ? -1 : 1;
-      }
-      if (a.totalCoverage !== b.totalCoverage) {
-        return b.totalCoverage - a.totalCoverage;
-      }
+      if (a.fullyCovered !== b.fullyCovered) return a.fullyCovered ? -1 : 1;
+      if (a.totalCoverage !== b.totalCoverage) return b.totalCoverage - a.totalCoverage;
       return preferredOrder.indexOf(a.formation) - preferredOrder.indexOf(b.formation);
     });
 
@@ -824,6 +841,7 @@ function generateAITeam(teamName, globalUsedIds) {
       starters,
       subs,
       avgRating: Number(avg.toFixed(1)),
+      isUser: false,
     };
 
     if (avg >= 87 && avg <= 92) {
@@ -837,11 +855,7 @@ function generateAITeam(teamName, globalUsedIds) {
   }
 
   if (best) {
-    const used = [
-      ...best.starters.map((p) => p.id),
-      ...best.subs.map((p) => p.id),
-    ];
-    used.forEach((id) => globalUsedIds.add(id));
+    [...best.starters, ...best.subs].forEach((p) => globalUsedIds.add(p.id));
     return best;
   }
 
@@ -851,6 +865,7 @@ function generateAITeam(teamName, globalUsedIds) {
     starters: [],
     subs: [],
     avgRating: 87.0,
+    isUser: false,
   };
 }
 
@@ -888,6 +903,158 @@ function generateLeagueData(force = false) {
       aiTeams: state.aiTeams,
     })
   );
+}
+
+function buildRoundRobinMatchdays(teamNames) {
+  const teams = [...teamNames];
+  const hasBye = teams.length % 2 !== 0;
+
+  if (hasBye) teams.push("__BYE__");
+
+  const rounds = [];
+  const rotation = [...teams];
+  const totalRounds = rotation.length - 1;
+  const half = rotation.length / 2;
+
+  for (let round = 0; round < totalRounds; round++) {
+    const fixtures = [];
+
+    for (let i = 0; i < half; i++) {
+      const home = rotation[i];
+      const away = rotation[rotation.length - 1 - i];
+
+      if (home !== "__BYE__" && away !== "__BYE__") {
+        fixtures.push(
+          round % 2 === 0
+            ? { homeTeam: home, awayTeam: away }
+            : { homeTeam: away, awayTeam: home }
+        );
+      }
+    }
+
+    rounds.push(fixtures);
+
+    const fixed = rotation[0];
+    const moved = rotation.pop();
+    rotation.splice(1, 0, moved);
+    rotation[0] = fixed;
+  }
+
+  return rounds;
+}
+
+function createSeasonFixtures(teams) {
+  const names = teams.map((team) => team.name);
+  const firstHalf = buildRoundRobinMatchdays(names);
+  const secondHalf = firstHalf.map((matchday) =>
+    matchday.map((fixture) => ({
+      homeTeam: fixture.awayTeam,
+      awayTeam: fixture.homeTeam,
+    }))
+  );
+
+  const allMatchdays = [...firstHalf, ...secondHalf];
+
+  return allMatchdays.map((matchday, idx) => ({
+    matchday: idx + 1,
+    fixtures: matchday.map((fixture, fixtureIdx) => ({
+      id: `md${idx + 1}-fx${fixtureIdx + 1}`,
+      matchday: idx + 1,
+      homeTeam: fixture.homeTeam,
+      awayTeam: fixture.awayTeam,
+      played: false,
+      score: null,
+      events: [],
+    })),
+  }));
+}
+
+function createSeasonState() {
+  const teams = buildLeagueTeams();
+  const fixtures = createSeasonFixtures(teams);
+
+  return {
+    started: true,
+    currentMatchday: 1,
+    userTeamName: "Your Team",
+    teams,
+    fixtures,
+  };
+}
+
+function getNextUserFixture(season) {
+  for (const matchday of season.fixtures) {
+    for (const fixture of matchday.fixtures) {
+      if (
+        !fixture.played &&
+        (fixture.homeTeam === season.userTeamName || fixture.awayTeam === season.userTeamName)
+      ) {
+        return fixture;
+      }
+    }
+  }
+
+  return null;
+}
+
+function handleSeasonButton() {
+  loadSeasonState();
+
+  if (!state.season || !state.season.started) {
+    state.season = createSeasonState();
+    saveSeasonState();
+  }
+
+  const nextFixture = getNextUserFixture(state.season);
+
+  if (!nextFixture) {
+    alert("Season complete.");
+    return;
+  }
+
+  window.location.href = "manager-game.html";
+}
+
+function updateSeasonButtons() {
+  loadSeasonState();
+
+  const seasonStarted = !!(state.season && state.season.started);
+
+  if (btnStartSeason) {
+    btnStartSeason.textContent = seasonStarted ? "Next Match" : "Start Season";
+  }
+
+  if (btnFixtureList) {
+    btnFixtureList.style.display = seasonStarted ? "" : "none";
+  }
+}
+
+function renderFixtureListModal() {
+  loadSeasonState();
+
+  if (!state.season || !fixtureListBody) return;
+
+  fixtureListBody.innerHTML = "";
+
+  state.season.fixtures.forEach((matchday) => {
+    const day = document.createElement("div");
+    day.className = "fixture-day";
+
+    day.innerHTML = `<h4>Matchday ${matchday.matchday}</h4>`;
+
+    matchday.fixtures.forEach((fixture) => {
+      const row = document.createElement("div");
+      row.className = "fixture-row";
+      row.innerHTML = `
+        <div class="fixture-home">${fixture.homeTeam}</div>
+        <div class="fixture-vs">vs</div>
+        <div class="fixture-away">${fixture.awayTeam}</div>
+      `;
+      day.appendChild(row);
+    });
+
+    fixtureListBody.appendChild(day);
+  });
 }
 
 function getAITeamsByStrength() {
@@ -976,10 +1143,7 @@ function renderScoutPitch(team) {
 }
 
 function renderLeagueTable() {
-  const userTeam = {
-    name: "Your Team",
-    avgRating: Number(averageRating(state.picks).toFixed(1)) || 0,
-  };
+  const userTeam = getUserTeamData();
 
   const teams = [userTeam, ...state.aiTeams]
     .map((team) => ({
@@ -1042,10 +1206,7 @@ function decimalToFractionalOdds(score, index) {
 }
 
 function renderBookiesOdds() {
-  const userTeam = {
-    name: "Your Team",
-    avgRating: Number(averageRating(state.picks).toFixed(1)) || 0,
-  };
+  const userTeam = getUserTeamData();
 
   const champions = [userTeam, ...state.aiTeams]
     .filter((team) => Number.isFinite(team.avgRating))
@@ -1098,7 +1259,10 @@ async function boot() {
   loadHubSquad();
   await loadPlayersFromSupabase();
   generateLeagueData(true);
+  loadSeasonState();
   renderAll();
 }
+
+boot();
 
 boot();

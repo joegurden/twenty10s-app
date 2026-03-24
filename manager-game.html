@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>KickAbout — Manager Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/manager-squad.css">
+  <link rel="stylesheet" href="css/manager-game.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="bar">
+      <a href="index.html" class="logo">
+        <img src="img/kickabout-shield.svg" alt="KickAbout logo" class="logo-icon">
+        <div class="logo-text">
+          <span class="kick">Kick</span><span class="about">About</span>
+        </div>
+      </a>
+
+      <button class="account-chip" type="button">
+        <span class="coin">🪙</span>
+        <span>1,450</span>
+        <span class="divider">|</span>
+        <span>Guest</span>
+        <span class="caret">▾</span>
+      </button>
+    </div>
+
+    <nav class="nav">
+      <a class="nav-btn" href="manager-hub.html">Manager Hub</a>
+      <div class="spacer"></div>
+    </nav>
+  </header>
+
+  <main class="mg-wrap">
+    <section class="mg-score card">
+      <div class="mg-topline">
+        <span id="mgMatchday" class="pill">Matchday 1</span>
+        <span id="mgStatus" class="pill">Pre-Match</span>
+      </div>
+
+      <div class="mg-scoreline">
+        <div class="mg-team mg-home">
+          <div class="mg-badge">H</div>
+          <div class="mg-team-name" id="mgHomeName">Home</div>
+        </div>
+
+        <div class="mg-score-center">
+          <div class="mg-score-number" id="mgHomeScore">0</div>
+          <div class="mg-score-divider">-</div>
+          <div class="mg-score-number" id="mgAwayScore">0</div>
+        </div>
+
+        <div class="mg-team mg-away">
+          <div class="mg-team-name" id="mgAwayName">Away</div>
+          <div class="mg-badge">A</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mg-actions">
+      <button id="btnBackToHub" class="secondary" type="button">Back to Hub</button>
+      <button id="btnPlayMatch" class="primary" type="button">Play Match</button>
+    </section>
+
+    <section class="mg-grid">
+      <section class="mg-lineup card">
+        <div class="mg-lineup-head">
+          <strong id="mgHomeLineupTitle">Home XI</strong>
+          <span id="mgHomeFormation" class="pill">4-3-3</span>
+        </div>
+        <div id="mgHomePitch" class="pitch-area mg-pitch"></div>
+
+        <div class="subs-wrap">
+          <div class="subs-head">
+            <strong>Bench</strong>
+          </div>
+          <div id="mgHomeSubs" class="subs-area"></div>
+        </div>
+      </section>
+
+      <section class="mg-lineup card">
+        <div class="mg-lineup-head">
+          <strong id="mgAwayLineupTitle">Away XI</strong>
+          <span id="mgAwayFormation" class="pill">4-3-3</span>
+        </div>
+        <div id="mgAwayPitch" class="pitch-area mg-pitch"></div>
+
+        <div class="subs-wrap">
+          <div class="subs-head">
+            <strong>Bench</strong>
+          </div>
+          <div id="mgAwaySubs" class="subs-area"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="js/manager-game.js"></script>
+</body>
+</html>
