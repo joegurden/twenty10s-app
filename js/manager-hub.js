@@ -699,8 +699,6 @@ function pickFormationForAITeam(globalUsedIds) {
     "4-4-2",
     "4-3-3 (Holding)",
     "4-3-3 (Attack)",
-    "3-5-2",
-    "3-4-3",
     "4-1-2-1-2 Wide",
     "4-1-2-1-2 (Diamond)",
     "4-3-3",
@@ -857,11 +855,18 @@ function generateAITeam(teamName, globalUsedIds) {
 }
 
 function generateLeagueData(force = false) {
+  const AI_LOGIC_VERSION = "natural-positions-no-3atb-v1";
+
   const saved = !force
     ? JSON.parse(localStorage.getItem("managerHubLeague") || "null")
     : null;
 
-  if (saved && Array.isArray(saved.aiTeams) && saved.aiTeams.length === 15) {
+  if (
+    saved &&
+    saved.version === AI_LOGIC_VERSION &&
+    Array.isArray(saved.aiTeams) &&
+    saved.aiTeams.length === 15
+  ) {
     state.aiTeams = saved.aiTeams;
     return;
   }
@@ -879,6 +884,7 @@ function generateLeagueData(force = false) {
   localStorage.setItem(
     "managerHubLeague",
     JSON.stringify({
+      version: AI_LOGIC_VERSION,
       aiTeams: state.aiTeams,
     })
   );
@@ -1091,7 +1097,7 @@ async function boot() {
 
   loadHubSquad();
   await loadPlayersFromSupabase();
-  generateLeagueData();
+  generateLeagueData(true);
   renderAll();
 }
 
