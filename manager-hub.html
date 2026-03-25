@@ -47,8 +47,9 @@
   </div>
 
   <div class="ms-hud-actions">
-    <button id="btnStartSeason" class="primary">Start Season</button>
-  </div>
+  <button id="btnFixtureList" class="secondary" type="button" style="display:none;">Fixture List</button>
+  <button id="btnStartSeason" class="primary">Start Season</button>
+</div>
 </section>
 
     <section class="hub-grid">
@@ -188,10 +189,19 @@
 </div>
 
 <div id="fixtureModal" class="modal-backdrop hidden">
-  <div class="modal card scout-modal">
-    <div class="hub-card-head">
-      <strong>Fixture List</strong>
-      <button id="btnCloseFixtureModal" class="secondary small" type="button">Close</button>
+  <div class="modal card scout-modal fixture-modal">
+    <div class="hub-card-head fixture-modal-head">
+      <button id="btnPrevFixtureWeek" class="secondary small" type="button">←</button>
+
+      <div class="fixture-modal-title-wrap">
+        <strong>Fixture List</strong>
+        <div id="fixtureModalWeekLabel" class="modal-sub fixture-week-label">Matchday 1</div>
+      </div>
+
+      <div class="fixture-modal-actions">
+        <button id="btnNextFixtureWeek" class="secondary small" type="button">→</button>
+        <button id="btnCloseFixtureModal" class="secondary small" type="button">Close</button>
+      </div>
     </div>
 
     <div id="fixtureListBody" class="fixture-list-body"></div>

@@ -184,6 +184,7 @@ let state = {
   wageRemaining: ACTIVE_BUDGET.wages,
   aiTeams: [],
   season: null,
+fixtureModalMatchday: 1,
 };
 
 const msDifficultyPill = el("msDifficultyPill");
@@ -209,12 +210,22 @@ const btnFixtureList = el("btnFixtureList");
 const fixtureModal = el("fixtureModal");
 const btnCloseFixtureModal = el("btnCloseFixtureModal");
 const fixtureListBody = el("fixtureListBody");
+const btnPrevFixtureWeek = el("btnPrevFixtureWeek");
+const btnNextFixtureWeek = el("btnNextFixtureWeek");
+const fixtureModalWeekLabel = el("fixtureModalWeekLabel");
 
 btnStartSeason?.addEventListener("click", () => {
   handleSeasonButton();
 });
 
 btnFixtureList?.addEventListener("click", () => {
+  loadSeasonState();
+
+  if (!state.season || !state.season.fixtures?.length) return;
+
+  const nextFixture = getNextUserFixture(state.season);
+  state.fixtureModalMatchday = nextFixture?.matchday || state.season.currentMatchday || 1;
+
   renderFixtureListModal();
   fixtureModal?.classList.remove("hidden");
 });
@@ -227,6 +238,21 @@ fixtureModal?.addEventListener("click", (e) => {
   if (e.target === fixtureModal) {
     fixtureModal.classList.add("hidden");
   }
+});
+
+btnPrevFixtureWeek?.addEventListener("click", () => {
+  if (!state.season?.fixtures?.length) return;
+
+  state.fixtureModalMatchday = Math.max(1, state.fixtureModalMatchday - 1);
+  renderFixtureListModal();
+});
+
+btnNextFixtureWeek?.addEventListener("click", () => {
+  if (!state.season?.fixtures?.length) return;
+
+  const maxMatchday = state.season.fixtures.length;
+  state.fixtureModalMatchday = Math.min(maxMatchday, state.fixtureModalMatchday + 1);
+  renderFixtureListModal();
 });
 
 btnCloseScoutModal?.addEventListener("click", closeScoutModal);
@@ -348,7 +374,13 @@ function getUserTeamData() {
 }
 
 function buildLeagueTeams() {
-  return [getUserTeamData(), ...state.aiTeams.map((team) => ({ ...team, isUser: false }))];
+  const userTeam = getUserTeamData();
+  const shuffledAI = shuffleArray([...state.aiTeams]).map((team) => ({
+    ...team,
+    isUser: false,
+  }));
+
+  return [userTeam, ...shuffledAI];
 }
 
 function renderAll() {
@@ -1034,27 +1066,50 @@ function renderFixtureListModal() {
 
   if (!state.season || !fixtureListBody) return;
 
+  const allMatchdays = state.season.fixtures || [];
+  const maxMatchday = allMatchdays.length || 1;
+
+  if (!state.fixtureModalMatchday || state.fixtureModalMatchday < 1) {
+    state.fixtureModalMatchday = 1;
+  }
+
+  if (state.fixtureModalMatchday > maxMatchday) {
+    state.fixtureModalMatchday = maxMatchday;
+  }
+
+  const selectedMatchday = allMatchdays.find(
+    (md) => md.matchday === state.fixtureModalMatchday
+  );
+
   fixtureListBody.innerHTML = "";
+  fixtureModalWeekLabel.textContent = `Matchday ${state.fixtureModalMatchday}`;
 
-  state.season.fixtures.forEach((matchday) => {
-    const day = document.createElement("div");
-    day.className = "fixture-day";
+  if (btnPrevFixtureWeek) {
+    btnPrevFixtureWeek.disabled = state.fixtureModalMatchday <= 1;
+  }
 
-    day.innerHTML = `<h4>Matchday ${matchday.matchday}</h4>`;
+  if (btnNextFixtureWeek) {
+    btnNextFixtureWeek.disabled = state.fixtureModalMatchday >= maxMatchday;
+  }
 
-    matchday.fixtures.forEach((fixture) => {
-      const row = document.createElement("div");
-      row.className = "fixture-row";
-      row.innerHTML = `
-        <div class="fixture-home">${fixture.homeTeam}</div>
-        <div class="fixture-vs">vs</div>
-        <div class="fixture-away">${fixture.awayTeam}</div>
-      `;
-      day.appendChild(row);
-    });
+  if (!selectedMatchday) return;
 
-    fixtureListBody.appendChild(day);
+  const day = document.createElement("div");
+  day.className = "fixture-day";
+  day.innerHTML = `<h4>Matchday ${selectedMatchday.matchday}</h4>`;
+
+  selectedMatchday.fixtures.forEach((fixture) => {
+    const row = document.createElement("div");
+    row.className = "fixture-row";
+    row.innerHTML = `
+      <div class="fixture-home">${fixture.homeTeam}</div>
+      <div class="fixture-vs">vs</div>
+      <div class="fixture-away">${fixture.awayTeam}</div>
+    `;
+    day.appendChild(row);
   });
+
+  fixtureListBody.appendChild(day);
 }
 
 function getAITeamsByStrength() {
@@ -1262,7 +1317,5 @@ async function boot() {
   loadSeasonState();
   renderAll();
 }
-
-boot();
 
 boot();
