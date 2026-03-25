@@ -1005,15 +1005,30 @@ function createSeasonState() {
   const teams = buildLeagueTeams();
   const fixtures = createSeasonFixtures(teams);
 
+  const tableStats = {};
+  teams.forEach((team) => {
+    tableStats[team.name] = {
+      P: 0,
+      W: 0,
+      D: 0,
+      L: 0,
+      GF: 0,
+      GA: 0,
+      GD: 0,
+      PTS: 0,
+    };
+  });
+
   return {
     started: true,
     currentMatchday: 1,
     userTeamName: "Your Team",
     teams,
     fixtures,
+    tableStats,
+    playerStats: {},
   };
 }
-
 function getNextUserFixture(season) {
   for (const matchday of season.fixtures) {
     for (const fixture of matchday.fixtures) {
@@ -1198,22 +1213,33 @@ function renderScoutPitch(team) {
 }
 
 function renderLeagueTable() {
-  const userTeam = getUserTeamData();
+  loadSeasonState();
 
-  const teams = [userTeam, ...state.aiTeams]
-    .map((team) => ({
-      name: team.name,
-      avgRating: team.avgRating || 0,
-      P: 0,
-      W: 0,
-      D: 0,
-      L: 0,
-      GF: 0,
-      GA: 0,
-      GD: 0,
-      PTS: 0,
-    }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const fallbackTeams = [getUserTeamData(), ...state.aiTeams].map((team) => ({
+    name: team.name,
+    P: 0,
+    W: 0,
+    D: 0,
+    L: 0,
+    GF: 0,
+    GA: 0,
+    GD: 0,
+    PTS: 0,
+  }));
+
+  const teams = state.season?.tableStats
+    ? Object.entries(state.season.tableStats).map(([name, stats]) => ({
+        name,
+        ...stats,
+      }))
+    : fallbackTeams;
+
+  teams.sort((a, b) => {
+    if (b.PTS !== a.PTS) return b.PTS - a.PTS;
+    if (b.GD !== a.GD) return b.GD - a.GD;
+    if (b.GF !== a.GF) return b.GF - a.GF;
+    return a.name.localeCompare(b.name);
+  });
 
   leagueTableBody.innerHTML = "";
 
@@ -1248,7 +1274,6 @@ function renderLeagueTable() {
     });
   });
 }
-
 function decimalToFractionalOdds(score, index) {
   if (index === 0) return "3/1";
   if (index === 1) return "4/1";
@@ -1285,11 +1310,20 @@ function renderBookiesOdds() {
 }
 
 function renderPlayerStats() {
+  loadSeasonState();
   playerStatsRow.innerHTML = "";
 
+  const seasonPlayerStats = state.season?.playerStats || {};
   const featured = [...state.picks.filter(Boolean)].slice(0, 4);
 
   featured.forEach((player) => {
+    const stats = seasonPlayerStats[player.id] || {
+      appearances: 0,
+      goals: 0,
+      assists: 0,
+      cleanSheets: 0,
+    };
+
     const card = document.createElement("div");
     card.className = "player-stat-card";
     card.innerHTML = `
@@ -1298,7 +1332,7 @@ function renderPlayerStats() {
       </div>
       <div class="player-stat-meta">
         <strong>${player.name}</strong>
-        <span>${player.role} · Rating ${player.rating}</span>
+        <span>${player.role} · G ${stats.goals} · A ${stats.assists} · CS ${stats.cleanSheets}</span>
       </div>
     `;
     playerStatsRow.appendChild(card);

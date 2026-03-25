@@ -1,3 +1,5 @@
+import { simulateMatchday } from "./match-engine.js";
+
 function el(id) {
   return document.getElementById(id);
 }
@@ -109,8 +111,46 @@ el("btnBackToHub")?.addEventListener("click", () => {
   window.location.href = "manager-hub.html";
 });
 
-el("btnPlayMatch")?.addEventListener("click", () => {
-  alert("Match simulation comes next — this screen is now wired for fixtures and lineups.");
+el("btnPlayMatch")?.addEventListener("click", async () => {
+  if (!state.season || !state.fixture) return;
+
+  const currentMatchday = state.fixture.matchday;
+  const matchdayBlock = getCurrentMatchdayBlock(state.season, currentMatchday);
+
+  if (!matchdayBlock) return;
+  if (matchdayBlock.fixtures.every((fixture) => fixture.played)) return;
+
+  const result = simulateMatchday(
+    matchdayBlock.fixtures,
+    state.season.teams,
+    state.season.playerStats,
+    state.season.tableStats
+  );
+
+  matchdayBlock.fixtures = result.fixtures;
+  state.season.playerStats = result.playerStats;
+  state.season.tableStats = result.tableStats;
+
+  const userFixtureResult = getCurrentUserFixtureFromMatchday(
+    matchdayBlock,
+    state.season.userTeamName
+  );
+
+  saveSeason();
+
+  if (userFixtureResult) {
+    state.fixture = userFixtureResult;
+    await playUserMatchPresentation(userFixtureResult);
+  }
+
+  const allPlayed = matchdayBlock.fixtures.every((fixture) => fixture.played);
+  if (allPlayed) {
+    state.season.currentMatchday = Math.min(
+      state.season.currentMatchday + 1,
+      state.season.fixtures.length
+    );
+    saveSeason();
+  }
 });
 
 function loadSeason() {
@@ -138,6 +178,51 @@ function getNextUserFixture(season) {
 
 function getTeamByName(name) {
   return state.season.teams.find((team) => team.name === name) || null;
+}
+
+function saveSeason() {
+  localStorage.setItem("managerSeason", JSON.stringify(state.season));
+}
+
+function getCurrentMatchdayBlock(season, matchdayNumber) {
+  return season.fixtures.find((md) => md.matchday === matchdayNumber) || null;
+}
+
+function getCurrentUserFixtureFromMatchday(matchdayBlock, userTeamName) {
+  return matchdayBlock.fixtures.find(
+    (fixture) => fixture.homeTeam === userTeamName || fixture.awayTeam === userTeamName
+  ) || null;
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function playUserMatchPresentation(fixtureResult) {
+  mgStatus.textContent = "Playing";
+
+  let liveHome = 0;
+  let liveAway = 0;
+
+  mgHomeScore.textContent = "0";
+  mgAwayScore.textContent = "0";
+
+  for (const event of fixtureResult.events) {
+    await delay(900);
+
+    if (event.side === "home") {
+      liveHome += 1;
+    } else {
+      liveAway += 1;
+    }
+
+    mgHomeScore.textContent = String(liveHome);
+    mgAwayScore.textContent = String(liveAway);
+    mgStatus.textContent = `${event.minute}' ${event.scorerName}`;
+  }
+
+  await delay(700);
+  mgStatus.textContent = "Full Time";
 }
 
 function renderSubs(subsArea, subs) {
@@ -223,6 +308,8 @@ function renderMatch() {
     mgFixtureTitle.textContent = "Season Complete";
     mgHomeName.textContent = "—";
     mgAwayName.textContent = "—";
+    mgHomeScore.textContent = "0";
+    mgAwayScore.textContent = "0";
     return;
   }
 
@@ -231,13 +318,13 @@ function renderMatch() {
   state.awayTeam = getTeamByName(fixture.awayTeam);
 
   mgMatchday.textContent = `Matchday ${fixture.matchday}`;
-  mgStatus.textContent = "Pre-Match";
+  mgStatus.textContent = fixture.played ? "Full Time" : "Pre-Match";
   mgFixtureTitle.textContent = `${fixture.homeTeam} v ${fixture.awayTeam}`;
 
   mgHomeName.textContent = fixture.homeTeam;
   mgAwayName.textContent = fixture.awayTeam;
-  mgHomeScore.textContent = "0";
-  mgAwayScore.textContent = "0";
+  mgHomeScore.textContent = fixture.score?.home ?? 0;
+  mgAwayScore.textContent = fixture.score?.away ?? 0;
 
   mgHomeLineupTitle.textContent = `${fixture.homeTeam} Lineup`;
   mgAwayLineupTitle.textContent = `${fixture.awayTeam} Lineup`;
