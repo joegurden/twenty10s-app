@@ -396,10 +396,12 @@ function loadSeasonState() {
 function getTeamNameForPlayerId(playerId) {
   if (!state.season?.teams?.length) return "Unknown Team";
 
+  const targetId = String(playerId);
+
   for (const team of state.season.teams) {
-    const inStarters = (team.starters || []).some((p) => p.id === playerId);
-    const inSubs = (team.subs || []).some((p) => p.id === playerId);
-    const inReserves = (team.reserves || []).some((p) => p.id === playerId);
+    const inStarters = (team.starters || []).some((p) => String(p.id) === targetId);
+    const inSubs = (team.subs || []).some((p) => String(p.id) === targetId);
+    const inReserves = (team.reserves || []).some((p) => String(p.id) === targetId);
 
     if (inStarters || inSubs || inReserves) {
       return team.name;
@@ -412,10 +414,11 @@ function getTeamNameForPlayerId(playerId) {
 function getPlayerById(playerId) {
   if (!state.season?.teams?.length) return null;
 
+  const targetId = String(playerId);
+
   for (const team of state.season.teams) {
-    const found =
-      [...(team.starters || []), ...(team.subs || []), ...(team.reserves || [])]
-        .find((p) => p.id === playerId);
+    const found = [...(team.starters || []), ...(team.subs || []), ...(team.reserves || [])]
+      .find((p) => String(p.id) === targetId);
 
     if (found) return found;
   }
