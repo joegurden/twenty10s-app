@@ -187,3 +187,51 @@
     font-size: 18px;
   }
 }
+
+.mg-events{
+  margin: 14px 0;
+  padding: 12px 14px;
+}
+
+.mg-events-head{
+  margin-bottom: 8px;
+  font-weight: 900;
+}
+
+.mg-events-feed{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  max-height: 160px;
+  overflow:auto;
+}
+
+.mg-event{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:6px 10px;
+  border-radius:10px;
+  background: rgba(0,0,0,.05);
+  font-size: 13px;
+}
+
+.mg-event.home{
+  border-left: 4px solid #22c55e;
+}
+
+.mg-event.away{
+  border-left: 4px solid #ef4444;
+}
+
+.mg-event-minute{
+  font-weight:900;
+  opacity:.7;
+  width:40px;
+}
+
+.mg-event-text{
+  flex:1;
+  text-align:left;
+  font-weight:700;
+}

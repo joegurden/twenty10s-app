@@ -106,6 +106,7 @@ const mgAwayPitch = el("mgAwayPitch");
 const mgHomeSubs = el("mgHomeSubs");
 const mgAwaySubs = el("mgAwaySubs");
 const mgFixtureTitle = el("mgFixtureTitle");
+const mgEventFeed = el("mgEventFeed");
 
 el("btnBackToHub")?.addEventListener("click", () => {
   window.location.href = "manager-hub.html";
@@ -198,6 +199,25 @@ function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function addEventToFeed(event) {
+  if (!mgEventFeed) return;
+
+  const row = document.createElement("div");
+  row.className = `mg-event ${event.side}`;
+
+  const text = event.assisterName
+    ? `${event.scorerName} (${event.assisterName})`
+    : `${event.scorerName}`;
+
+  row.innerHTML = `
+    <span class="mg-event-minute">${event.minute}'</span>
+    <span class="mg-event-text">${text}</span>
+  `;
+
+  mgEventFeed.prepend(row);
+}
+
+// ✅ NEW (paste here)
 async function playUserMatchPresentation(fixtureResult) {
   mgStatus.textContent = "Playing";
 
@@ -206,6 +226,8 @@ async function playUserMatchPresentation(fixtureResult) {
 
   mgHomeScore.textContent = "0";
   mgAwayScore.textContent = "0";
+
+  if (mgEventFeed) mgEventFeed.innerHTML = "";
 
   for (const event of fixtureResult.events) {
     await delay(900);
@@ -218,7 +240,10 @@ async function playUserMatchPresentation(fixtureResult) {
 
     mgHomeScore.textContent = String(liveHome);
     mgAwayScore.textContent = String(liveAway);
+
     mgStatus.textContent = `${event.minute}' ${event.scorerName}`;
+
+    addEventToFeed(event);
   }
 
   await delay(700);
