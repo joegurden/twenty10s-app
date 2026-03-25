@@ -47,6 +47,7 @@
   </div>
 
   <div class="ms-hud-actions">
+  <button id="btnSeasonStats" class="secondary" type="button" style="display:none;">Season Stats</button>
   <button id="btnFixtureList" class="secondary" type="button" style="display:none;">Fixture List</button>
   <button id="btnStartSeason" class="primary">Start Season</button>
 </div>
@@ -205,6 +206,26 @@
     </div>
 
     <div id="fixtureListBody" class="fixture-list-body"></div>
+  </div>
+</div>
+
+<div id="seasonStatsModal" class="modal-backdrop hidden">
+  <div class="modal card scout-modal fixture-modal">
+    <div class="hub-card-head fixture-modal-head">
+      <button id="btnPrevSeasonStats" class="secondary small" type="button">←</button>
+
+      <div class="fixture-modal-title-wrap">
+        <strong>Season Stats</strong>
+        <div id="seasonStatsCategoryLabel" class="modal-sub fixture-week-label">Top Scorers</div>
+      </div>
+
+      <div class="fixture-modal-actions">
+        <button id="btnNextSeasonStats" class="secondary small" type="button">→</button>
+        <button id="btnCloseSeasonStatsModal" class="secondary small" type="button">Close</button>
+      </div>
+    </div>
+
+    <div id="seasonStatsBody" class="fixture-list-body"></div>
   </div>
 </div>
 

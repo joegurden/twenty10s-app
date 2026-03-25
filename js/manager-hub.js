@@ -185,6 +185,7 @@ let state = {
   aiTeams: [],
   season: null,
 fixtureModalMatchday: 1,
+seasonStatsIndex: 0,
 };
 
 const msDifficultyPill = el("msDifficultyPill");
@@ -213,6 +214,13 @@ const fixtureListBody = el("fixtureListBody");
 const btnPrevFixtureWeek = el("btnPrevFixtureWeek");
 const btnNextFixtureWeek = el("btnNextFixtureWeek");
 const fixtureModalWeekLabel = el("fixtureModalWeekLabel");
+const btnSeasonStats = el("btnSeasonStats");
+const seasonStatsModal = el("seasonStatsModal");
+const btnCloseSeasonStatsModal = el("btnCloseSeasonStatsModal");
+const btnPrevSeasonStats = el("btnPrevSeasonStats");
+const btnNextSeasonStats = el("btnNextSeasonStats");
+const seasonStatsCategoryLabel = el("seasonStatsCategoryLabel");
+const seasonStatsBody = el("seasonStatsBody");
 
 btnStartSeason?.addEventListener("click", () => {
   handleSeasonButton();
@@ -228,6 +236,34 @@ btnFixtureList?.addEventListener("click", () => {
 
   renderFixtureListModal();
   fixtureModal?.classList.remove("hidden");
+});
+
+btnSeasonStats?.addEventListener("click", () => {
+  loadSeasonState();
+  if (!state.season) return;
+
+  renderSeasonStatsModal();
+  seasonStatsModal?.classList.remove("hidden");
+});
+
+btnCloseSeasonStatsModal?.addEventListener("click", () => {
+  seasonStatsModal?.classList.add("hidden");
+});
+
+seasonStatsModal?.addEventListener("click", (e) => {
+  if (e.target === seasonStatsModal) {
+    seasonStatsModal.classList.add("hidden");
+  }
+});
+
+btnPrevSeasonStats?.addEventListener("click", () => {
+  state.seasonStatsIndex = (state.seasonStatsIndex + 2) % 3;
+  renderSeasonStatsModal();
+});
+
+btnNextSeasonStats?.addEventListener("click", () => {
+  state.seasonStatsIndex = (state.seasonStatsIndex + 1) % 3;
+  renderSeasonStatsModal();
 });
 
 btnCloseFixtureModal?.addEventListener("click", () => {
@@ -357,6 +393,36 @@ function loadSeasonState() {
   state.season = JSON.parse(localStorage.getItem("managerSeason") || "null");
 }
 
+function getTeamNameForPlayerId(playerId) {
+  if (!state.season?.teams?.length) return "Unknown Team";
+
+  for (const team of state.season.teams) {
+    const inStarters = (team.starters || []).some((p) => p.id === playerId);
+    const inSubs = (team.subs || []).some((p) => p.id === playerId);
+    const inReserves = (team.reserves || []).some((p) => p.id === playerId);
+
+    if (inStarters || inSubs || inReserves) {
+      return team.name;
+    }
+  }
+
+  return "Unknown Team";
+}
+
+function getPlayerById(playerId) {
+  if (!state.season?.teams?.length) return null;
+
+  for (const team of state.season.teams) {
+    const found =
+      [...(team.starters || []), ...(team.subs || []), ...(team.reserves || [])]
+        .find((p) => p.id === playerId);
+
+    if (found) return found;
+  }
+
+  return null;
+}
+
 function saveSeasonState() {
   localStorage.setItem("managerSeason", JSON.stringify(state.season));
 }
@@ -384,6 +450,8 @@ function buildLeagueTeams() {
 }
 
 function renderAll() {
+  loadSeasonState();
+
   msNote.style.display = "block";
 
   if (formationSelect) {
@@ -1074,6 +1142,10 @@ function updateSeasonButtons() {
   if (btnFixtureList) {
     btnFixtureList.style.display = seasonStarted ? "" : "none";
   }
+
+  if (btnSeasonStats) {
+    btnSeasonStats.style.display = seasonStarted ? "" : "none";
+  }
 }
 
 function renderFixtureListModal() {
@@ -1114,17 +1186,95 @@ function renderFixtureListModal() {
   day.innerHTML = `<h4>Matchday ${selectedMatchday.matchday}</h4>`;
 
   selectedMatchday.fixtures.forEach((fixture) => {
+    const isUserFixture =
+      fixture.homeTeam === state.season.userTeamName ||
+      fixture.awayTeam === state.season.userTeamName;
+
     const row = document.createElement("div");
-    row.className = "fixture-row";
+    row.className =
+      "fixture-row" +
+      (fixture.played ? " played" : "") +
+      (isUserFixture ? " user-fixture" : "");
+
+    const middleText = fixture.played && fixture.score
+      ? `${fixture.score.home} - ${fixture.score.away}`
+      : "vs";
+
     row.innerHTML = `
       <div class="fixture-home">${fixture.homeTeam}</div>
-      <div class="fixture-vs">vs</div>
+      <div class="fixture-vs">${middleText}</div>
       <div class="fixture-away">${fixture.awayTeam}</div>
     `;
+
     day.appendChild(row);
   });
 
   fixtureListBody.appendChild(day);
+}
+
+function renderSeasonStatsModal() {
+  loadSeasonState();
+
+  if (!state.season || !seasonStatsBody) return;
+
+  const categories = [
+    { key: "goals", label: "Top Scorers" },
+    { key: "assists", label: "Top Assists" },
+    { key: "cleanSheets", label: "Clean Sheets" },
+  ];
+
+  const current = categories[state.seasonStatsIndex] || categories[0];
+  seasonStatsCategoryLabel.textContent = current.label;
+  seasonStatsBody.innerHTML = "";
+
+  const rows = Object.entries(state.season.playerStats || {})
+    .map(([playerId, stats]) => {
+      const player = getPlayerById(playerId);
+      return {
+        playerId,
+        player,
+        teamName: getTeamNameForPlayerId(playerId),
+        value: Number(stats[current.key] || 0),
+      };
+    })
+    .filter((row) => row.player && row.value > 0)
+    .sort((a, b) => {
+      if (b.value !== a.value) return b.value - a.value;
+      return a.player.name.localeCompare(b.player.name);
+    })
+    .slice(0, 15);
+
+  if (!rows.length) {
+    const empty = document.createElement("div");
+    empty.className = "fixture-day";
+    empty.innerHTML = `<h4>No stats yet</h4>`;
+    seasonStatsBody.appendChild(empty);
+    return;
+  }
+
+  const card = document.createElement("div");
+  card.className = "fixture-day";
+
+  rows.forEach((row, idx) => {
+    const statRow = document.createElement("div");
+    statRow.className = "season-stat-row";
+    statRow.innerHTML = `
+      <div class="season-stat-rank">${idx + 1}</div>
+      <div class="season-stat-main">
+        <div class="pimg">
+          <img src="${row.player.photo || photoUrlFor(row.player.id) || "img/player-placeholder.png"}" alt="${row.player.name}">
+        </div>
+        <div class="season-stat-meta">
+          <strong>${row.player.name}</strong>
+          <span>${row.teamName}</span>
+        </div>
+      </div>
+      <div class="season-stat-value">${row.value}</div>
+    `;
+    card.appendChild(statRow);
+  });
+
+  seasonStatsBody.appendChild(card);
 }
 
 function getAITeamsByStrength() {

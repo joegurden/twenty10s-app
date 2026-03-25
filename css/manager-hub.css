@@ -466,3 +466,72 @@
   font-weight:900;
   letter-spacing:.06em;
 }
+
+.fixture-row.played .fixture-vs{
+  font-size: 14px;
+  opacity: .95;
+}
+
+.fixture-row.user-fixture{
+  background: rgba(212,58,58,.08);
+  border-radius: 12px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.fixture-row.user-fixture .fixture-home,
+.fixture-row.user-fixture .fixture-away,
+.fixture-row.user-fixture .fixture-vs{
+  font-weight: 950;
+}
+
+.season-stat-row{
+  display:grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap:10px;
+  align-items:center;
+  padding: 10px 0;
+  border-top: 1px solid rgba(0,0,0,.06);
+}
+
+.season-stat-row:first-of-type{
+  border-top: 0;
+  padding-top: 0;
+}
+
+.season-stat-rank{
+  font-weight: 950;
+  opacity: .7;
+}
+
+.season-stat-main{
+  min-width: 0;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.season-stat-meta{
+  min-width: 0;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+.season-stat-meta strong{
+  font-weight:950;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.season-stat-meta span{
+  font-size:12px;
+  opacity:.68;
+}
+
+.season-stat-value{
+  font-weight:950;
+  font-size: 24px;
+  line-height:1;
+}
