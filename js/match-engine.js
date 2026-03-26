@@ -140,46 +140,52 @@ function getScorerWeight(player) {
   const ratingBoost = (player.rating || 80) - 75;
 
   const byRole = {
-    ST: 11.0,
-    LW: 7.8,
-    RW: 7.8,
-    CAM: 6.0,
-    LM: 4.2,
-    RM: 4.2,
-    CM: 3.0,
-    CDM: 1.5,
-    LB: 0.8,
-    RB: 0.8,
-    LWB: 1.1,
-    RWB: 1.1,
-    CB: 0.45,
-    GK: 0.02,
+    ST: 14.0,       // main scorers
+    LW: 12.5,
+    RW: 12.5,
+    CAM: 7.5,
+
+    LM: 4.5,
+    RM: 4.5,
+    CM: 2.8,
+
+    CDM: 1.0,
+    LB: 0.4,
+    RB: 0.4,
+    LWB: 0.6,
+    RWB: 0.6,
+    CB: 0.2,
+
+    GK: 0.0 // completely remove GK goals
   };
 
-  return (byRole[player.role] || 0.2) + ratingBoost * 0.16;
+  return (byRole[player.role] || 0.1) + ratingBoost * 0.18;
 }
 
 function getAssistWeight(player) {
   const ratingBoost = (player.rating || 80) - 75;
 
   const byRole = {
-    CAM: 9.0,
-    LW: 7.2,
-    RW: 7.2,
-    LM: 5.8,
-    RM: 5.8,
-    CM: 4.8,
-    ST: 3.4,
-    CDM: 2.0,
-    LB: 2.8,
-    RB: 2.8,
-    LWB: 3.6,
-    RWB: 3.6,
-    CB: 0.5,
-    GK: 0.03,
+    CAM: 10.0,
+    LW: 8.5,
+    RW: 8.5,
+    LM: 6.5,
+    RM: 6.5,
+    CM: 5.0,
+
+    ST: 3.0,
+    CDM: 1.8,
+
+    LB: 3.5,
+    RB: 3.5,
+    LWB: 4.0,
+    RWB: 4.0,
+
+    CB: 0.3,
+    GK: 0.0
   };
 
-  return (byRole[player.role] || 0.2) + ratingBoost * 0.12;
+  return (byRole[player.role] || 0.1) + ratingBoost * 0.12;
 }
 
 function pickScorer(team) {

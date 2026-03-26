@@ -1500,8 +1500,16 @@ async function boot() {
 
   loadHubSquad();
   await loadPlayersFromSupabase();
-  generateLeagueData(true);
   loadSeasonState();
+
+  // ✅ ONLY generate AI teams if no season exists yet
+  if (!state.season || !state.season.started) {
+    generateLeagueData(true);
+  } else {
+    // ✅ use saved teams from season
+    state.aiTeams = state.season.teams.filter(t => !t.isUser);
+  }
+
   renderAll();
 }
 
