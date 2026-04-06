@@ -1,4 +1,4 @@
-import { simulateMatchday } from "./match-engine.js";
+import { simulateMatchday } from "./match-engine.js?v=3";
 
 function el(id) {
   return document.getElementById(id);

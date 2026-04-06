@@ -1,6 +1,7 @@
 // js/manager-squad.js
 
 import { supabase } from "./supabaseClient.js";
+import { FORMATIONS, FORMATION_COORDS } from "./shared/formations.js";
 
 // same pattern as SBS
 function photoUrlFor(playerId) {

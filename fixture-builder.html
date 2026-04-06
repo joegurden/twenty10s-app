@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>KickAbout — Fixture Recreator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/manager-squad.css">
+  <link rel="stylesheet" href="css/manager-game.css">
+</head>
+
+<body>
+  <!-- SAME HEADER -->
+  <header class="topbar">
+    <div class="bar">
+      <a href="index.html" class="logo">
+        <img src="img/kickabout-shield.svg" class="logo-icon">
+        <div class="logo-text">
+          <span class="kick">Kick</span><span class="about">About</span>
+        </div>
+      </a>
+    </div>
+  </header>
+
+  <main class="mg-wrap">
+
+    <!-- FIXTURE HEADER -->
+    <section class="mg-header card">
+      <h1 id="fixtureTitle">Loading...</h1>
+
+      <div class="mg-scoreboard">
+        <span id="homeScore">0</span>
+        <span>-</span>
+        <span id="awayScore">0</span>
+      </div>
+    </section>
+
+    <!-- LINEUPS -->
+    <section class="mg-grid">
+
+      <section class="mg-side">
+        <div class="card">
+          <h3 id="homeTeam">Home</h3>
+          <div class="pitch-area" id="homePitch"></div>
+        </div>
+      </section>
+
+      <section class="mg-side">
+        <div class="card">
+          <h3 id="awayTeam">Away</h3>
+          <div class="pitch-area" id="awayPitch"></div>
+        </div>
+      </section>
+
+    </section>
+
+<div class="card guess-box">
+  <input id="playerInput" placeholder="Search player..." />
+  <button id="submitGuess">Submit</button>
+<div id="suggestions" class="suggestions"></div>
+</div>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script type="module" src="js/fixture-builder.js"></script>
+</body>
+</html>

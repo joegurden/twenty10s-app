@@ -393,6 +393,8 @@ function loadSeasonState() {
   state.season = JSON.parse(localStorage.getItem("managerSeason") || "null");
 }
 
+
+
 function getTeamNameForPlayerId(playerId) {
   if (!state.season?.teams?.length) return "Unknown Team";
 
@@ -1502,12 +1504,10 @@ async function boot() {
   await loadPlayersFromSupabase();
   loadSeasonState();
 
-  // ✅ ONLY generate AI teams if no season exists yet
   if (!state.season || !state.season.started) {
     generateLeagueData(true);
   } else {
-    // ✅ use saved teams from season
-    state.aiTeams = state.season.teams.filter(t => !t.isUser);
+    state.aiTeams = (state.season.teams || []).filter((team) => !team.isUser);
   }
 
   renderAll();
