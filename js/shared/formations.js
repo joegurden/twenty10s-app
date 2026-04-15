@@ -1,13 +1,7 @@
 // js/shared/formations.js
-export const FORMATIONS = { ... };
-export const FORMATION_COORDS = { ... };
-
-export function canPlayPosition(playerRole, slotRole) { ... }
-export function getValidStarterTargets(player, formation) { ... } // optional later
 
 // ---- Formations (v1) ----
-// Each formation defines 11 “slots” with a label + category for filtering.
-const FORMATIONS = {
+export const FORMATIONS = {
   "4-3-3": ["GK","LB","CB","CB","RB","CM","CM","CM","LW","ST","RW"],
   "4-3-3 (Attack)": ["GK","LB","CB","CB","RB","CAM","CM","CM","LW","ST","RW"],
   "4-3-3 (Holding)": ["GK","LB","CB","CB","RB","CDM","CM","CM","LW","ST","RW"],
@@ -19,8 +13,8 @@ const FORMATIONS = {
   "4-1-2-1-2 (Diamond)": ["GK","LB","CB","CB","RB","CDM","CM","CM","CAM","ST","ST"],
 };
 
-// Slot coordinates (percentage positioning) for each label type.
-const FORMATION_COORDS = {
+// ---- Coordinates ----
+export const FORMATION_COORDS = {
   "4-3-3": [
     { x: 50, y: 86 },
     { x: 16, y: 72 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 84, y: 72 },
