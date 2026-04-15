@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient.js";
+import { FORMATIONS, FORMATION_COORDS } from "./shared/formations.js";
 
 function photoUrlFor(playerId) {
   const { data } = supabase.storage
