@@ -75,13 +75,13 @@ function getExpectedGoals(homeTeam, awayTeam) {
   const away = getTeamMatchStrength(awayTeam, false);
 
   const homeAttackVsAwayDef =
-    1.25 +
+  1.38 +
     (home.att - away.def) * 0.045 +
     (home.mid - away.mid) * 0.020 +
     (home.overall - away.overall) * 0.015;
 
   const awayAttackVsHomeDef =
-    1.05 +
+  1.14 +
     (away.att - home.def) * 0.045 +
     (away.mid - home.mid) * 0.020 +
     (away.overall - home.overall) * 0.015;
@@ -136,79 +136,132 @@ function sampleGoalsFromXG(xg) {
   return 6;
 }
 
-function getScorerWeight(player) {
-  const ratingBoost = (player.rating || 80) - 75;
+function getStarAttackers(team) {
+  const attackers = (team?.starters || [])
+    .filter((p) => ["LW", "ST", "RW"].includes(p.role))
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0));
 
-  const byRole = {
-    ST: 14.0,       // main scorers
-    LW: 12.5,
-    RW: 12.5,
-    CAM: 7.5,
-
-    LM: 4.5,
-    RM: 4.5,
-    CM: 2.8,
-
-    CDM: 1.0,
-    LB: 0.4,
-    RB: 0.4,
-    LWB: 0.6,
-    RWB: 0.6,
-    CB: 0.2,
-
-    GK: 0.0 // completely remove GK goals
+  return {
+    main: attackers[0] || null,
+    second: attackers[1] || null,
+    third: attackers[2] || null,
   };
-
-  return (byRole[player.role] || 0.1) + ratingBoost * 0.18;
 }
 
-function getAssistWeight(player) {
+function getStarCreators(team) {
+  const creators = (team?.starters || [])
+    .filter((p) => ["CAM", "LW", "RW", "CM", "LM", "RM"].includes(p.role))
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0));
+
+  return {
+    main: creators[0] || null,
+    second: creators[1] || null,
+  };
+}
+
+function getScorerWeight(player, team) {
   const ratingBoost = (player.rating || 80) - 75;
+  const stars = getStarAttackers(team);
 
   const byRole = {
-    CAM: 10.0,
-    LW: 8.5,
-    RW: 8.5,
-    LM: 6.5,
-    RM: 6.5,
-    CM: 5.0,
+    ST: 16.5,
+    LW: 10.5,
+    RW: 10.5,
+    CAM: 5.5,
 
-    ST: 3.0,
-    CDM: 1.8,
+    LM: 2.6,
+    RM: 2.6,
+    CM: 1.7,
 
-    LB: 3.5,
-    RB: 3.5,
-    LWB: 4.0,
-    RWB: 4.0,
-
-    CB: 0.3,
-    GK: 0.0
+    CDM: 0.5,
+    LB: 0.15,
+    RB: 0.15,
+    LWB: 0.2,
+    RWB: 0.2,
+    CB: 0.05,
+    GK: 0.0,
   };
 
-  return (byRole[player.role] || 0.1) + ratingBoost * 0.12;
+  let weight = (byRole[player.role] || 0.05) + ratingBoost * 0.22;
+
+  if (stars.main && player.id === stars.main.id) {
+    weight *= 1.75;
+  } else if (stars.second && player.id === stars.second.id) {
+    weight *= 1.25;
+  } else if (stars.third && player.id === stars.third.id) {
+    weight *= 1.1;
+  }
+
+  if (player.role === "ST") {
+    weight *= 1.15;
+  }
+
+  return Math.max(0, weight);
+}
+
+function getAssistWeight(player, team) {
+  const ratingBoost = (player.rating || 80) - 75;
+  const creators = getStarCreators(team);
+  const starAttackers = getStarAttackers(team);
+
+  const byRole = {
+    CAM: 11.0,
+    LW: 9.5,
+    RW: 9.5,
+    LM: 6.5,
+    RM: 6.5,
+    CM: 4.8,
+
+    ST: 3.2,
+    CDM: 1.3,
+
+    LB: 2.8,
+    RB: 2.8,
+    LWB: 3.4,
+    RWB: 3.4,
+
+    CB: 0.2,
+    GK: 0.0,
+  };
+
+  let weight = (byRole[player.role] || 0.05) + ratingBoost * 0.14;
+
+  if (creators.main && player.id === creators.main.id) {
+    weight *= 1.45;
+  } else if (creators.second && player.id === creators.second.id) {
+    weight *= 1.18;
+  }
+
+  if (starAttackers.main && player.id === starAttackers.main.id && player.role !== "ST") {
+    weight *= 1.12;
+  }
+
+  return Math.max(0, weight);
 }
 
 function pickScorer(team) {
-  const starters = team?.starters || [];
+  const starters = (team?.starters || []).filter((p) => p.role !== "GK");
 
   return pickWeighted(
     starters.map((player) => ({
       value: player,
-      weight: getScorerWeight(player),
+      weight: getScorerWeight(player, team),
     }))
   );
 }
 
 function pickAssister(team, scorerId) {
-  const starters = (team?.starters || []).filter((p) => p.id !== scorerId);
+  const starters = (team?.starters || [])
+    .filter((p) => p.id !== scorerId)
+    .filter((p) => p.role !== "GK");
 
-  const assistedChance = 0.78;
+  const assistedChance = 0.82;
   if (Math.random() > assistedChance) return null;
 
   return pickWeighted(
     starters.map((player) => ({
       value: player,
-      weight: getAssistWeight(player),
+      weight: getAssistWeight(player, team),
     }))
   );
 }
@@ -297,12 +350,11 @@ function applyGoalAndAssistStats(playersMap, events) {
 function applyCleanSheetStats(playersMap, team, goalsAgainst) {
   if (goalsAgainst !== 0) return;
 
-  (team?.starters || []).forEach((player) => {
-    if (player.role === "GK" || ["LB", "RB", "CB", "LWB", "RWB"].includes(player.role)) {
-      const stats = buildPlayerStatsObject(playersMap, player.id);
-      stats.cleanSheets += 1;
-    }
-  });
+  const gk = (team?.starters || []).find((player) => player.role === "GK");
+  if (!gk) return;
+
+  const stats = buildPlayerStatsObject(playersMap, gk.id);
+  stats.cleanSheets += 1;
 }
 
 function buildEmptyTeamTableStats() {
