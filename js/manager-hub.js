@@ -366,6 +366,10 @@ function loadHubSquad() {
   state.reserveSlots = Array.isArray(saved.reserves) ? saved.reserves : Array(3).fill(null);
 }
 
+function loadSeasonState() {
+  state.season = JSON.parse(localStorage.getItem("managerSeason") || "null");
+}
+
 function getTeamNameForPlayerId(playerId) {
   if (!state.season?.teams?.length) return "Unknown Team";
 
