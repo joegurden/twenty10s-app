@@ -122,15 +122,16 @@ el("btnPlayMatch")?.addEventListener("click", async () => {
   if (matchdayBlock.fixtures.every((fixture) => fixture.played)) return;
 
   const result = simulateMatchday(
-    matchdayBlock.fixtures,
-    state.season.teams,
-    state.season.playerStats,
-    state.season.tableStats
-  );
+  matchdayBlock.fixtures,
+  state.season.teams,
+  state.season.playerStats,
+  state.season.tableStats
+);
 
-  matchdayBlock.fixtures = result.fixtures;
-  state.season.playerStats = result.playerStats;
-  state.season.tableStats = result.tableStats;
+matchdayBlock.fixtures = result.fixtures;
+state.season.teams = result.teams;
+state.season.playerStats = result.playerStats;
+state.season.tableStats = result.tableStats;
 
   const userFixtureResult = getCurrentUserFixtureFromMatchday(
     matchdayBlock,

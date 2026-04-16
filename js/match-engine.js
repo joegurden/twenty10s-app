@@ -357,6 +357,110 @@ function applyCleanSheetStats(playersMap, team, goalsAgainst) {
   stats.cleanSheets += 1;
 }
 
+function clampStat(value, min = 0, max = 100) {
+  return Math.max(min, Math.min(max, Math.round(value)));
+}
+
+function getEventCountsForTeam(events, side) {
+  const counts = {};
+
+  (events || []).forEach((event) => {
+    if (event.type !== "goal" || event.side !== side) return;
+
+    if (event.scorerId != null) {
+      counts[event.scorerId] = counts[event.scorerId] || { goals: 0, assists: 0 };
+      counts[event.scorerId].goals += 1;
+    }
+
+    if (event.assisterId != null) {
+      counts[event.assisterId] = counts[event.assisterId] || { goals: 0, assists: 0 };
+      counts[event.assisterId].assists += 1;
+    }
+  });
+
+  return counts;
+}
+
+function getTeamResult(goalsFor, goalsAgainst) {
+  if (goalsFor > goalsAgainst) return "win";
+  if (goalsFor < goalsAgainst) return "loss";
+  return "draw";
+}
+
+function applyPostMatchConditionChanges(team, goalsFor, goalsAgainst, events, side) {
+  const eventCounts = getEventCountsForTeam(events, side);
+  const result = getTeamResult(goalsFor, goalsAgainst);
+
+  const starters = (team?.starters || []).map((player) => {
+    const stats = eventCounts[player.id] || { goals: 0, assists: 0 };
+
+    let fitnessLoss = 0;
+    let formChange = 0;
+
+    // FITNESS
+    // Better players lose a tiny bit less, but not enough to ignore fatigue.
+    if (player.role === "GK") {
+      fitnessLoss = 8;
+    } else if (["CB", "LB", "RB", "LWB", "RWB"].includes(player.role)) {
+      fitnessLoss = 15;
+    } else if (["CDM", "CM", "CAM", "LM", "RM"].includes(player.role)) {
+      fitnessLoss = 17;
+    } else {
+      fitnessLoss = 18; // attackers
+    }
+
+    fitnessLoss -= Math.max(0, ((player.rating || 80) - 80) * 0.12);
+    fitnessLoss = Math.max(6, fitnessLoss);
+
+    // FORM
+    if (result === "win") formChange += 3;
+    else if (result === "draw") formChange += 0;
+    else formChange -= 3;
+
+    if (player.role === "GK") {
+      if (goalsAgainst === 0) formChange += 6;
+      else if (goalsAgainst >= 3) formChange -= 4;
+      else formChange -= Math.max(0, goalsAgainst - 1);
+    } else if (["CB", "LB", "RB", "LWB", "RWB"].includes(player.role)) {
+      if (goalsAgainst === 0) formChange += 4;
+      else if (goalsAgainst >= 3) formChange -= 3;
+      formChange += stats.goals * 4 + stats.assists * 3;
+    } else if (["CDM", "CM", "CAM", "LM", "RM"].includes(player.role)) {
+      formChange += stats.goals * 5 + stats.assists * 4;
+      if (goalsFor === 0) formChange -= 1;
+    } else {
+      // attackers
+      formChange += stats.goals * 6 + stats.assists * 3;
+      if (stats.goals === 0 && goalsFor === 0) formChange -= 2;
+    }
+
+    return {
+      ...player,
+      fitness: clampStat((player.fitness ?? 92) - fitnessLoss),
+      form: clampStat((player.form ?? 60) + formChange),
+    };
+  });
+
+  const subs = (team?.subs || []).map((player) => ({
+    ...player,
+    fitness: clampStat((player.fitness ?? 92) + 8),
+    form: clampStat((player.form ?? 60)),
+  }));
+
+  const reserves = (team?.reserves || []).map((player) => ({
+    ...player,
+    fitness: clampStat((player.fitness ?? 92) + 10),
+    form: clampStat((player.form ?? 60)),
+  }));
+
+  return {
+    ...team,
+    starters,
+    subs,
+    reserves,
+  };
+}
+
 function buildEmptyTeamTableStats() {
   return {
     P: 0,
@@ -425,19 +529,19 @@ export function simulateMatch(homeTeam, awayTeam) {
 }
 
 export function simulateMatchday(matchdayFixtures, teams, existingPlayerStats = {}, existingTableStats = {}) {
-  const teamMap = Object.fromEntries(teams.map((team) => [team.name, team]));
+  let updatedTeams = structuredClone(teams || []);
   const playerStats = structuredClone(existingPlayerStats || {});
   const tableStats = structuredClone(existingTableStats || {});
 
-  teams.forEach((team) => {
+  updatedTeams.forEach((team) => {
     if (!tableStats[team.name]) {
       tableStats[team.name] = buildEmptyTeamTableStats();
     }
   });
 
   const results = matchdayFixtures.map((fixture) => {
-    const homeTeam = teamMap[fixture.homeTeam];
-    const awayTeam = teamMap[fixture.awayTeam];
+    const homeTeam = updatedTeams.find((team) => team.name === fixture.homeTeam);
+    const awayTeam = updatedTeams.find((team) => team.name === fixture.awayTeam);
 
     const result = simulateMatch(homeTeam, awayTeam);
 
@@ -451,6 +555,28 @@ export function simulateMatchday(matchdayFixtures, teams, existingPlayerStats = 
 
     applyResultToTeamTable(tableStats[homeTeam.name], result.homeGoals, result.awayGoals);
     applyResultToTeamTable(tableStats[awayTeam.name], result.awayGoals, result.homeGoals);
+
+    const refreshedHomeTeam = applyPostMatchConditionChanges(
+      homeTeam,
+      result.homeGoals,
+      result.awayGoals,
+      result.events,
+      "home"
+    );
+
+    const refreshedAwayTeam = applyPostMatchConditionChanges(
+      awayTeam,
+      result.awayGoals,
+      result.homeGoals,
+      result.events,
+      "away"
+    );
+
+    updatedTeams = updatedTeams.map((team) => {
+      if (team.name === refreshedHomeTeam.name) return refreshedHomeTeam;
+      if (team.name === refreshedAwayTeam.name) return refreshedAwayTeam;
+      return team;
+    });
 
     return {
       ...fixture,
@@ -466,6 +592,7 @@ export function simulateMatchday(matchdayFixtures, teams, existingPlayerStats = 
 
   return {
     fixtures: results,
+    teams: updatedTeams,
     playerStats,
     tableStats,
   };
