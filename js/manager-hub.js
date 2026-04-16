@@ -40,6 +40,37 @@ function el(id) {
   return document.getElementById(id);
 }
 
+function clampStat100(value, fallback = 60) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+function getConditionBand(value) {
+  const v = clampStat100(value);
+
+  if (v <= 45) return "cond-red";
+  if (v <= 55) return "cond-orange";
+  if (v <= 69) return "cond-yellow";
+  if (v <= 85) return "cond-green";
+  return "cond-darkgreen";
+}
+
+function renderSideConditionStat(label, value, side) {
+  const v = clampStat100(value);
+  const band = getConditionBand(v);
+
+  return `
+    <div class="side-stat side-stat-${side}">
+      <div class="side-stat-label ${band}">${label}</div>
+      <div class="side-stat-track">
+        <div class="side-stat-fill ${band}" style="height:${v}%"></div>
+      </div>
+      <div class="side-stat-value ${band}">${v}</div>
+    </div>
+  `;
+}
+
 function clearManagementSelections() {
   state.selectedSlotIndex = -1;
   state.swapSourceIndex = null;
@@ -238,6 +269,7 @@ formationSelect?.addEventListener("change", () => {
   }
 
   clearManagementSelections();
+persistSquadChanges();
   generateLeagueData(true);
   renderAll();
 });
@@ -250,19 +282,22 @@ async function loadPlayersFromSupabase() {
 
   if (error) throw new Error(error.message);
 
-  PLAYER_POOL = (data || [])
-    .map((p) => ({
-      id: p.ID,
-      name: p.Name,
-      pos: slotGroupFromPosition(normalizePos(p.Position)),
-      role: normalizePos(p.Position),
-      rating: Number(p.Rating) || 0,
-      club: p.Club,
-      league: p.League,
-      fee: Number(p.value) || 0,
-      wage: Number(p.wages) || 0,
-      photo: photoUrlFor(p.ID),
-    }))
+PLAYER_POOL = (data || [])
+  .map((p) => ({
+    id: p.ID,
+    name: p.Name,
+    pos: slotGroupFromPosition(normalizePos(p.Position)),
+    role: normalizePos(p.Position),
+    rating: Number(p.Rating) || 0,
+    club: p.Club,
+    league: p.League,
+    fee: Number(p.value) || 0,
+    wage: Number(p.wages) || 0,
+    photo: photoUrlFor(p.ID),
+
+    form: 55 + Math.floor(Math.random() * 11),
+    fitness: 88 + Math.floor(Math.random() * 9),
+  }))
     .filter((p) => p.id != null && p.name && p.role);
 }
 
@@ -369,6 +404,46 @@ function getUserTeamData() {
   };
 }
 
+function saveHubSquadState() {
+  const payload = {
+    managerName: state.managerName,
+    formation: state.formation,
+    picks: state.picks,
+    subs: state.subs,
+    reserves: state.reserveSlots,
+    transferRemaining: state.transferRemaining,
+    wageRemaining: state.wageRemaining,
+  };
+
+  localStorage.setItem("managerHubSquad", JSON.stringify(payload));
+  localStorage.setItem("managerSquad", JSON.stringify(payload));
+}
+
+function syncUserTeamIntoSeason() {
+  loadSeasonState();
+
+  if (!state.season || !state.season.started || !Array.isArray(state.season.teams)) {
+    return;
+  }
+
+  const updatedUserTeam = getUserTeamData();
+  const idx = state.season.teams.findIndex((team) => team.name === state.season.userTeamName);
+
+  if (idx === -1) return;
+
+  state.season.teams[idx] = {
+    ...state.season.teams[idx],
+    ...updatedUserTeam,
+  };
+
+  saveSeasonState();
+}
+
+function persistSquadChanges() {
+  saveHubSquadState();
+  syncUserTeamIntoSeason();
+}
+
 function buildLeagueTeams() {
   const userTeam = getUserTeamData();
   const shuffledAI = shuffleArray([...state.aiTeams]).map((team) => ({
@@ -460,14 +535,16 @@ function renderPitch() {
       `;
     } else {
       tile.innerHTML = `
-        <div class="slot-photo">
-          <img src="${picked.photo || photoUrlFor(picked.id) || "img/player-placeholder.png"}" alt="${picked.name}">
-        </div>
-        <div class="picked">
-          <strong>${picked.name}</strong>
-          <span>${picked.role}</span>
-        </div>
-      `;
+  ${renderSideConditionStat("Form", picked.form, "left")}
+  <div class="slot-photo">
+    <img src="${picked.photo || photoUrlFor(picked.id) || "img/player-placeholder.png"}" alt="${picked.name}">
+  </div>
+  <div class="picked">
+    <strong>${picked.name}</strong>
+    <span>${picked.role}</span>
+  </div>
+  ${renderSideConditionStat("Fitness", picked.fitness, "right")}
+`;
     }
 
     tile.addEventListener("click", () => {
@@ -530,16 +607,18 @@ function renderSubs() {
       `;
     } else {
       card.innerHTML = `
-        <div class="sub-top">
-          <div class="pimg">
-            <img src="${sub.photo || photoUrlFor(sub.id) || "img/player-placeholder.png"}" alt="${sub.name}">
-          </div>
-          <div class="sub-meta">
-            <strong>${sub.name}</strong>
-            <span>${sub.pos} · ${sub.role} · Rating ${sub.rating}</span>
-          </div>
-        </div>
-      `;
+  <div class="sub-top">
+    ${renderSideConditionStat("Form", sub.form, "left")}
+    <div class="pimg">
+      <img src="${sub.photo || photoUrlFor(sub.id) || "img/player-placeholder.png"}" alt="${sub.name}">
+    </div>
+    <div class="sub-meta">
+      <strong>${sub.name}</strong>
+      <span>${sub.pos} · ${sub.role} · Rating ${sub.rating}</span>
+    </div>
+    ${renderSideConditionStat("Fitness", sub.fitness, "right")}
+  </div>
+`;
     }
 
     card.addEventListener("click", () => {
@@ -573,24 +652,25 @@ function renderReserves() {
       (state.pendingReserveIndex === idx ? " active" : "");
 
     if (!player) {
-      card.innerHTML = `
-        <div class="sub-meta">
+      card.innerHTML = `        <div class="sub-meta">
           <strong>Reserve ${idx + 1}</strong>
           <span>Temporary holding slot</span>
         </div>
       `;
     } else {
       card.innerHTML = `
-        <div class="sub-top">
-          <div class="pimg">
-            <img src="${player.photo || photoUrlFor(player.id) || "img/player-placeholder.png"}" alt="${player.name}">
-          </div>
-          <div class="sub-meta">
-            <strong>${player.name}</strong>
-            <span>${player.pos} · ${player.role} · Rating ${player.rating}</span>
-          </div>
-        </div>
-      `;
+  <div class="sub-top">
+    ${renderSideConditionStat("Form", player.form, "left")}
+    <div class="pimg">
+      <img src="${player.photo || photoUrlFor(player.id) || "img/player-placeholder.png"}" alt="${player.name}">
+    </div>
+    <div class="sub-meta">
+      <strong>${player.name}</strong>
+      <span>${player.pos} · ${player.role} · Rating ${player.rating}</span>
+    </div>
+    ${renderSideConditionStat("Fitness", player.fitness, "right")}
+  </div>
+`;
     }
 
     card.addEventListener("click", () => {
@@ -608,11 +688,12 @@ function renderReserves() {
         if (!subPlayer) return;
 
         state.reserveSlots[idx] = subPlayer;
-        state.subs[state.pendingSubIndex] = reservePlayer;
+state.subs[state.pendingSubIndex] = reservePlayer;
 
-        clearManagementSelections();
-        renderAll();
-        return;
+persistSquadChanges();
+clearManagementSelections();
+renderAll();
+return;
       }
 
       if (!player) return;
@@ -660,6 +741,8 @@ function attemptSwap(fromIdx, toIdx) {
   [state.picks[fromIdx], state.picks[toIdx]] = [state.picks[toIdx], state.picks[fromIdx]];
   state.swapSourceIndex = null;
   state.selectedSlotIndex = -1;
+
+persistSquadChanges();
 }
 
 function attemptSubSwap(subIdx, starterIdx) {
@@ -677,6 +760,8 @@ function attemptSubSwap(subIdx, starterIdx) {
   state.subs[subIdx] = starterPlayer;
   state.picks[starterIdx] = subPlayer;
   state.selectedSlotIndex = -1;
+
+  persistSquadChanges();
 }
 
 function attemptStarterToReserveSwap(starterIdx, reserveIdx) {
@@ -689,6 +774,8 @@ function attemptStarterToReserveSwap(starterIdx, reserveIdx) {
 
   state.swapSourceIndex = null;
   state.selectedSlotIndex = -1;
+
+  persistSquadChanges();
 }
 
 function attemptReserveToStarterSwap(reserveIdx, starterIdx) {
@@ -705,6 +792,8 @@ function attemptReserveToStarterSwap(reserveIdx, starterIdx) {
   state.picks[starterIdx] = reservePlayer;
   state.reserveSlots[reserveIdx] = starterPlayer;
   state.selectedSlotIndex = -1;
+
+  persistSquadChanges();
 }
 
 function getAllUsedUserIds() {
@@ -1434,7 +1523,7 @@ async function boot() {
   } else {
     state.aiTeams = (state.season.teams || []).filter((team) => !team.isUser);
   }
-
+persistSquadChanges();
   renderAll();
 }
 
