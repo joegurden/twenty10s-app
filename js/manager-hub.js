@@ -331,6 +331,25 @@ function getValidStarterTargets(player) {
 }
 
 function loadHubSquad() {
+  loadSeasonState();
+
+  // ✅ If season exists, ALWAYS use that
+  if (state.season && state.season.started) {
+    const userTeam = state.season.teams.find(
+      (t) => t.name === state.season.userTeamName
+    );
+
+    if (userTeam) {
+      state.managerName = "Your Team";
+      state.formation = userTeam.formation || state.formation;
+      state.picks = [...(userTeam.starters || [])];
+      state.subs = [...(userTeam.subs || [])];
+      state.reserveSlots = [...(userTeam.reserves || [])];
+      return;
+    }
+  }
+
+  // ❌ fallback (before season starts)
   const saved =
     JSON.parse(localStorage.getItem("managerHubSquad") || "null") ||
     JSON.parse(localStorage.getItem("managerSquad") || "null");
@@ -345,15 +364,7 @@ function loadHubSquad() {
   state.picks = Array.isArray(saved.picks) ? saved.picks : [];
   state.subs = Array.isArray(saved.subs) ? saved.subs : Array(4).fill(null);
   state.reserveSlots = Array.isArray(saved.reserves) ? saved.reserves : Array(3).fill(null);
-  state.transferRemaining = Number(saved.transferRemaining ?? ACTIVE_BUDGET.transfer);
-  state.wageRemaining = Number(saved.wageRemaining ?? ACTIVE_BUDGET.wages);
 }
-
-function loadSeasonState() {
-  state.season = JSON.parse(localStorage.getItem("managerSeason") || "null");
-}
-
-
 
 function getTeamNameForPlayerId(playerId) {
   if (!state.season?.teams?.length) return "Unknown Team";
