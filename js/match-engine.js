@@ -387,6 +387,16 @@ function getTeamResult(goalsFor, goalsAgainst) {
   return "draw";
 }
 
+function getFormFitnessBoost(form) {
+  const f = clampStat(form ?? 60);
+
+  if (f >= 86) return 4;
+  if (f >= 70) return 3;
+  if (f >= 56) return 2;
+  if (f >= 46) return 1;
+  return 0;
+}
+
 function applyPostMatchConditionChanges(team, goalsFor, goalsAgainst, events, side) {
   const eventCounts = getEventCountsForTeam(events, side);
   const result = getTeamResult(goalsFor, goalsAgainst);
@@ -399,18 +409,24 @@ function applyPostMatchConditionChanges(team, goalsFor, goalsAgainst, events, si
 
     // FITNESS
     // Better players lose a tiny bit less, but not enough to ignore fatigue.
-    if (player.role === "GK") {
-      fitnessLoss = 8;
-    } else if (["CB", "LB", "RB", "LWB", "RWB"].includes(player.role)) {
-      fitnessLoss = 15;
-    } else if (["CDM", "CM", "CAM", "LM", "RM"].includes(player.role)) {
-      fitnessLoss = 17;
-    } else {
-      fitnessLoss = 18; // attackers
-    }
+  if (player.role === "GK") {
+  fitnessLoss = 0;
+} else if (["CB", "LB", "RB", "LWB", "RWB"].includes(player.role)) {
+  fitnessLoss = 15;
+} else if (["CDM", "CM", "CAM", "LM", "RM"].includes(player.role)) {
+  fitnessLoss = 17;
+} else {
+  fitnessLoss = 18;
+}
 
-    fitnessLoss -= Math.max(0, ((player.rating || 80) - 80) * 0.12);
-    fitnessLoss = Math.max(6, fitnessLoss);
+fitnessLoss -= Math.max(0, ((player.rating || 80) - 80) * 0.12);
+
+const formFitnessBoost = getFormFitnessBoost(player.form);
+fitnessLoss = Math.max(0, fitnessLoss - formFitnessBoost);
+
+if (player.role === "GK") {
+  fitnessLoss = 0;
+}
 
     // FORM
     if (result === "win") formChange += 3;
@@ -442,16 +458,16 @@ function applyPostMatchConditionChanges(team, goalsFor, goalsAgainst, events, si
   });
 
   const subs = (team?.subs || []).map((player) => ({
-    ...player,
-    fitness: clampStat((player.fitness ?? 92) + 8),
-    form: clampStat((player.form ?? 60)),
-  }));
+  ...player,
+  fitness: 100,
+  form: clampStat((player.form ?? 60)),
+}));
 
-  const reserves = (team?.reserves || []).map((player) => ({
-    ...player,
-    fitness: clampStat((player.fitness ?? 92) + 10),
-    form: clampStat((player.form ?? 60)),
-  }));
+const reserves = (team?.reserves || []).map((player) => ({
+  ...player,
+  fitness: 100,
+  form: clampStat((player.form ?? 60)),
+}));
 
   return {
     ...team,
