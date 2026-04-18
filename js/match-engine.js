@@ -159,6 +159,15 @@ function getStarCreators(team) {
   };
 }
 
+function getSuperstarScoringMultiplier(player) {
+  const id = Number(player?.id);
+
+  if (id === 56) return 1.35;   // Messi
+  if (id === 108) return 1.35;  // Ronaldo
+
+  return 1.0;
+}
+
 function getScorerWeight(player, team) {
   const ratingBoost = (player.rating || 80) - 75;
   const stars = getStarAttackers(team);
@@ -184,22 +193,24 @@ function getScorerWeight(player, team) {
 
   let weight = (byRole[player.role] || 0.05) + ratingBoost * 0.22;
 
-  if (stars.main && player.id === stars.main.id) {
-    weight *= 1.75;
-  } else if (stars.second && player.id === stars.second.id) {
-    weight *= 1.25;
-  } else if (stars.third && player.id === stars.third.id) {
-    weight *= 1.1;
-  }
+ if (stars.main && player.id === stars.main.id) {
+  weight *= 2.1;
+} else if (stars.second && player.id === stars.second.id) {
+  weight *= 1.35;
+} else if (stars.third && player.id === stars.third.id) {
+  weight *= 1.12;
+}
 
   if (player.role === "ST") {
-    weight *= 1.15;
-  }
+  weight *= 1.22;
+}
 
-  const formBoost = (player.form ?? 60) - 60;
-  weight *= 1 + (formBoost * 0.01);
+const formBoost = (player.form ?? 60) - 60;
+weight *= 1 + (formBoost * 0.01);
 
-  return Math.max(0, weight);
+weight *= getSuperstarScoringMultiplier(player);
+
+return Math.max(0, weight);
 }
 
 function getAssistWeight(player, team) {
@@ -297,10 +308,20 @@ function generateGoalMinute(existingMinutes = []) {
 function buildGoalEvents(team, side, goalsFor) {
   const events = [];
   const usedMinutes = [];
+  const stars = getStarAttackers(team);
 
   for (let i = 0; i < goalsFor; i++) {
-    const scorer = pickScorer(team);
+    let scorer = pickScorer(team);
     if (!scorer) continue;
+
+    // Extra bias toward the main star in multi-goal games
+    if (
+      stars.main &&
+      goalsFor >= 2 &&
+      Math.random() < 0.22
+    ) {
+      scorer = stars.main;
+    }
 
     const assister = pickAssister(team, scorer.id);
     const minute = generateGoalMinute(usedMinutes);
