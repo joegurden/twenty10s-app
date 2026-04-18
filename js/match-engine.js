@@ -196,6 +196,9 @@ function getScorerWeight(player, team) {
     weight *= 1.15;
   }
 
+  const formBoost = (player.form ?? 60) - 60;
+  weight *= 1 + (formBoost * 0.01);
+
   return Math.max(0, weight);
 }
 
@@ -235,6 +238,9 @@ function getAssistWeight(player, team) {
   if (starAttackers.main && player.id === starAttackers.main.id && player.role !== "ST") {
     weight *= 1.12;
   }
+
+  const formBoost = (player.form ?? 60) - 60;
+  weight *= 1 + (formBoost * 0.01);
 
   return Math.max(0, weight);
 }
