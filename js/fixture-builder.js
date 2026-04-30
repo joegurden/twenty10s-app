@@ -17,6 +17,9 @@ async function loadChallenge() {
     .eq("mode", "fixture_recreator")
     .single();
 
+  console.log("Challenge data:", data);
+  console.log("Challenge error:", error);
+
   if (error) {
     console.error(error);
     return;
@@ -136,27 +139,37 @@ async function handleGuess() {
 }
 
 async function handleSearch(e) {
-  const query = e.target.value;
+  const query = e.target.value.trim();
 
-  // Only search after 2+ characters
   if (query.length < 2) {
     document.getElementById("suggestions").innerHTML = "";
     return;
   }
 
-const validIds = Object.values(correctAnswers);
+  const validIds = Object.values(correctAnswers);
 
-const { data } = await supabase
-  .from("players")
-  .select("id, name")
-  .in("id", validIds) // 🔥 THIS LINE
-  .ilike("name", `%${query}%`)
-  .limit(5);
+  if (!validIds.length) {
+    console.warn("No correct answers loaded yet");
+    return;
+  }
 
-  renderSuggestions(data);
+  const { data, error } = await supabase
+    .from("players")
+    .select("id, name")
+    .in("id", validIds)
+    .ilike("name", `%${query}%`)
+    .limit(5);
+
+  if (error) {
+    console.error("Player search error:", error);
+    renderSuggestions([]);
+    return;
+  }
+
+  renderSuggestions(data || []);
 }
 
-function renderSuggestions(players) {
+function renderSuggestions(players = []) {
   const container = document.getElementById("suggestions");
   container.innerHTML = "";
 
