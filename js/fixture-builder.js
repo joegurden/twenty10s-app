@@ -1,9 +1,6 @@
 import { FORMATIONS, FORMATION_COORDS } from "./shared/formations.js";
 
-const SUPABASE_URL = "YOUR_URL";
-const SUPABASE_KEY = "YOUR_KEY";
-
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+import { supabase } from "./supabaseClient.js";
 
 let currentChallenge = null;
 let selectedSlot = null;
