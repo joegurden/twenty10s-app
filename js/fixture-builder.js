@@ -238,7 +238,8 @@ async function handleSearch(e, suggestionsBox, slotKey) {
   id: p.ID,
   name: p.Name,
   photo: photoUrlFor(p.ID)
-})));
+})), suggestionsBox, slotKey);
+}
 
 function renderSuggestions(players, container, slotKey) {
   container.innerHTML = "";
@@ -255,10 +256,7 @@ function renderSuggestions(players, container, slotKey) {
 `;
 
     div.addEventListener("click", () => {
-      selectSuggestion({
-        id: player.ID,
-        name: player.Name
-      }, slotKey);
+      selectSuggestion(player, slotKey);
     });
 
     container.appendChild(div);
