@@ -202,9 +202,9 @@ async function handleSearch(e) {
 
   const { data, error } = await supabase
     .from("players")
-    .select("id, name")
-    .in("id", validIds)
-    .ilike("name", `%${query}%`)
+    .select('"ID","Name"')
+.in("ID", validIds)
+.ilike('"Name"', `%${query}%`)
     .limit(5);
 
   if (error) {
@@ -213,8 +213,10 @@ async function handleSearch(e) {
     return;
   }
 
-  renderSuggestions(data || []);
-}
+  renderSuggestions((data || []).map(p => ({
+  id: p.ID,
+  name: p.Name
+})));
 
 function renderSuggestions(players = []) {
   const container = document.getElementById("suggestions");
@@ -244,12 +246,14 @@ function selectSuggestion(player) {
 async function findPlayerByName(name) {
   const { data } = await supabase
     .from("players")
-    .select("*")
-    .ilike("name", `%${name}%`)
-    .limit(1);
+.select('"ID","Name"')
+.ilike('"Name"', `%${name}%`)
+.limit(1);
 
-  return data?.[0];
-}
+  return data?.[0] ? {
+  id: data[0].ID,
+  name: data[0].Name
+} : null;
 
 function checkAnswer(slot, player) {
   const correctPlayerId = correctAnswers[slot];
