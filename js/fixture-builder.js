@@ -2,6 +2,14 @@ import { FORMATIONS, FORMATION_COORDS } from "./shared/formations.js";
 
 import { supabase } from "./supabaseClient.js";
 
+function photoUrlFor(playerId) {
+  const { data } = supabase.storage
+    .from("player-photos")
+    .getPublicUrl(`headshots/${playerId}.webp`);
+
+  return data?.publicUrl || "img/player-placeholder.png";
+}
+
 let currentChallenge = null;
 let selectedSlot = null;
 let correctAnswers = {};
@@ -145,27 +153,48 @@ function renderPitch(containerId, playerIds, formation, side) {
       `;
     }
 
-    div.addEventListener("click", () => {
-      selectedSlot = slotKey;
+   div.addEventListener("click", () => {
+  selectedSlot = slotKey;
 
-      document.querySelectorAll(".slot").forEach(el => {
-        el.classList.remove("active");
-      });
+  document.querySelectorAll(".slot").forEach(el => {
+    el.classList.remove("active");
+  });
 
-      div.classList.add("active");
-    });
+  div.classList.add("active");
+
+  showSlotInput(div, slotKey);
+});
 
     container.appendChild(div);
   });
 }
 
-document.getElementById("submitGuess").addEventListener("click", handleGuess);
-document.getElementById("playerInput").addEventListener("input", handleSearch);
 document.getElementById("playerInput").addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     handleGuess();
   }
 });
+
+function showSlotInput(slotDiv, slotKey) {
+  // remove any existing inputs
+  document.querySelectorAll(".slot-search").forEach(el => el.remove());
+
+  slotDiv.innerHTML += `
+    <div class="slot-search">
+      <input class="slot-player-input" placeholder="Search player..." />
+      <div class="slot-suggestions"></div>
+    </div>
+  `;
+
+  const input = slotDiv.querySelector(".slot-player-input");
+  const suggestionsBox = slotDiv.querySelector(".slot-suggestions");
+
+  input.focus();
+
+  input.addEventListener("input", (e) => {
+    handleSearch(e, suggestionsBox, slotKey);
+  });
+}
 
 async function handleGuess() {
   if (!selectedSlot) {
@@ -185,63 +214,63 @@ async function handleGuess() {
   checkAnswer(selectedSlot, player);
 }
 
-async function handleSearch(e) {
+async function handleSearch(e, suggestionsBox, slotKey) {
   const query = e.target.value.trim();
 
   if (query.length < 2) {
-    document.getElementById("suggestions").innerHTML = "";
-    return;
-  }
-
-  const validIds = Object.values(correctAnswers);
-
-  if (!validIds.length) {
-    console.warn("No correct answers loaded yet");
+    suggestionsBox.innerHTML = "";
     return;
   }
 
   const { data, error } = await supabase
     .from("players")
-    .select('"ID","Name"')
-.in("ID", validIds)
-.ilike('"Name"', `%${query}%`)
-    .limit(5);
+    .select('"ID","Name","Club"')
+    .ilike('"Name"', `%${query}%`)
+    .limit(6);
 
   if (error) {
-    console.error("Player search error:", error);
-    renderSuggestions([]);
+    console.error(error);
+    suggestionsBox.innerHTML = "";
     return;
   }
 
   renderSuggestions((data || []).map(p => ({
   id: p.ID,
-  name: p.Name
+  name: p.Name,
+  photo: photoUrlFor(p.ID)
 })));
-}
 
-function renderSuggestions(players = []) {
-  const container = document.getElementById("suggestions");
+function renderSuggestions(players, container, slotKey) {
   container.innerHTML = "";
 
   players.forEach(player => {
     const div = document.createElement("div");
     div.className = "suggestion-item";
-    div.textContent = player.name;
+
+    div.innerHTML = `
+  <div class="pimg">
+    <img src="${player.photo}" alt="${player.name}">
+  </div>
+  <span>${player.name}</span>
+`;
 
     div.addEventListener("click", () => {
-      selectSuggestion(player);
+      selectSuggestion({
+        id: player.ID,
+        name: player.Name
+      }, slotKey);
     });
 
     container.appendChild(div);
   });
 }
 
-function selectSuggestion(player) {
+function selectSuggestion(player, slotKey) {
   document.getElementById("playerInput").value = player.name;
 
   document.getElementById("suggestions").innerHTML = "";
 
-  checkAnswer(selectedSlot, player);
+  checkAnswer(slotKey, player);
 }
 
 async function findPlayerByName(name) {
@@ -253,7 +282,8 @@ async function findPlayerByName(name) {
 
   return data?.[0] ? {
   id: data[0].ID,
-  name: data[0].Name
+  name: data[0].Name,
+  photo: photoUrlFor(data[0].ID)
 } : null;
 }
 
@@ -264,6 +294,10 @@ function checkAnswer(slot, player) {
 
   if (player.id === correctPlayerId) {
 slotDiv.innerHTML = `
+  <div class="slot-photo">
+    <img src="${player.photo || 'img/player-placeholder.png'}"
+         alt="${player.name}">
+  </div>
   <div class="picked">
     <strong>${player.name}</strong>
   </div>
