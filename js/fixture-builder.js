@@ -217,6 +217,7 @@ async function handleSearch(e) {
   id: p.ID,
   name: p.Name
 })));
+}
 
 function renderSuggestions(players = []) {
   const container = document.getElementById("suggestions");
@@ -254,6 +255,7 @@ async function findPlayerByName(name) {
   id: data[0].ID,
   name: data[0].Name
 } : null;
+}
 
 function checkAnswer(slot, player) {
   const correctPlayerId = correctAnswers[slot];
