@@ -11,21 +11,68 @@ async function loadChallenge() {
   const today = new Date().toISOString().split("T")[0];
 
   const { data, error } = await supabase
-    .from("daily_challenges")
+    .from("fixturebuilder")
     .select("*")
     .eq("challenge_date", today)
-    .eq("mode", "fixture_recreator")
     .single();
 
-  console.log("Challenge data:", data);
-  console.log("Challenge error:", error);
+  console.log("Fixturebuilder data:", data);
+  console.log("Fixturebuilder error:", error);
 
   if (error) {
     console.error(error);
     return;
   }
 
-  renderChallenge(data.data);
+  renderChallenge(transformFixtureRow(data));
+}
+
+function transformFixtureRow(row) {
+  return {
+    fixture: {
+      home_team: row.home_team,
+      away_team: row.away_team,
+      score_home: row.home_score,
+      score_away: row.away_score,
+    },
+
+    home_formation: row.home_formation,
+    away_formation: row.away_formation,
+
+    lineup: {
+      home: [
+        row.id_home_pos_1,
+        row.id_home_pos_2,
+        row.id_home_pos_3,
+        row.id_home_pos_4,
+        row.id_home_pos_5,
+        row.id_home_pos_6,
+        row.id_home_pos_7,
+        row.id_home_pos_8,
+        row.id_home_pos_9,
+        row.id_home_pos_10,
+        row.id_home_pos_11,
+      ],
+      away: [
+        row.id_away_pos_1,
+        row.id_away_pos_2,
+        row.id_away_pos_3,
+        row.id_away_pos_4,
+        row.id_away_pos_5,
+        row.id_away_pos_6,
+        row.id_away_pos_7,
+        row.id_away_pos_8,
+        row.id_away_pos_9,
+        row.id_away_pos_10,
+        row.id_away_pos_11,
+      ],
+    },
+
+    scorers: {
+      home: row.home_scorers || [],
+      away: row.away_scorers || [],
+    },
+  };
 }
 
 function renderChallenge(data) {
@@ -60,8 +107,8 @@ data.lineup.away.forEach((playerId, index) => {
     data.fixture.away_team;
 
   // Lineups
-renderPitch("homePitch", data.lineup.home, data.formation || "4-3-3", "home");
-renderPitch("awayPitch", data.lineup.away, data.formation || "4-3-3", "away");
+renderPitch("homePitch", data.lineup.home, data.home_formation || "4-3-3", "home");
+renderPitch("awayPitch", data.lineup.away, data.away_formation || "4-3-3", "away");
 }
 
 function renderPitch(containerId, playerIds, formation, side) {
