@@ -32,7 +32,7 @@ async function loadChallenge() {
     return;
   }
 
-  renderChallenge(transformFixtureRow(data));
+  showDifficultyScreen(transformFixtureRow(data));
 }
 
 function transformFixtureRow(row) {
@@ -43,7 +43,9 @@ function transformFixtureRow(row) {
       score_home: row.home_score,
       score_away: row.away_score,
     },
-
+date: row.Date,
+competition: row.Competition,
+matchday: row.Matchday,
     home_formation: row.home_formation,
     away_formation: row.away_formation,
 
@@ -81,6 +83,27 @@ function transformFixtureRow(row) {
       away: row.away_scorers || [],
     },
   };
+}
+
+function showDifficultyScreen(data) {
+  document.getElementById("preGameFixtureTitle").textContent =
+    `${data.fixture.home_team} vs ${data.fixture.away_team}`;
+
+  document.getElementById("preGameFixtureMeta").textContent =
+    `${data.competition || ""} · ${data.matchday || ""} · ${data.date || ""}`;
+
+  document.querySelectorAll(".fr-card").forEach(card => {
+    card.addEventListener("click", () => {
+      const difficulty = card.dataset.difficulty;
+
+      localStorage.setItem("fixtureDifficulty", difficulty);
+
+      document.getElementById("fixtureDifficultyScreen").classList.add("hidden");
+      document.getElementById("fixtureGameScreen").classList.remove("hidden");
+
+      renderChallenge(data);
+    });
+  });
 }
 
 function renderChallenge(data) {
@@ -169,17 +192,14 @@ function renderPitch(containerId, playerIds, formation, side) {
   });
 }
 
-document.getElementById("playerInput").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    handleGuess();
-  }
-});
-
 function showSlotInput(slotDiv, slotKey) {
   // remove any existing inputs
   document.querySelectorAll(".slot-search").forEach(el => el.remove());
 
-  slotDiv.innerHTML += `
+  // 🔑 store original content BEFORE replacing
+  const originalContent = slotDiv.innerHTML;
+
+  slotDiv.innerHTML = `
     <div class="slot-search">
       <input class="slot-player-input" placeholder="Search player..." />
       <div class="slot-suggestions"></div>
@@ -193,6 +213,15 @@ function showSlotInput(slotDiv, slotKey) {
 
   input.addEventListener("input", (e) => {
     handleSearch(e, suggestionsBox, slotKey);
+  });
+
+  // 🔄 restore slot if user clicks away without selecting
+  input.addEventListener("blur", () => {
+    setTimeout(() => {
+      if (!filledSlots[slotKey]) {
+        slotDiv.innerHTML = originalContent;
+      }
+    }, 200);
   });
 }
 
@@ -249,10 +278,12 @@ function renderSuggestions(players, container, slotKey) {
     div.className = "suggestion-item";
 
     div.innerHTML = `
-  <div class="pimg">
-    <img src="${player.photo}" alt="${player.name}">
+  <div class="suggestion-photo">
+    <img src="${player.photo || 'img/player-placeholder.png'}" alt="${player.name}">
   </div>
-  <span>${player.name}</span>
+  <div class="suggestion-info">
+    <strong>${player.name}</strong>
+  </div>
 `;
 
     div.addEventListener("click", () => {

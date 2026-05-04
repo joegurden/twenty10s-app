@@ -2,15 +2,15 @@
 
 // ---- Formations (v1) ----
 export const FORMATIONS = {
-  "4-3-3": ["GK","LB","CB","CB","RB","CM","CM","CM","LW","ST","RW"],
-  "4-3-3 (Attack)": ["GK","LB","CB","CB","RB","CAM","CM","CM","LW","ST","RW"],
-  "4-3-3 (Holding)": ["GK","LB","CB","CB","RB","CDM","CM","CM","LW","ST","RW"],
-  "4-2-3-1": ["GK","LB","CB","CB","RB","CDM","CDM","LW","CAM","RW","ST"],
-  "4-4-2": ["GK","LB","CB","CB","RB","LM","CM","CM","RM","ST","ST"],
-  "3-5-2": ["GK","CB","CB","CB","LWB","CM","CDM","CM","RWB","ST","ST"],
-  "3-4-3": ["GK","CB","CB","CB","LM","CM","CM","RM","LW","ST","RW"],
-  "4-1-2-1-2 Wide": ["GK","LB","CB","CB","RB","CDM","LM","RM","CAM","ST","ST"],
-  "4-1-2-1-2 (Diamond)": ["GK","LB","CB","CB","RB","CDM","CM","CM","CAM","ST","ST"],
+  "4-3-3": ["GK","RB","CB","CB","LB","CM","CM","CM","RW","ST","LW"],
+  "4-3-3 (Attack)": ["GK","RB","CB","CB","LB","CM","CM","CAM","RW","ST","LW"],
+  "4-3-3 (Holding)": ["GK","RB","CB","CB","LB","CDM","CM","CM","RW","ST","LW"],
+  "4-2-3-1": ["GK","RB","CB","CB","LB","CDM","CDM","CAM","RW","ST","LW"],
+  "4-4-2": ["GK","RB","CB","CB","LB","LM","CM","CM","RM","ST","ST"],
+  "3-5-2": ["GK","CB","CB","CB","RWB","LWB","CDM","CDM","CAM","ST","ST"],
+  "3-4-3": ["GK","CB","CB","CB","RM","CM","CM","LM","RW","ST","LW"],
+  "4-1-2-1-2 Wide": ["GK","RB","CB","CB","LB","CDM","RM","LM","CAM","ST","ST"],
+  "4-1-2-1-2 (Diamond)": ["GK","RB","CB","CB","LB","CDM","CM","CM","CAM","ST","ST"],
 };
 
 // ---- Coordinates ----

@@ -22,7 +22,49 @@
     </div>
   </header>
 
-  <main class="mg-wrap">
+<section id="fixtureDifficultyScreen" class="fr-difficulty-screen">
+  <h1 id="preGameFixtureTitle">Loading...</h1>
+  <p id="preGameFixtureMeta"></p>
+
+  <div class="fr-difficulty-grid">
+
+    <div class="fr-card easy" data-difficulty="easy">
+      <h2>Easy</h2>
+      <p>Guess 22 players on the pitch</p>
+      <p>Nationality hints</p>
+      <strong>3 lives</strong>
+      <span>Reward: 25 coins</span>
+      <button>Start Easy</button>
+    </div>
+
+    <div class="fr-card medium" data-difficulty="medium">
+      <h2>Medium</h2>
+      <p>Guess 22 players + the score</p>
+      <strong>3 lives</strong>
+      <span>Reward: 30 coins</span>
+      <button>Start Medium</button>
+    </div>
+
+    <div class="fr-card hard" data-difficulty="hard">
+      <h2>Hard</h2>
+      <p>Guess 22 players, score and scorers</p>
+      <strong>3 lives</strong>
+      <span>Reward: 50 coins</span>
+      <button>Start Hard</button>
+    </div>
+
+    <div class="fr-card very-hard" data-difficulty="very-hard">
+      <h2>Very Hard</h2>
+      <p>Guess 22 players, score, scorers and shirt numbers</p>
+      <strong>3 lives</strong>
+      <span>Reward: 100 coins</span>
+      <button>Start Very Hard</button>
+    </div>
+
+  </div>
+</section>
+
+  <main id="fixtureGameScreen" class="mg-wrap hidden">
 
     <!-- FIXTURE HEADER -->
     <section class="mg-header card">
@@ -34,6 +76,7 @@
         <span id="awayScore">0</span>
       </div>
     </section>
+
 
     <!-- LINEUPS -->
     <section class="mg-grid">
@@ -54,15 +97,8 @@
 
     </section>
 
-<div class="card guess-box">
-  <input id="playerInput" placeholder="Search player..." />
-  <button id="submitGuess">Submit</button>
-<div id="suggestions" class="suggestions"></div>
-</div>
-
   </main>
 
- </script>
   <script type="module" src="js/fixture-builder.js"></script>
 </body>
 </html>
