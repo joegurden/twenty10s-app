@@ -216,14 +216,13 @@ function showSlotInput(slotDiv, slotKey) {
   });
 
   // 🔄 restore slot if user clicks away without selecting
-  input.addEventListener("blur", () => {
-    setTimeout(() => {
-      if (!filledSlots[slotKey]) {
-        slotDiv.innerHTML = originalContent;
-      }
-    }, 200);
-  });
-}
+ input.addEventListener("blur", () => {
+  setTimeout(() => {
+    if (!slotDiv.classList.contains("correct")) {
+      slotDiv.innerHTML = originalContent;
+    }
+  }, 300);
+});
 
 async function handleGuess() {
   if (!selectedSlot) {
