@@ -138,3 +138,42 @@
   height: 100%;
   object-fit: cover;
 }
+
+.slot.correct {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 8px;
+}
+
+.slot.correct .picked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.slot.correct .picked strong {
+  font-size: 12px;
+  text-align: center;
+  line-height: 1.1;
+  max-width: 90px;
+}
+
+.slot-photo {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin-bottom: 6px;
+  background: #f2f2f2;
+  flex-shrink: 0;
+}
+
+.slot-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
