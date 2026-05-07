@@ -193,10 +193,8 @@ function renderPitch(containerId, playerIds, formation, side) {
 }
 
 function showSlotInput(slotDiv, slotKey) {
-  // remove any existing inputs
   document.querySelectorAll(".slot-search").forEach(el => el.remove());
 
-  // 🔑 store original content BEFORE replacing
   const originalContent = slotDiv.innerHTML;
 
   slotDiv.innerHTML = `
@@ -215,14 +213,14 @@ function showSlotInput(slotDiv, slotKey) {
     handleSearch(e, suggestionsBox, slotKey);
   });
 
-  // 🔄 restore slot if user clicks away without selecting
- input.addEventListener("blur", () => {
-  setTimeout(() => {
-    if (!slotDiv.classList.contains("correct")) {
-      slotDiv.innerHTML = originalContent;
-    }
-  }, 300);
-});
+  input.addEventListener("blur", () => {
+    setTimeout(() => {
+      if (!slotDiv.classList.contains("correct")) {
+        slotDiv.innerHTML = originalContent;
+      }
+    }, 300);
+  });
+}
 
 async function handleGuess() {
   if (!selectedSlot) {
