@@ -295,10 +295,6 @@ function renderSuggestions(players, container, slotKey) {
 }
 
 function selectSuggestion(player, slotKey) {
-  document.getElementById("playerInput").value = player.name;
-
-  document.getElementById("suggestions").innerHTML = "";
-
   checkAnswer(slotKey, player);
 }
 
