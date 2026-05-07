@@ -177,6 +177,10 @@ function renderPitch(containerId, playerIds, formation, side) {
     }
 
    div.addEventListener("click", () => {
+  if (filledSlots[slotKey] || div.classList.contains("correct")) {
+    return;
+  }
+
   selectedSlot = slotKey;
 
   document.querySelectorAll(".slot").forEach(el => {
@@ -214,13 +218,12 @@ function showSlotInput(slotDiv, slotKey) {
   });
 
   input.addEventListener("blur", () => {
-    setTimeout(() => {
-      if (!slotDiv.classList.contains("correct")) {
-        slotDiv.innerHTML = originalContent;
-      }
-    }, 300);
-  });
-}
+  setTimeout(() => {
+    if (!filledSlots[slotKey] && !slotDiv.classList.contains("correct")) {
+      slotDiv.innerHTML = originalContent;
+    }
+  }, 300);
+});
 
 async function handleGuess() {
   if (!selectedSlot) {
@@ -346,10 +349,10 @@ function checkAnswer(slot, player) {
   const slotDiv = document.querySelector(`[data-slot="${slot}"]`);
 
   if (player.id === correctPlayerId) {
-    filledSlots[slot] = player;
+  filledSlots[slot] = player;
 
-    slotDiv.classList.remove("active", "wrong");
-    slotDiv.classList.add("correct");
+  slotDiv.classList.remove("active", "wrong");
+  slotDiv.classList.add("correct");
 
     slotDiv.innerHTML = `
       <div class="slot-photo">
