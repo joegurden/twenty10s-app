@@ -309,31 +309,69 @@ async function findPlayerByName(name) {
 } : null;
 }
 
+function getSlotLabel(slot) {
+  const [side, indexText] = slot.split("-");
+  const index = Number(indexText);
+
+  const formation =
+    side === "home"
+      ? currentChallenge.home_formation
+      : currentChallenge.away_formation;
+
+  const slots = FORMATIONS[formation] || FORMATIONS["4-3-3"];
+
+  return slots[index] || "";
+}
+
+function showWrongGuessMessage(message) {
+  let box = document.getElementById("guessMessage");
+
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "guessMessage";
+    box.className = "guess-message";
+    document.body.appendChild(box);
+  }
+
+  box.textContent = message;
+  box.classList.add("show");
+
+  setTimeout(() => {
+    box.classList.remove("show");
+  }, 1400);
+}
+
 function checkAnswer(slot, player) {
   const correctPlayerId = correctAnswers[slot];
-
   const slotDiv = document.querySelector(`[data-slot="${slot}"]`);
 
   if (player.id === correctPlayerId) {
-slotDiv.innerHTML = `
-  <div class="slot-photo">
-    <img src="${player.photo || 'img/player-placeholder.png'}"
-         alt="${player.name}">
-  </div>
-  <div class="picked">
-    <strong>${player.name}</strong>
-  </div>
-`;
-slotDiv.classList.add("correct");
-
     filledSlots[slot] = player;
-  } else {
-    slotDiv.classList.add("wrong");
 
-    setTimeout(() => {
-      slotDiv.classList.remove("wrong");
-    }, 800);
+    slotDiv.classList.remove("active", "wrong");
+    slotDiv.classList.add("correct");
+
+    slotDiv.innerHTML = `
+      <div class="slot-photo">
+        <img src="${player.photo || 'img/player-placeholder.png'}"
+             alt="${player.name}">
+      </div>
+
+      <div class="picked">
+        <strong>${player.name}</strong>
+        <span>${getSlotLabel(slot)}</span>
+      </div>
+    `;
+
+    return;
   }
+
+  slotDiv.classList.add("wrong");
+  showWrongGuessMessage("Wrong player — try again");
+
+  setTimeout(() => {
+    slotDiv.classList.remove("wrong");
+  }, 800);
 }
 
 loadChallenge();
