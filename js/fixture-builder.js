@@ -10,6 +10,16 @@ function photoUrlFor(playerId) {
   return data?.publicUrl || "img/player-placeholder.png";
 }
 
+function badgeUrlFor(abbreviation) {
+  if (!abbreviation) return "";
+
+  const { data } = supabase.storage
+    .from("badges")
+    .getPublicUrl(`${abbreviation}.png`);
+
+  return data?.publicUrl || "";
+}
+
 let currentChallenge = null;
 let selectedSlot = null;
 let correctAnswers = {};
@@ -38,11 +48,13 @@ async function loadChallenge() {
 function transformFixtureRow(row) {
   return {
     fixture: {
-      home_team: row.home_team,
-      away_team: row.away_team,
-      score_home: row.home_score,
-      score_away: row.away_score,
-    },
+  home_team: row.home_team,
+  away_team: row.away_team,
+  home_badge: row.home_badge,
+  away_badge: row.away_badge,
+  score_home: row.home_score,
+  score_away: row.away_score,
+},
 date: row.Date,
 competition: row.Competition,
 matchday: row.Matchday,
@@ -124,11 +136,19 @@ data.lineup.away.forEach((playerId, index) => {
     `${data.fixture.home_team} vs ${data.fixture.away_team}`;
 
   // Score
-  document.getElementById("homeScore").textContent =
-    data.fixture.score_home;
+  document.querySelector(".mg-scoreboard").innerHTML = `
+  <div class="score-team">
+    <img src="${badgeUrlFor(data.fixture.home_badge)}" alt="${data.fixture.home_team}">
+    <span id="homeScore">${data.fixture.score_home}</span>
+  </div>
 
-  document.getElementById("awayScore").textContent =
-    data.fixture.score_away;
+  <span class="score-dash">-</span>
+
+  <div class="score-team">
+    <span id="awayScore">${data.fixture.score_away}</span>
+    <img src="${badgeUrlFor(data.fixture.away_badge)}" alt="${data.fixture.away_team}">
+  </div>
+`;
 
   // Team names
   document.getElementById("homeTeam").textContent =
