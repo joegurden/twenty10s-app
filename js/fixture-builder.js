@@ -224,6 +224,7 @@ function showSlotInput(slotDiv, slotKey) {
     }
   }, 300);
 });
+}
 
 async function handleGuess() {
   if (!selectedSlot) {
