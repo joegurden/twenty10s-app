@@ -463,6 +463,10 @@ function updateProgressPanel() {
   const homeDone = Object.keys(filledSlots).filter(k => k.startsWith("home-")).length;
   const awayDone = Object.keys(filledSlots).filter(k => k.startsWith("away-")).length;
 
+  const totalScorers =
+    (currentChallenge.scorers.home?.length || 0) +
+    (currentChallenge.scorers.away?.length || 0);
+
   const rows = [
     `Lives: ${lives}`,
     `${currentChallenge.fixture.home_team}: ${homeDone} / 11 players`,
@@ -470,15 +474,11 @@ function updateProgressPanel() {
   ];
 
   if (["medium", "hard", "very-hard"].includes(currentDifficulty)) {
-    rows.push(`Scorers: ${guessedGoals.length} / ${totalScorers}`);
+    rows.push(`Score: ${guessedScore ? "1 / 1" : "0 / 1"}`);
   }
 
   if (["hard", "very-hard"].includes(currentDifficulty)) {
-    const totalScorers =
-      (currentChallenge.scorers.home?.length || 0) +
-      (currentChallenge.scorers.away?.length || 0);
-
-    rows.push(`Scorers: ${guessedScorers ? `${totalScorers} / ${totalScorers}` : `0 / ${totalScorers}`}`);
+    rows.push(`Scorers: ${guessedGoals.length} / ${totalScorers}`);
   }
 
   if (currentDifficulty === "very-hard") {
