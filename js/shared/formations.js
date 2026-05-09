@@ -14,7 +14,7 @@ export const FORMATIONS = {
 
   "3-5-2": ["GK","CB","CB","CB","LWB","RWB","CDM","CDM","CAM","ST","ST"],
 
-  "3-4-3": ["GK","CB","CB","CB","LM","CM","CM","RM","RW","ST","LW"],
+  "3-4-3": ["GK","CB","CB","CB","LM","CM","CM","RM","LW","ST","RW"],
 
   "4-1-2-1-2 Wide": ["GK","LB","CB","CB","RB","CDM","LM","RM","CAM","ST","ST"],
 

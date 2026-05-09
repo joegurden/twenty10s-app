@@ -24,6 +24,13 @@ let currentChallenge = null;
 let selectedSlot = null;
 let correctAnswers = {};
 let filledSlots = {};
+let currentDifficulty = null;
+let lives = 3;
+let gameStage = "players";
+
+let guessedScore = false;
+let guessedScorers = false;
+let guessedShirtNumbers = false;
 
 async function loadChallenge() {
   const today = new Date().toISOString().split("T")[0];
@@ -90,6 +97,21 @@ matchday: row.Matchday,
       ],
     },
 
+shirtNumbers: {
+  home: [
+    row.shirtno_home_1, row.shirtno_home_2, row.shirtno_home_3,
+    row.shirtno_home_4, row.shirtno_home_5, row.shirtno_home_6,
+    row.shirtno_home_7, row.shirtno_home_8, row.shirtno_home_9,
+    row.shirtno_home_10, row.shirtno_home_11,
+  ],
+  away: [
+    row.shirtno_away_1, row.shirtno_away_2, row.shirtno_away_3,
+    row.shirtno_away_4, row.shirtno_away_5, row.shirtno_away_6,
+    row.shirtno_away_7, row.shirtno_away_8, row.shirtno_away_9,
+    row.shirtno_away_10, row.shirtno_away_11,
+  ],
+},
+
     scorers: {
       home: row.home_scorers || [],
       away: row.away_scorers || [],
@@ -108,7 +130,11 @@ function showDifficultyScreen(data) {
     card.addEventListener("click", () => {
       const difficulty = card.dataset.difficulty;
 
-      localStorage.setItem("fixtureDifficulty", difficulty);
+currentDifficulty = difficulty;
+lives = 3;
+gameStage = "players";
+
+localStorage.setItem("fixtureDifficulty", difficulty);
 
       document.getElementById("fixtureDifficultyScreen").classList.add("hidden");
       document.getElementById("fixtureGameScreen").classList.remove("hidden");
@@ -121,6 +147,8 @@ function showDifficultyScreen(data) {
 function renderChallenge(data) {
 
 currentChallenge = data;
+createProgressPanel();
+updateProgressPanel();
 
 // Store correct answers
 data.lineup.home.forEach((playerId, index) => {
@@ -139,13 +167,13 @@ data.lineup.away.forEach((playerId, index) => {
   document.querySelector(".mg-scoreboard").innerHTML = `
   <div class="score-team">
     <img src="${badgeUrlFor(data.fixture.home_badge)}" alt="${data.fixture.home_team}">
-    <span id="homeScore">${data.fixture.score_home}</span>
+    <span id="homeScore">${currentDifficulty === "easy" ? data.fixture.score_home : "?"}</span>
   </div>
 
   <span class="score-dash">-</span>
 
   <div class="score-team">
-    <span id="awayScore">${data.fixture.score_away}</span>
+    <span id="awayScore">${currentDifficulty === "easy" ? data.fixture.score_away : "?"}</span>
     <img src="${badgeUrlFor(data.fixture.away_badge)}" alt="${data.fixture.away_team}">
   </div>
 `;
@@ -160,6 +188,14 @@ data.lineup.away.forEach((playerId, index) => {
   // Lineups
 renderPitch("homePitch", data.lineup.home, data.home_formation || "4-3-3", "home");
 renderPitch("awayPitch", data.lineup.away, data.away_formation || "4-3-3", "away");
+}
+
+function getSlotHint(side, index) {
+  if (currentDifficulty !== "easy") {
+    return `Position ${index + 1}`;
+  }
+
+  return "Name length hidden";
 }
 
 function renderPitch(containerId, playerIds, formation, side) {
@@ -191,7 +227,7 @@ div.style.top = `calc(${pos.y}% - 34px)`;
       div.innerHTML = `
         <div>
           <div class="pos">${slots[index]}</div>
-          <div class="hint">Position ${index + 1}</div>
+          <div class="hint">${getSlotHint(side, index)}</div>
         </div>
       `;
     }
@@ -371,9 +407,12 @@ function checkAnswer(slot, player) {
 
   if (player.id === correctPlayerId) {
   filledSlots[slot] = player;
+updateProgressPanel();
+checkStageProgress();
 
   slotDiv.classList.remove("active", "wrong");
   slotDiv.classList.add("correct");
+
 
     slotDiv.innerHTML = `
       <div class="slot-photo">
@@ -398,4 +437,130 @@ function checkAnswer(slot, player) {
   }, 800);
 }
 
+function createProgressPanel() {
+  if (document.getElementById("fixtureProgressPanel")) return;
+
+  const panel = document.createElement("div");
+  panel.id = "fixtureProgressPanel";
+  panel.className = "fixture-progress-panel";
+
+  const header = document.querySelector(".mg-header");
+  header.insertAdjacentElement("afterend", panel);
+}
+
+function updateProgressPanel() {
+  const panel = document.getElementById("fixtureProgressPanel");
+  if (!panel || !currentChallenge) return;
+
+  const homeDone = Object.keys(filledSlots).filter(k => k.startsWith("home-")).length;
+  const awayDone = Object.keys(filledSlots).filter(k => k.startsWith("away-")).length;
+
+  const rows = [
+    `Lives: ${lives}`,
+    `${currentChallenge.fixture.home_team}: ${homeDone} / 11 players`,
+    `${currentChallenge.fixture.away_team}: ${awayDone} / 11 players`,
+  ];
+
+  if (["medium", "hard", "very-hard"].includes(currentDifficulty)) {
+    rows.push(`Score: ${guessedScore ? "1 / 1" : "0 / 1"}`);
+  }
+
+  if (["hard", "very-hard"].includes(currentDifficulty)) {
+    const totalScorers =
+      (currentChallenge.scorers.home?.length || 0) +
+      (currentChallenge.scorers.away?.length || 0);
+
+    rows.push(`Scorers: ${guessedScorers ? `${totalScorers} / ${totalScorers}` : `0 / ${totalScorers}`}`);
+  }
+
+  if (currentDifficulty === "very-hard") {
+    rows.push(`Shirt numbers: ${guessedShirtNumbers ? "22 / 22" : "0 / 22"}`);
+  }
+
+  panel.innerHTML = rows.map(r => `<span>${r}</span>`).join("");
+}
+
+function checkStageProgress() {
+  const guessedPlayers = Object.keys(filledSlots).length;
+
+  if (guessedPlayers === 22) {
+    if (currentDifficulty === "easy") {
+      showWrongGuessMessage("Complete! You earned 25 coins");
+      return;
+    }
+
+    gameStage = "score";
+showWrongGuessMessage("Players complete — now guess the score");
+showScoreGuessPanel();
+  }
+}
+
+function showScoreGuessPanel() {
+  if (document.getElementById("scoreGuessPanel")) return;
+
+  const panel = document.createElement("div");
+  panel.id = "scoreGuessPanel";
+  panel.className = "score-guess-panel";
+
+  panel.innerHTML = `
+    <strong>Guess the final score</strong>
+    <div class="score-inputs">
+      <input id="homeScoreGuess" type="number" min="0" placeholder="${currentChallenge.fixture.home_team}" />
+      <span>-</span>
+      <input id="awayScoreGuess" type="number" min="0" placeholder="${currentChallenge.fixture.away_team}" />
+      <button id="submitScoreGuess">Submit score</button>
+    </div>
+  `;
+
+  document.getElementById("fixtureProgressPanel").insertAdjacentElement("afterend", panel);
+
+  document.getElementById("submitScoreGuess").addEventListener("click", checkScoreGuess);
+}
+
+function endGame() {
+  showWrongGuessMessage("Game over");
+  document.querySelectorAll(".slot").forEach(slot => {
+    slot.style.pointerEvents = "none";
+  });
+
+  const scorePanel = document.getElementById("scoreGuessPanel");
+  if (scorePanel) scorePanel.remove();
+}
+
 loadChallenge();
+
+function checkScoreGuess() {
+  const homeGuess = Number(document.getElementById("homeScoreGuess").value);
+  const awayGuess = Number(document.getElementById("awayScoreGuess").value);
+
+  if (
+    homeGuess === Number(currentChallenge.fixture.score_home) &&
+    awayGuess === Number(currentChallenge.fixture.score_away)
+  ) {
+    guessedScore = true;
+    gameStage = ["hard", "very-hard"].includes(currentDifficulty) ? "scorers" : "complete";
+
+    document.getElementById("homeScore").textContent = currentChallenge.fixture.score_home;
+    document.getElementById("awayScore").textContent = currentChallenge.fixture.score_away;
+
+    document.getElementById("scoreGuessPanel").remove();
+
+    updateProgressPanel();
+
+    if (currentDifficulty === "medium") {
+      showWrongGuessMessage("Complete! You earned 30 coins");
+    } else {
+      showWrongGuessMessage("Score correct — now guess the scorers");
+    }
+
+    return;
+  }
+
+  lives--;
+  updateProgressPanel();
+  showWrongGuessMessage(`Wrong score — ${lives} lives left`);
+
+  if (lives <= 0) {
+    endGame();
+  }
+}
