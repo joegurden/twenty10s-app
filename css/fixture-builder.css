@@ -211,3 +211,25 @@
   font-size: 11px;
   max-width: 96px;
 }
+
+.mg-scoreboard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.score-team {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.score-team img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.score-dash {
+  opacity: 0.8;
+}
