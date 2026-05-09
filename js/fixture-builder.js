@@ -156,8 +156,8 @@ function renderPitch(containerId, playerIds, formation, side) {
 
     div.className = "slot";
     div.dataset.slot = slotKey;
-    div.style.left = `calc(${pos.x}% - 75px)`;
-    div.style.top = `calc(${pos.y}% - 42px)`;
+    div.style.left = `calc(${pos.x}% - 55px)`;
+div.style.top = `calc(${pos.y}% - 34px)`;
 
     if (filledSlots[slotKey]) {
       div.innerHTML = `

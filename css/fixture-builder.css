@@ -189,3 +189,25 @@
   opacity: 1;
   bottom: 42px;
 }
+
+#homePitch .slot,
+#awayPitch .slot {
+  width: 110px;
+  min-height: 68px;
+}
+
+.slot.correct {
+  width: 110px;
+  min-height: 82px;
+  padding: 8px 6px;
+}
+
+.slot.correct .slot-photo {
+  width: 46px;
+  height: 46px;
+}
+
+.slot.correct .picked strong {
+  font-size: 11px;
+  max-width: 96px;
+}
