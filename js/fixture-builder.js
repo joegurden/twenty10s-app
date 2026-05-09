@@ -31,6 +31,7 @@ let gameStage = "players";
 let guessedScore = false;
 let guessedScorers = false;
 let guessedShirtNumbers = false;
+let guessedGoals = [];
 
 async function loadChallenge() {
   const today = new Date().toISOString().split("T")[0];
@@ -429,12 +430,19 @@ checkStageProgress();
     return;
   }
 
-  slotDiv.classList.add("wrong");
-  showWrongGuessMessage("Wrong player — try again");
+  lives--;
+updateProgressPanel();
 
-  setTimeout(() => {
-    slotDiv.classList.remove("wrong");
-  }, 800);
+slotDiv.classList.add("wrong");
+showWrongGuessMessage(`Wrong player — ${lives} lives left`);
+
+setTimeout(() => {
+  slotDiv.classList.remove("wrong");
+}, 800);
+
+if (lives <= 0) {
+  endGame();
+}
 }
 
 function createProgressPanel() {
@@ -462,7 +470,7 @@ function updateProgressPanel() {
   ];
 
   if (["medium", "hard", "very-hard"].includes(currentDifficulty)) {
-    rows.push(`Score: ${guessedScore ? "1 / 1" : "0 / 1"}`);
+    rows.push(`Scorers: ${guessedGoals.length} / ${totalScorers}`);
   }
 
   if (["hard", "very-hard"].includes(currentDifficulty)) {
@@ -527,6 +535,106 @@ function endGame() {
   if (scorePanel) scorePanel.remove();
 }
 
+function getAllGoalEvents() {
+  return [
+    ...(currentChallenge.scorers.home || []).map(goal => ({
+      ...goal,
+      team: "home",
+      teamName: currentChallenge.fixture.home_team
+    })),
+    ...(currentChallenge.scorers.away || []).map(goal => ({
+      ...goal,
+      team: "away",
+      teamName: currentChallenge.fixture.away_team
+    })),
+  ];
+}
+
+function showScorerGuessPanel() {
+  if (document.getElementById("scorerGuessPanel")) return;
+
+  const panel = document.createElement("div");
+  panel.id = "scorerGuessPanel";
+  panel.className = "scorer-guess-panel";
+
+  panel.innerHTML = `
+    <strong>Guess every goal scorer</strong>
+    <div class="scorer-inputs">
+      <input id="scorerGuessInput" placeholder="Type scorer name..." />
+      <button id="submitScorerGuess">Submit scorer</button>
+    </div>
+    <div id="guessedGoalsList"></div>
+  `;
+
+  document.getElementById("fixtureProgressPanel").insertAdjacentElement("afterend", panel);
+
+  document.getElementById("submitScorerGuess").addEventListener("click", checkScorerGuess);
+}
+
+async function checkScorerGuess() {
+  const input = document.getElementById("scorerGuessInput").value.trim();
+
+  if (!input) return;
+
+  const player = await findPlayerByName(input);
+
+  if (!player) {
+    lives--;
+    updateProgressPanel();
+    showWrongGuessMessage(`Scorer not found — ${lives} lives left`);
+
+    if (lives <= 0) endGame();
+    return;
+  }
+
+  const goals = getAllGoalEvents();
+
+  const goalIndex = goals.findIndex((goal, index) =>
+    Number(goal.id) === Number(player.id) &&
+    !guessedGoals.includes(index)
+  );
+
+  if (goalIndex === -1) {
+    lives--;
+    updateProgressPanel();
+    showWrongGuessMessage(`Wrong scorer — ${lives} lives left`);
+
+    if (lives <= 0) endGame();
+    return;
+  }
+
+  guessedGoals.push(goalIndex);
+
+  const goal = goals[goalIndex];
+
+  document.getElementById("guessedGoalsList").innerHTML += `
+    <div class="guessed-goal">
+      ✅ ${player.name} ${goal.minute ? `(${goal.minute}')` : ""}
+      ${goal.own_goal ? " OG" : ""}
+    </div>
+  `;
+
+  document.getElementById("scorerGuessInput").value = "";
+
+  if (guessedGoals.length === goals.length) {
+    guessedScorers = true;
+    updateProgressPanel();
+
+    document.getElementById("scorerGuessPanel").remove();
+
+    if (currentDifficulty === "hard") {
+      gameStage = "complete";
+      showWrongGuessMessage("Complete! You earned 50 coins");
+    } else {
+      gameStage = "shirtNumbers";
+      showWrongGuessMessage("Scorers complete — now guess shirt numbers");
+    }
+  } else {
+    updateProgressPanel();
+    showWrongGuessMessage("Correct scorer");
+  }
+}
+
 loadChallenge();
 
 function checkScoreGuess() {
@@ -548,10 +656,11 @@ function checkScoreGuess() {
     updateProgressPanel();
 
     if (currentDifficulty === "medium") {
-      showWrongGuessMessage("Complete! You earned 30 coins");
-    } else {
-      showWrongGuessMessage("Score correct — now guess the scorers");
-    }
+  showWrongGuessMessage("Complete! You earned 30 coins");
+} else {
+  showWrongGuessMessage("Score correct — now guess the scorers");
+  showScorerGuessPanel();
+}
 
     return;
   }
