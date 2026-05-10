@@ -174,9 +174,15 @@ data.lineup.away.forEach((playerId, index) => {
       </div>
 
       <div class="sky-score-box">
-        <span id="homeScore">${currentDifficulty === "easy" ? data.fixture.score_home : "?"}</span>
-        <em></em>
-        <span id="awayScore">${currentDifficulty === "easy" ? data.fixture.score_away : "?"}</span>
+        ${currentDifficulty === "easy" ? `
+  <span id="homeScore">${data.fixture.score_home}</span>
+  <em></em>
+  <span id="awayScore">${data.fixture.score_away}</span>
+` : `
+  <input id="homeScoreGuess" class="scoreboard-score-input" type="number" min="0" placeholder="?" />
+  <em></em>
+  <input id="awayScoreGuess" class="scoreboard-score-input" type="number" min="0" placeholder="?" />
+`}
       </div>
 
       <div class="sky-team sky-team-away">
@@ -227,8 +233,8 @@ function renderPitch(containerId, playerIds, formation, side) {
 
     div.className = "slot";
     div.dataset.slot = slotKey;
-    div.style.left = `calc(${pos.x}% - 55px)`;
-div.style.top = `calc(${pos.y}% - 34px)`;
+    div.style.left = `calc(${pos.x}% - 48px)`;
+div.style.top = `calc(${pos.y}% - 32px)`;
 
     if (filledSlots[slotKey]) {
       div.innerHTML = `
@@ -518,25 +524,20 @@ showScoreGuessPanel();
 }
 
 function showScoreGuessPanel() {
-  if (document.getElementById("scoreGuessPanel")) return;
+  const homeInput = document.getElementById("homeScoreGuess");
+  const awayInput = document.getElementById("awayScoreGuess");
 
-  const panel = document.createElement("div");
-  panel.id = "scoreGuessPanel";
-  panel.className = "score-guess-panel";
+  if (!homeInput || !awayInput) return;
 
-  panel.innerHTML = `
-    <strong>Guess the final score</strong>
-    <div class="score-inputs">
-      <input id="homeScoreGuess" type="number" min="0" placeholder="${currentChallenge.fixture.home_team}" />
-      <span>-</span>
-      <input id="awayScoreGuess" type="number" min="0" placeholder="${currentChallenge.fixture.away_team}" />
-      <button id="submitScoreGuess">Submit score</button>
-    </div>
-  `;
+  homeInput.focus();
 
-  document.getElementById("fixtureProgressPanel").insertAdjacentElement("afterend", panel);
+  [homeInput, awayInput].forEach(input => {
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") checkScoreGuess();
+    });
+  });
 
-  document.getElementById("submitScoreGuess").addEventListener("click", checkScoreGuess);
+  showWrongGuessMessage("Type the score into the scoreboard");
 }
 
 function endGame() {
@@ -559,28 +560,44 @@ function updateScoreboardScorers() {
 
   const goals = getAllGoalEvents();
 
-  const guessedHomeGoals = [];
-  const guessedAwayGoals = [];
+  function minuteValue(goal) {
+    return Number(String(goal.minute || "999").replace(/\D/g, "")) || 999;
+  }
 
-  guessedGoals.forEach(index => {
-    const goal = goals[index];
-    if (!goal) return;
+  function groupedScorers(team) {
+    const teamGoals = guessedGoals
+      .map(index => ({ ...goals[index], index }))
+      .filter(goal => goal.team === team)
+      .sort((a, b) => minuteValue(a) - minuteValue(b));
 
-    const scorerText = `
+    const grouped = {};
+
+    teamGoals.forEach(goal => {
+      const name = guessedGoalNames[goal.index] || "Scorer";
+
+      if (!grouped[name]) {
+        grouped[name] = {
+          name,
+          minutes: [],
+          ownGoals: []
+        };
+      }
+
+      grouped[name].minutes.push(`${goal.minute}'`);
+      if (goal.own_goal) grouped[name].ownGoals.push(goal.minute);
+    });
+
+    return Object.values(grouped).map(group => `
       <div class="sky-scorer">
         <span>⚽</span>
-        ${guessedGoalNames[index] || "Scorer"} 
-        ${goal.minute ? `${goal.minute}'` : ""}
-        ${goal.own_goal ? " OG" : ""}
+        ${group.name} ${group.minutes.join(", ")}
+        ${group.ownGoals.length ? " OG" : ""}
       </div>
-    `;
+    `).join("");
+  }
 
-    if (goal.team === "home") guessedHomeGoals.push(scorerText);
-    if (goal.team === "away") guessedAwayGoals.push(scorerText);
-  });
-
-  homeList.innerHTML = guessedHomeGoals.join("");
-  awayList.innerHTML = guessedAwayGoals.join("");
+  homeList.innerHTML = groupedScorers("home");
+  awayList.innerHTML = groupedScorers("away");
 }
 
 function getAllGoalEvents() {
