@@ -214,9 +214,14 @@
 
 .mg-scoreboard {
   width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .sky-scoreboard {
+  width: min(100%, 1400px);
+  margin: 0 auto;
+
   background: linear-gradient(180deg, #101722 0%, #182232 100%);
   border-radius: 18px;
   overflow: hidden;
