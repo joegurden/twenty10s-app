@@ -192,24 +192,56 @@
 
 #homePitch .slot,
 #awayPitch .slot {
-  width: 110px;
-  min-height: 68px;
+  width: 96px;
+  min-height: 54px;
 }
 
 .slot.correct {
-  width: 110px;
-  min-height: 82px;
-  padding: 8px 6px;
+  width: 96px;
+  min-height: 54px;
+
+  padding: 0 4px 6px;
+
+  background: white;
+  border-radius: 16px;
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.08),
+    inset 0 0 0 1px rgba(0,0,0,0.04);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+
+  overflow: visible;
 }
 
 .slot.correct .slot-photo {
-  width: 46px;
-  height: 46px;
+  width: 54px;
+  height: 54px;
+
+  margin-top: -18px;
+  margin-bottom: 4px;
+
+  border: 3px solid white;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+}
+
+.slot.correct .picked {
+  gap: 1px;
 }
 
 .slot.correct .picked strong {
-  font-size: 11px;
-  max-width: 96px;
+  font-size: 10px;
+  line-height: 1.05;
+  max-width: 88px;
+  text-align: center;
+}
+
+.slot.correct .picked span {
+  font-size: 10px;
+  opacity: 0.72;
+  font-weight: 700;
 }
 
 .mg-scoreboard {
@@ -393,4 +425,14 @@
   padding: 8px 12px;
   font-weight: 800;
   font-size: 13px;
+}
+
+.scorer-search-wrap {
+  position: relative;
+}
+
+.scorer-suggestions {
+  top: 42px;
+  left: 0;
+  width: 240px;
 }

@@ -32,6 +32,7 @@ let guessedScore = false;
 let guessedScorers = false;
 let guessedShirtNumbers = false;
 let guessedGoals = [];
+let guessedGoalNames = {};
 
 async function loadChallenge() {
   const today = new Date().toISOString().split("T")[0];
@@ -568,7 +569,7 @@ function updateScoreboardScorers() {
     const scorerText = `
       <div class="sky-scorer">
         <span>⚽</span>
-        ${goal.name || goal.player_name || goal.scorer || "Scorer"} 
+        ${guessedGoalNames[index] || "Scorer"} 
         ${goal.minute ? `${goal.minute}'` : ""}
         ${goal.own_goal ? " OG" : ""}
       </div>
@@ -597,6 +598,42 @@ function getAllGoalEvents() {
   ];
 }
 
+function getPlayersOnPitch() {
+  return Object.values(filledSlots).filter(Boolean);
+}
+
+function renderScorerSuggestions(query) {
+  const box = document.getElementById("scorerSuggestions");
+  if (!box) return;
+
+  if (query.length < 2) {
+    box.innerHTML = "";
+    return;
+  }
+
+  const matches = getPlayersOnPitch()
+    .filter(player => player.name.toLowerCase().includes(query.toLowerCase()))
+    .slice(0, 6);
+
+  box.innerHTML = matches.map(player => `
+    <div class="suggestion-item scorer-suggestion" data-player-id="${player.id}">
+      <div class="suggestion-photo">
+        <img src="${player.photo || "img/player-placeholder.png"}" alt="${player.name}">
+      </div>
+      <div class="suggestion-info">
+        <strong>${player.name}</strong>
+      </div>
+    </div>
+  `).join("");
+
+  box.querySelectorAll(".scorer-suggestion").forEach(item => {
+    item.addEventListener("click", () => {
+      const player = getPlayersOnPitch().find(p => Number(p.id) === Number(item.dataset.playerId));
+      if (player) checkScorerGuess(player);
+    });
+  });
+}
+
 function showScorerGuessPanel() {
   if (document.getElementById("scorerGuessPanel")) return;
 
@@ -607,31 +644,39 @@ function showScorerGuessPanel() {
   panel.innerHTML = `
     <strong>Guess every goal scorer</strong>
     <div class="scorer-inputs">
-      <input id="scorerGuessInput" placeholder="Type scorer name..." />
+      <div class="scorer-search-wrap">
+        <input id="scorerGuessInput" placeholder="Type scorer name..." autocomplete="off" />
+        <div id="scorerSuggestions" class="slot-suggestions scorer-suggestions"></div>
+      </div>
       <button id="submitScorerGuess">Submit scorer</button>
     </div>
   `;
 
   document.querySelector(".mg-scoreboard").insertAdjacentElement("afterend", panel);
 
-  document.getElementById("submitScorerGuess").addEventListener("click", checkScorerGuess);
+  const input = document.getElementById("scorerGuessInput");
+
+  input.addEventListener("input", e => {
+    renderScorerSuggestions(e.target.value.trim());
+  });
+
+  document.getElementById("submitScorerGuess").addEventListener("click", () => {
+    const typedName = input.value.trim();
+    const player = getPlayersOnPitch().find(
+      p => p.name.toLowerCase() === typedName.toLowerCase()
+    );
+
+    if (!player) {
+      showWrongGuessMessage("Pick a player from the suggestions");
+      return;
+    }
+
+    checkScorerGuess(player);
+  });
 }
 
-async function checkScorerGuess() {
-  const input = document.getElementById("scorerGuessInput").value.trim();
-
-  if (!input) return;
-
-  const player = await findPlayerByName(input);
-
-  if (!player) {
-    lives--;
-    updateProgressPanel();
-    showWrongGuessMessage(`Scorer not found — ${lives} lives left`);
-
-    if (lives <= 0) endGame();
-    return;
-  }
+async function checkScorerGuess(player) {
+  if (!player) return;
 
   const goals = getAllGoalEvents();
 
@@ -650,13 +695,12 @@ async function checkScorerGuess() {
   }
 
   guessedGoals.push(goalIndex);
+  guessedGoalNames[goalIndex] = player.name;
 
-  const goal = goals[goalIndex];
-
-  goal.name = player.name;
-updateScoreboardScorers();
+  updateScoreboardScorers();
 
   document.getElementById("scorerGuessInput").value = "";
+  document.getElementById("scorerSuggestions").innerHTML = "";
 
   if (guessedGoals.length === goals.length) {
     guessedScorers = true;
