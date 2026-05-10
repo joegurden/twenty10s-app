@@ -164,18 +164,31 @@ data.lineup.away.forEach((playerId, index) => {
   document.getElementById("fixtureTitle").textContent =
     `${data.fixture.home_team} vs ${data.fixture.away_team}`;
 
-  // Score
-  document.querySelector(".mg-scoreboard").innerHTML = `
-  <div class="score-team">
-    <img src="${badgeUrlFor(data.fixture.home_badge)}" alt="${data.fixture.home_team}">
-    <span id="homeScore">${currentDifficulty === "easy" ? data.fixture.score_home : "?"}</span>
-  </div>
+ document.querySelector(".mg-scoreboard").innerHTML = `
+  <div class="sky-scoreboard">
+    <div class="sky-score-top">
+      <div class="sky-team sky-team-home">
+        <img src="${badgeUrlFor(data.fixture.home_badge)}" alt="${data.fixture.home_team}">
+        <strong>${data.fixture.home_team}</strong>
+      </div>
 
-  <span class="score-dash">-</span>
+      <div class="sky-score-box">
+        <span id="homeScore">${currentDifficulty === "easy" ? data.fixture.score_home : "?"}</span>
+        <em></em>
+        <span id="awayScore">${currentDifficulty === "easy" ? data.fixture.score_away : "?"}</span>
+      </div>
 
-  <div class="score-team">
-    <span id="awayScore">${currentDifficulty === "easy" ? data.fixture.score_away : "?"}</span>
-    <img src="${badgeUrlFor(data.fixture.away_badge)}" alt="${data.fixture.away_team}">
+      <div class="sky-team sky-team-away">
+        <strong>${data.fixture.away_team}</strong>
+        <img src="${badgeUrlFor(data.fixture.away_badge)}" alt="${data.fixture.away_team}">
+      </div>
+    </div>
+
+    <div class="sky-scorers">
+      <div id="homeScorersList" class="sky-scorer-list"></div>
+      <div class="sky-scorer-divider"></div>
+      <div id="awayScorersList" class="sky-scorer-list"></div>
+    </div>
   </div>
 `;
 
@@ -535,6 +548,40 @@ function endGame() {
   if (scorePanel) scorePanel.remove();
 }
 
+function updateScoreboardScorers() {
+  if (!currentChallenge) return;
+
+  const homeList = document.getElementById("homeScorersList");
+  const awayList = document.getElementById("awayScorersList");
+
+  if (!homeList || !awayList) return;
+
+  const goals = getAllGoalEvents();
+
+  const guessedHomeGoals = [];
+  const guessedAwayGoals = [];
+
+  guessedGoals.forEach(index => {
+    const goal = goals[index];
+    if (!goal) return;
+
+    const scorerText = `
+      <div class="sky-scorer">
+        <span>⚽</span>
+        ${goal.name || goal.player_name || goal.scorer || "Scorer"} 
+        ${goal.minute ? `${goal.minute}'` : ""}
+        ${goal.own_goal ? " OG" : ""}
+      </div>
+    `;
+
+    if (goal.team === "home") guessedHomeGoals.push(scorerText);
+    if (goal.team === "away") guessedAwayGoals.push(scorerText);
+  });
+
+  homeList.innerHTML = guessedHomeGoals.join("");
+  awayList.innerHTML = guessedAwayGoals.join("");
+}
+
 function getAllGoalEvents() {
   return [
     ...(currentChallenge.scorers.home || []).map(goal => ({
@@ -563,10 +610,9 @@ function showScorerGuessPanel() {
       <input id="scorerGuessInput" placeholder="Type scorer name..." />
       <button id="submitScorerGuess">Submit scorer</button>
     </div>
-    <div id="guessedGoalsList"></div>
   `;
 
-  document.getElementById("fixtureProgressPanel").insertAdjacentElement("afterend", panel);
+  document.querySelector(".mg-scoreboard").insertAdjacentElement("afterend", panel);
 
   document.getElementById("submitScorerGuess").addEventListener("click", checkScorerGuess);
 }
@@ -607,12 +653,8 @@ async function checkScorerGuess() {
 
   const goal = goals[goalIndex];
 
-  document.getElementById("guessedGoalsList").innerHTML += `
-    <div class="guessed-goal">
-      ✅ ${player.name} ${goal.minute ? `(${goal.minute}')` : ""}
-      ${goal.own_goal ? " OG" : ""}
-    </div>
-  `;
+  goal.name = player.name;
+updateScoreboardScorers();
 
   document.getElementById("scorerGuessInput").value = "";
 
